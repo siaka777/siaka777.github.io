@@ -16,7 +16,7 @@
     }
 
     .container {
-      max-width: 760px;
+      max-width: 820px;
       margin: 0 auto;
     }
 
@@ -38,7 +38,7 @@
 
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
       gap: 1rem;
     }
 
@@ -46,16 +46,16 @@
       display: block;
       background: #fff;
       border: 1px solid #e0e0de;
-      border-radius: 10px;
-      padding: 1.25rem 1.25rem 1rem;
+      border-radius: 12px;
+      padding: 1.4rem 1.25rem 1.1rem;
       text-decoration: none;
       color: inherit;
       transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
     }
 
     .card:hover {
-      border-color: #aaa;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+      border-color: #bbb;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.08);
       transform: translateY(-2px);
     }
 
@@ -65,22 +65,34 @@
     }
 
     .card-icon {
-      font-size: 1.5rem;
-      margin-bottom: 0.75rem;
-      display: block;
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      margin-bottom: 0.9rem;
     }
 
     .card-title {
       font-size: 0.95rem;
       font-weight: 600;
-      margin-bottom: 0.3rem;
+      margin-bottom: 0.35rem;
     }
 
     .card-desc {
       font-size: 0.82rem;
       color: #888;
-      line-height: 1.5;
+      line-height: 1.55;
     }
+
+    .icon-purple { background: #EEEDFE; }
+    .icon-teal   { background: #E1F5EE; }
+    .icon-amber  { background: #FAEEDA; }
+    .icon-blue   { background: #E6F1FB; }
+    .icon-coral  { background: #FAECE7; }
+    .icon-green  { background: #EAF3DE; }
 
     footer {
       margin-top: 3rem;
@@ -89,13 +101,21 @@
       text-align: center;
     }
 
+    footer a { color: inherit; }
+
     @media (prefers-color-scheme: dark) {
       body { background: #141414; color: #e8e8e8; }
       .card { background: #1e1e1e; border-color: #2e2e2e; }
-      .card:hover { border-color: #555; box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+      .card:hover { border-color: #555; box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
       .card-desc { color: #777; }
       header p { color: #888; }
       footer { color: #555; }
+      .icon-purple { background: #26215C; }
+      .icon-teal   { background: #04342C; }
+      .icon-amber  { background: #412402; }
+      .icon-blue   { background: #042C53; }
+      .icon-coral  { background: #4A1B0C; }
+      .icon-green  { background: #173404; }
     }
   </style>
 </head>
@@ -103,36 +123,43 @@
   <div class="container">
     <header>
       <h1>My GitHub Pages</h1>
-      <p>A collection of pages and projects.</p>
+      <p>A collection of pages, tools, and learning resources.</p>
     </header>
 
     <div class="grid">
-      <!-- 
-        To add a page, copy one <a class="card"> block below.
-        Set href to the filename, e.g. href="about.html"
-        Change the icon (emoji), title, and description.
-      -->
+
+      <a class="card" href="il/index.html">
+        <div class="card-icon icon-purple">🎛️</div>
+        <div class="card-title">Interactive Learning</div>
+        <div class="card-desc">Hands-on dashboards and tools to learn by doing.</div>
+      </a>
+
+      <a class="card" href="mindmaps/index.html">
+        <div class="card-icon icon-teal">🗺️</div>
+        <div class="card-title">Mind Maps</div>
+        <div class="card-desc">Visual maps for exploring and connecting ideas.</div>
+      </a>
+
+      <a class="card" href="cheatsheets/index.html">
+        <div class="card-icon icon-amber">⚡</div>
+        <div class="card-title">Cheat Sheets</div>
+        <div class="card-desc">Quick-reference sheets for languages, tools, and concepts.</div>
+      </a>
 
       <a class="card" href="about.html">
-        <span class="card-icon">👤</span>
+        <div class="card-icon icon-blue">👤</div>
         <div class="card-title">About</div>
         <div class="card-desc">Learn more about me and this site.</div>
       </a>
 
-      <a class="card" href="projects.html">
-        <span class="card-icon">🛠️</span>
+      <a class="card" href="projects/index.html">
+        <div class="card-icon icon-coral">🛠️</div>
         <div class="card-title">Projects</div>
         <div class="card-desc">A showcase of things I've built.</div>
       </a>
 
-      <a class="card" href="https://medium.com/@dizaak2003">
-        <span class="card-icon">📝</span>
-        <div class="card-title">Blog</div>
-        <div class="card-desc">Thoughts, notes, and writing.</div>
-      </a>
-
       <a class="card" href="contact.html">
-        <span class="card-icon">✉️</span>
+        <div class="card-icon icon-green">✉️</div>
         <div class="card-title">Contact</div>
         <div class="card-desc">Get in touch with me.</div>
       </a>
@@ -140,7 +167,7 @@
     </div>
 
     <footer>
-      Hosted on <a href="https://pages.github.com" style="color: inherit;">GitHub Pages</a>
+      Hosted on <a href="https://pages.github.com">GitHub Pages</a>
     </footer>
   </div>
 </body>
