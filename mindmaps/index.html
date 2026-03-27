@@ -4,6 +4,8 @@ oi<!DOCTYPE html>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mind Maps</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/glightbox/dist/js/glightbox.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -232,6 +234,7 @@ oi<!DOCTYPE html>
     }
   </style>
 </head>
+<script>GLightbox();</script>
 <body>
 
   <div class="page-header">
@@ -284,18 +287,16 @@ oi<!DOCTYPE html>
         <span class="category-count">0 maps</span>
       </div>
       <div class="cards">
-        <a class="card" href="metasploit.png">
-          <div class="card-img">
-            <div class="placeholder">
-              <span class="placeholder-icon">🗺️</span>
-              <span class="placeholder-text">Add map</span>
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="card-title">Your map title</div>
-            <div class="card-sub">Short description or subtopic</div>
-          </div>
-        </a>
+<!-- Your card — note href stays as the image, add class="glightbox" -->
+<a class="card glightbox" href="metasploit.png" data-title="Metasploit" data-description="Your subtopic">
+  <div class="card-img">
+    <img src="metasploit.png" alt="Metasploit mind map" />
+  </div>
+  <div class="card-body">
+    <div class="card-title">Metasploit</div>
+    <div class="card-sub">Short description or subtopic</div>
+  </div>
+</a>
       </div>
     </div>
 
