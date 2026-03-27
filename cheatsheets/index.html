@@ -1,1 +1,429 @@
-x
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cheat Sheets</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-2: #1e293b;
+      --text: #f1f5f9;
+      --muted: rgba(241,245,249,0.5);
+      --subtle: rgba(241,245,249,0.08);
+      --sky: rgba(56,189,248,1);
+      --sky-dim: rgba(56,189,248,0.15);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      font-family: 'DM Sans', Arial, sans-serif;
+      background:
+        radial-gradient(circle at top right, rgba(56,189,248,0.10), transparent 28%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 5rem 2rem 3rem;
+      opacity: 0;
+      animation: fadeUp 0.7s ease forwards 0.1s;
+    }
+
+    .page-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--sky);
+      margin-bottom: 1rem;
+    }
+
+    .page-label::before {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 1px;
+      background: var(--sky);
+    }
+
+    .page-header h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.75rem;
+    }
+
+    .page-header p {
+      font-size: 1rem;
+      color: var(--muted);
+      font-weight: 300;
+      max-width: 520px;
+      line-height: 1.7;
+    }
+
+    /* ── LEGEND ── */
+    .legend {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 2rem 2rem;
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: fadeUp 0.6s ease forwards 0.25s;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .legend-badge {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+    }
+
+    .badge-file { background: rgba(99,102,241,0.18); }
+    .badge-url  { background: rgba(56,189,248,0.15); }
+    .badge-pdf  { background: rgba(239,68,68,0.15);  }
+
+    /* ── CONTENT ── */
+    .content {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 2rem 5rem;
+    }
+
+    /* ── CATEGORY BLOCK ── */
+    .category {
+      margin-bottom: 3.5rem;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    .category.visible {
+      animation: fadeUp 0.6s ease forwards;
+    }
+
+    .category-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--subtle);
+    }
+
+    .category-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .category-title {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .category-count {
+      margin-left: auto;
+      font-size: 0.72rem;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+    }
+
+    /* ── CARDS GRID ── */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 0.85rem;
+    }
+
+    .card {
+      background: var(--subtle);
+      border: 1px solid rgba(241,245,249,0.08);
+      border-radius: 12px;
+      padding: 1.1rem 1.1rem 1rem;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+    }
+
+    .card:hover {
+      border-color: rgba(56,189,248,0.35);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+    }
+
+    .card-type-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .card-body { flex: 1; min-width: 0; }
+
+    .card-title {
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 0.25rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-sub {
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.45;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-meta {
+      font-size: 0.7rem;
+      color: rgba(241,245,249,0.3);
+      font-family: 'DM Sans', monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* type-specific icon backgrounds */
+    .type-file { background: rgba(99,102,241,0.18); }
+    .type-url  { background: rgba(56,189,248,0.15); }
+    .type-pdf  { background: rgba(239,68,68,0.15);  }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--subtle);
+      padding: 1.5rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 900px;
+      margin: 0 auto;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    footer span { font-size: 0.78rem; color: var(--muted); }
+    footer a { font-size: 0.78rem; color: var(--muted); text-decoration: none; transition: color 0.2s; }
+    footer a:hover { color: var(--text); }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 600px) {
+      .page-header, .content, .legend { padding-left: 1.25rem; padding-right: 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="page-header">
+    <div class="page-label">Cheat Sheets</div>
+    <h1>The essentials,<br>distilled.</h1>
+    <p>Quick-reference sheets for languages, tools, and concepts — files to download and links worth bookmarking.</p>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-badge badge-file">📄</div>
+      <span>File download</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-badge badge-url">🔗</div>
+      <span>External link</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-badge badge-pdf">📕</div>
+      <span>PDF</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ═══════════════════════════════════════════
+         HOW TO ADD A CARD:
+
+         File:    type-icon class="card-type-icon type-file", icon 📄
+                  href="files/your-file.pdf" (or path to file)
+                  card-meta = filename
+
+         URL:     type-icon class="card-type-icon type-url", icon 🔗
+                  href="https://..."
+                  card-meta = domain name
+
+         PDF:     type-icon class="card-type-icon type-pdf", icon 📕
+                  href="files/your.pdf"
+                  card-meta = filename
+    ════════════════════════════════════════════ -->
+
+    <!-- CATEGORY: AI & Machine Learning -->
+    <div class="category" id="cat-ai">
+      <div class="category-header">
+        <div class="category-icon" style="background:rgba(99,102,241,0.15);">🤖</div>
+        <span class="category-title">AI & Machine Learning</span>
+        <span class="category-count">0 sheets</span>
+      </div>
+      <div class="cards">
+
+        <!-- FILE example (duplicate & fill in) -->
+        <a class="card" href="#">
+          <div class="card-type-icon type-file">📄</div>
+          <div class="card-body">
+            <div class="card-title">Sheet title</div>
+            <div class="card-sub">What this covers</div>
+            <div class="card-meta">filename.pdf</div>
+          </div>
+        </a>
+
+        <!-- URL example -->
+        <a class="card" href="#">
+          <div class="card-type-icon type-url">🔗</div>
+          <div class="card-body">
+            <div class="card-title">Resource title</div>
+            <div class="card-sub">What this covers</div>
+            <div class="card-meta">example.com</div>
+          </div>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- CATEGORY: Cybersecurity -->
+    <div class="category" id="cat-sec">
+      <div class="category-header">
+        <div class="category-icon" style="background:rgba(56,189,248,0.12);">🔐</div>
+        <span class="category-title">Cybersecurity</span>
+        <span class="category-count">0 sheets</span>
+      </div>
+      <div class="cards">
+        <a class="card" href="#">
+          <div class="card-type-icon type-file">📄</div>
+          <div class="card-body">
+            <div class="card-title">Sheet title</div>
+            <div class="card-sub">What this covers</div>
+            <div class="card-meta">filename.pdf</div>
+          </div>
+        </a>
+        <a class="card" href="#">
+          <div class="card-type-icon type-url">🔗</div>
+          <div class="card-body">
+            <div class="card-title">Resource title</div>
+            <div class="card-sub">What this covers</div>
+            <div class="card-meta">example.com</div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- CATEGORY: Systems & Architecture -->
+    <div class="category" id="cat-sys">
+      <div class="category-header">
+        <div class="category-icon" style="background:rgba(251,191,36,0.12);">🏗️</div>
+        <span class="category-title">Systems & Architecture</span>
+        <span class="category-count">0 sheets</span>
+      </div>
+      <div class="cards">
+        <a class="card" href="#">
+          <div class="card-type-icon type-file">📄</div>
+          <div class="card-body">
+            <div class="card-title">Sheet title</div>
+            <div class="card-sub">What this covers</div>
+            <div class="card-meta">filename.pdf</div>
+          </div>
+        </a>
+        <a class="card" href="#">
+          <div class="card-type-icon type-url">🔗</div>
+          <div class="card-body">
+            <div class="card-title">Resource title</div>
+            <div class="card-sub">What this covers</div>
+            <div class="card-meta">example.com</div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- CATEGORY: Web Development -->
+    <div class="category" id="cat-web">
+      <div class="category-header">
+        <div class="category-icon" style="background:rgba(52,211,153,0.12);">🌐</div>
+        <span class="category-title">Web Development</span>
+        <span class="category-count">0 sheets</span>
+      </div>
+      <div class="cards">
+        <a class="card" href="#">
+          <div class="card-type-icon type-file">📄</div>
+          <div class="card-body">
+            <div class="card-title">Sheet title</div>
+            <div class="card-sub">What this covers</div>
+            <div class="card-meta">filename.pdf</div>
+          </div>
+        </a>
+        <a class="card" href="#">
+          <div class="card-type-icon type-url">🔗</div>
+          <div class="card-body">
+            <div class="card-title">Resource title</div>
+            <div class="card-sub">What this covers</div>
+            <div class="card-meta">example.com</div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <footer>
+    <span>Cheat Sheets</span>
+    <a href="index.html">← Back to home</a>
+  </footer>
+
+  <script>
+    const cats = document.querySelectorAll('.category');
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.08 });
+    cats.forEach(c => io.observe(c));
+  </script>
+
+</body>
+</html>
