@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CCSP Study Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { min-height: 100vh; background: #0A0E1A; color: #E8EDF5; font-family: 'DM Sans', system-ui, sans-serif; overflow-x: hidden; }
+
+  /* HEADER */
+  #header { background: linear-gradient(135deg, #0D1B2A 0%, #1A2744 100%); border-bottom: 1px solid rgba(0,212,255,0.15); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); gap: 16px; flex-wrap: wrap; }
+  .logo { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; background: linear-gradient(135deg, #00D4FF, #7B61FF); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .nav { display: flex; gap: 8px; flex-wrap: wrap; }
+  .nav-btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; background: transparent; color: #8899AA; transition: all 0.2s; font-family: inherit; letter-spacing: 0.3px; }
+  .nav-btn.active, .nav-btn:hover { background: rgba(0,212,255,0.15); color: #00D4FF; }
+  .progress-wrap { display: flex; align-items: center; gap: 8px; }
+  .progress-track { width: 100px; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
+  .progress-fill-header { height: 100%; background: linear-gradient(90deg, #00D4FF, #7B61FF); border-radius: 3px; transition: width 0.8s ease; }
+  .progress-pct { font-size: 11px; color: #8899AA; font-weight: 600; }
+
+  /* CONTENT */
+  #content { max-width: 1200px; margin: 0 auto; padding: 32px 24px; transition: opacity 0.25s, transform 0.25s; }
+  #content.fade-out { opacity: 0; transform: translateY(12px); }
+
+  /* VIEWS */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* STAT CARDS */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 32px; }
+  .stat-card { border-radius: 16px; padding: 24px; text-align: center; }
+  .stat-num { font-size: 40px; font-weight: 800; line-height: 1; }
+  .stat-label { font-size: 13px; color: #8899AA; margin-top: 4px; font-weight: 500; }
+
+  /* DOMAIN GRID */
+  .domain-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .domain-card { border-radius: 16px; padding: 24px; cursor: pointer; transition: all 0.25s; position: relative; overflow: hidden; }
+  .domain-card:hover { transform: translateY(-4px); }
+  .domain-icon { font-size: 36px; margin-bottom: 12px; }
+  .domain-name { font-size: 15px; font-weight: 700; line-height: 1.3; margin-bottom: 6px; }
+  .domain-weight { font-size: 24px; font-weight: 800; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; margin-top: 8px; }
+  .domain-prog-track { height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+  .domain-prog-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+  .domain-prog-text { font-size: 11px; color: #8899AA; margin-top: 6px; }
+
+  /* SECTION TITLES */
+  .section-title { font-size: 28px; font-weight: 800; margin-bottom: 8px; background: linear-gradient(135deg, #E8EDF5, #8899AA); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .section-sub { color: #8899AA; font-size: 14px; margin-bottom: 28px; }
+  .eyebrow { font-size: 13px; color: #00D4FF; font-weight: 700; letter-spacing: 2px; margin-bottom: 8px; }
+
+  /* QUICK ACTIONS */
+  .quick-actions { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
+  .quick-btn { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #C8D4E0; padding: 14px 24px; border-radius: 12px; cursor: pointer; font-size: 14px; font-weight: 600; flex: 1 1 180px; transition: all 0.2s; font-family: inherit; }
+  .quick-btn:hover { background: rgba(255,255,255,0.08); }
+
+  /* BACK BTN */
+  .back-btn { background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.2); color: #00D4FF; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; margin-bottom: 24px; display: inline-flex; align-items: center; gap: 6px; font-family: inherit; }
+
+  /* DOMAIN DETAIL */
+  .domain-header { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; }
+  .domain-header-icon { font-size: 40px; }
+  .domain-domain-num { font-size: 11px; font-weight: 700; letter-spacing: 2px; margin-bottom: 4px; }
+  .domain-detail-name { font-size: 24px; font-weight: 800; color: #E8EDF5; }
+  .topic-list { display: flex; flex-direction: column; gap: 12px; }
+  .topic-card { border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.2s; }
+  .topic-name { font-size: 15px; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  .topic-check { width: 18px; flex-shrink: 0; }
+  .topic-chevron { margin-left: auto; color: #445566; font-size: 12px; }
+  .subtopic-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .subtopic-tag { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+  .mark-btn { margin-top: 16px; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 700; font-family: inherit; border: 1px solid; transition: all 0.2s; }
+
+  /* FLASHCARD */
+  .flash-card { background: linear-gradient(135deg, #1A2340, #0F1829); border: 1px solid rgba(0,212,255,0.2); border-radius: 20px; padding: 60px 48px; text-align: center; cursor: pointer; min-height: 260px; display: flex; flex-direction: column; align-items: center; justify-content: center; max-width: 700px; margin: 0 auto 24px; transition: transform 0.15s; user-select: none; }
+  .flash-card:hover { transform: scale(0.99); }
+  .flash-label { font-size: 11px; color: #8899AA; font-weight: 700; letter-spacing: 2px; margin-bottom: 20px; }
+  .flash-q { font-size: 20px; font-weight: 600; line-height: 1.5; color: #E8EDF5; }
+  .flash-a { font-size: 17px; line-height: 1.7; color: #00D4FF; }
+  .flash-hint { margin-top: 20px; font-size: 12px; color: #445566; }
+  .flash-nav { display: flex; justify-content: center; gap: 16px; align-items: center; }
+  .flash-btn { background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.2); color: #00D4FF; padding: 10px 24px; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600; font-family: inherit; }
+  .flash-shuffle { background: rgba(107,203,119,0.1); border: 1px solid rgba(107,203,119,0.3); color: #6BCB77; }
+  .flash-counter { color: #445566; font-size: 13px; font-weight: 600; }
+  .flash-shuffle-wrap { display: flex; justify-content: center; margin-top: 16px; }
+
+  /* QUIZ */
+  .quiz-card { background: linear-gradient(135deg, #1A2340, #0F1829); border: 1px solid rgba(123,97,255,0.2); border-radius: 20px; padding: 40px 48px; max-width: 680px; margin: 0 auto; }
+  .quiz-meta { display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; }
+  .tag { display: inline-block; background: rgba(0,212,255,0.1); color: #00D4FF; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; border: 1px solid rgba(0,212,255,0.2); }
+  .quiz-score-label { color: #6BCB77; font-size: 13px; font-weight: 600; }
+  .quiz-q { font-size: 19px; font-weight: 600; margin-bottom: 28px; line-height: 1.5; color: #E8EDF5; }
+  .option-btn { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #C8D4E0; padding: 14px 20px; border-radius: 10px; cursor: pointer; margin-bottom: 10px; text-align: left; font-size: 14px; font-weight: 500; transition: all 0.2s; font-family: inherit; }
+  .option-btn:hover:not(:disabled) { background: rgba(123,97,255,0.15); border-color: #7B61FF; color: #C4B5FD; }
+  .option-btn.correct { background: rgba(107,203,119,0.15) !important; border-color: #6BCB77 !important; color: #6BCB77 !important; }
+  .option-btn.wrong { background: rgba(255,107,107,0.15) !important; border-color: #FF6B6B !important; color: #FF6B6B !important; }
+  .quiz-next-wrap { text-align: right; margin-top: 12px; }
+  .quiz-next-btn { background: linear-gradient(135deg, #7B61FF, #00D4FF); border: none; color: #fff; padding: 12px 28px; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 700; font-family: inherit; }
+  .quiz-result { text-align: center; }
+  .quiz-result-emoji { font-size: 48px; margin-bottom: 16px; }
+  .quiz-result-score { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
+  .quiz-result-msg { color: #8899AA; margin-bottom: 24px; }
+  .quiz-retry-btn { background: linear-gradient(135deg, #7B61FF, #00D4FF); border: none; color: #fff; padding: 12px 28px; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 700; font-family: inherit; }
+
+  /* AI */
+  .ai-box { background: linear-gradient(135deg, #1A2340, #0F1829); border: 1px solid rgba(255,217,61,0.15); border-radius: 20px; padding: 32px; max-width: 800px; margin: 0 auto; }
+  .ai-prompt-label { font-size: 13px; color: #FFD93D; font-weight: 600; margin-bottom: 12px; }
+  .ai-prompts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .ai-prompt-chip { background: rgba(255,217,61,0.08); border: 1px solid rgba(255,217,61,0.2); color: #FFD93D; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 500; font-family: inherit; transition: background 0.2s; }
+  .ai-prompt-chip:hover { background: rgba(255,217,61,0.15); }
+  .ai-textarea { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,217,61,0.2); border-radius: 10px; padding: 14px 16px; color: #E8EDF5; font-size: 14px; outline: none; resize: vertical; min-height: 90px; font-family: inherit; }
+  .ai-textarea:focus { border-color: rgba(255,217,61,0.5); }
+  .ai-submit-btn { background: linear-gradient(135deg, #FFD93D, #FF9F43); border: none; color: #0A0E1A; padding: 12px 28px; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 700; margin-top: 12px; font-family: inherit; }
+  .ai-loading { margin-top: 20px; color: #8899AA; font-size: 14px; display: none; }
+  .ai-response { margin-top: 24px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; color: #C8D4E0; font-size: 14px; line-height: 1.8; white-space: pre-wrap; display: none; }
+
+  /* PROGRESS BAR in stat card */
+  .stat-prog-track { height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+  .stat-prog-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+
+  /* SECTION LABEL */
+  .section-domain-label { font-size: 12px; font-weight: 700; color: #8899AA; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 16px; }
+
+  @media (max-width: 768px) {
+    .stat-grid { grid-template-columns: 1fr 1fr; }
+    .domain-grid { grid-template-columns: 1fr 1fr; }
+    #header { padding: 12px 16px; }
+    #content { padding: 20px 16px; }
+    .quiz-card, .ai-box { padding: 24px 20px; }
+    .flash-card { padding: 40px 24px; }
+  }
+  @media (max-width: 480px) {
+    .stat-grid { grid-template-columns: 1fr; }
+    .domain-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <div class="logo">CCSP Study Hub</div>
+  <div class="nav">
+    <button class="nav-btn active" onclick="navigate('home')">Home</button>
+    <button class="nav-btn" onclick="navigate('flash')">Flashcards</button>
+    <button class="nav-btn" onclick="navigate('quiz')">Quiz</button>
+    <button class="nav-btn" onclick="navigate('ai')">AI Tutor</button>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-track"><div class="progress-fill-header" id="header-progress" style="width:0%"></div></div>
+    <span class="progress-pct" id="header-pct">0%</span>
+  </div>
+</div>
+
+<div id="content">
+
+  <!-- HOME VIEW -->
+  <div class="view active" id="view-home">
+    <div style="margin-bottom:32px">
+      <div class="eyebrow">CERTIFIED CLOUD SECURITY PROFESSIONAL</div>
+      <div class="section-title">CCSP Exam Study Dashboard</div>
+      <div class="section-sub">Master all 6 domains · 29 topics · Interactive learning tools</div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card" style="background:linear-gradient(135deg,#00D4FF18,#00D4FF08);border:1px solid #00D4FF30">
+        <div class="stat-num" style="color:#00D4FF">6</div>
+        <div class="stat-label">Exam Domains</div>
+      </div>
+      <div class="stat-card" style="background:linear-gradient(135deg,#6BCB7718,#6BCB7708);border:1px solid #6BCB7730">
+        <div class="stat-num" style="color:#6BCB77" id="studied-count">0</div>
+        <div class="stat-label">Topics Reviewed <span style="color:#8899AA">/ 29</span></div>
+        <div class="stat-prog-track"><div class="stat-prog-fill" id="overall-prog" style="width:0%;background:#6BCB77"></div></div>
+      </div>
+      <div class="stat-card" style="background:linear-gradient(135deg,#C77DFF18,#C77DFF08);border:1px solid #C77DFF30">
+        <div class="stat-num" style="color:#C77DFF">125</div>
+        <div class="stat-label">Exam Questions · 3 Hours</div>
+      </div>
+    </div>
+    <div class="section-domain-label">Exam Domains</div>
+    <div class="domain-grid" id="domain-grid"></div>
+    <div class="quick-actions">
+      <button class="quick-btn" onclick="navigate('flash')">📇 Flashcards</button>
+      <button class="quick-btn" onclick="navigate('quiz')">🧠 Quiz Mode</button>
+      <button class="quick-btn" onclick="navigate('ai')">🤖 AI Tutor</button>
+    </div>
+  </div>
+
+  <!-- DOMAIN VIEW -->
+  <div class="view" id="view-domain">
+    <button class="back-btn" onclick="navigate('home')">← Back to Domains</button>
+    <div class="domain-header">
+      <div class="domain-header-icon" id="d-icon"></div>
+      <div>
+        <div class="domain-domain-num" id="d-num"></div>
+        <div class="domain-detail-name" id="d-name"></div>
+      </div>
+    </div>
+    <div class="section-sub">Click to expand subtopics · Mark as studied to track progress</div>
+    <div class="topic-list" id="topic-list"></div>
+  </div>
+
+  <!-- FLASH VIEW -->
+  <div class="view" id="view-flash">
+    <button class="back-btn" onclick="navigate('home')">← Back</button>
+    <div class="section-title">Flashcards</div>
+    <div class="section-sub" id="flash-sub"></div>
+    <div class="flash-card" id="flash-card" onclick="flipCard()">
+      <div class="flash-label" id="flash-label"></div>
+      <div id="flash-content"></div>
+      <div class="flash-hint" id="flash-hint"></div>
+    </div>
+    <div class="flash-nav">
+      <button class="flash-btn" onclick="flashPrev()">← Prev</button>
+      <span class="flash-counter" id="flash-counter"></span>
+      <button class="flash-btn" onclick="flashNext()">Next →</button>
+    </div>
+    <div class="flash-shuffle-wrap">
+      <button class="flash-btn flash-shuffle" onclick="flashShuffle()">🔀 Shuffle</button>
+    </div>
+  </div>
+
+  <!-- QUIZ VIEW -->
+  <div class="view" id="view-quiz">
+    <button class="back-btn" onclick="navigate('home')">← Back</button>
+    <div class="section-title">Practice Quiz</div>
+    <div class="section-sub">Test your CCSP knowledge · 8 questions</div>
+    <div class="quiz-card" id="quiz-card"></div>
+  </div>
+
+  <!-- AI VIEW -->
+  <div class="view" id="view-ai">
+    <button class="back-btn" onclick="navigate('home')">← Back</button>
+    <div class="section-title">AI Tutor</div>
+    <div class="section-sub">Ask any CCSP question and get an exam-focused explanation</div>
+    <div class="ai-box">
+      <div class="ai-prompt-label">💡 Try asking:</div>
+      <div class="ai-prompts">
+        <button class="ai-prompt-chip" onclick="setPrompt(this)">Explain the shared responsibility model</button>
+        <button class="ai-prompt-chip" onclick="setPrompt(this)">What's the difference between IaaS and PaaS security?</button>
+        <button class="ai-prompt-chip" onclick="setPrompt(this)">How does GDPR impact cloud data storage?</button>
+        <button class="ai-prompt-chip" onclick="setPrompt(this)">Explain VM escape attacks</button>
+      </div>
+      <textarea class="ai-textarea" id="ai-input" placeholder="Ask about any CCSP concept, domain, or exam topic..."></textarea>
+      <div><button class="ai-submit-btn" id="ai-submit" onclick="askAI()">Ask Tutor →</button></div>
+      <div class="ai-loading" id="ai-loading">⏳ Generating explanation...</div>
+      <div class="ai-response" id="ai-response"></div>
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<script>
+const DOMAINS = [
+  { id:1, name:"Cloud Concepts, Architecture & Design", weight:"17%", color:"#00D4FF", icon:"🏗️", topics:[
+    { name:"Cloud Computing Definitions & Characteristics", subtopics:["Essential characteristics (NIST)","Service models: IaaS, PaaS, SaaS","Deployment models: Public, Private, Hybrid, Community"] },
+    { name:"Cloud Reference Architecture", subtopics:["Cloud roles & responsibilities","Key cloud enabling technologies","Measured & metered services","Interoperability & portability"] },
+    { name:"Cloud Security Concepts", subtopics:["Cryptography basics","IAM in the cloud","Data & media sanitization","Network security in cloud"] },
+    { name:"Design Principles of Secure Cloud", subtopics:["Threat modeling","OWASP Cloud Top 10","Security by design","DevSecOps integration"] },
+    { name:"Trusted Cloud Services", subtopics:["Cloud service agreements","Supply chain management","Third-party audits","Certification frameworks (FedRAMP, CSA STAR)"] },
+  ]},
+  { id:2, name:"Cloud Data Security", weight:"20%", color:"#FF6B6B", icon:"🔐", topics:[
+    { name:"Cloud Data Concepts", subtopics:["Data lifecycle (Create, Store, Use, Share, Archive, Destroy)","Data classification","Data types and formats","Location and jurisdiction"] },
+    { name:"Data Storage Architectures", subtopics:["IaaS storage: raw, volume, object, CDN","PaaS storage: structured, unstructured","SaaS storage types","Storage threats & countermeasures"] },
+    { name:"Data Security Technologies", subtopics:["Encryption at rest & in transit","Key management","Tokenization & masking","DLP solutions"] },
+    { name:"Data Discovery & Classification", subtopics:["Automated discovery tools","Metadata vs content classification","Labeling and tagging","Rights management"] },
+    { name:"Privacy Act Compliance", subtopics:["GDPR principles","CCPA requirements","HIPAA/PHI","Cross-border data transfer rules"] },
+  ]},
+  { id:3, name:"Cloud Platform & Infrastructure Security", weight:"17%", color:"#FFD93D", icon:"☁️", topics:[
+    { name:"Cloud Infrastructure Components", subtopics:["Physical environments","Network & communications","Compute resources","Virtualization technologies"] },
+    { name:"Risks Associated with Cloud Infrastructure", subtopics:["Risk assessment in cloud","Countermeasures & security controls","VM escape & sprawl","Hypervisor vulnerabilities"] },
+    { name:"Designing & Planning Security Controls", subtopics:["Physical & environmental protection","System & communications protection","Configuration management","Patch management"] },
+    { name:"Disaster Recovery & Business Continuity", subtopics:["RTO / RPO / MTTR / MTBF","Backup strategies","Multi-region & multi-zone design","DR testing methodologies"] },
+  ]},
+  { id:4, name:"Cloud Application Security", weight:"17%", color:"#6BCB77", icon:"💻", topics:[
+    { name:"Advocate Training & Awareness", subtopics:["Cloud-specific security training","Developer security awareness","Role-based training","Secure SDLC"] },
+    { name:"Cloud Software Assurance & Validation", subtopics:["Functional testing","Security testing (SAST, DAST)","Threat modeling for apps","Code review practices"] },
+    { name:"Secure Software Development", subtopics:["OWASP Top 10","Secure coding standards","API security","Container & microservices security"] },
+    { name:"Cloud Application Architecture", subtopics:["Supplemental security components","Cryptography in apps","Sandboxing","Application virtualization"] },
+    { name:"IAM for Cloud Apps", subtopics:["Identity federation","OAuth 2.0 & OpenID Connect","SAML assertions","Privileged access management"] },
+  ]},
+  { id:5, name:"Cloud Security Operations", weight:"16%", color:"#C77DFF", icon:"⚙️", topics:[
+    { name:"Build & Implement Physical Infrastructure", subtopics:["Hardware security configurations","Installation & configuration of systems","Secure network configuration","OS hardening"] },
+    { name:"Operate & Maintain Infrastructure", subtopics:["Change management","Continuity management","Capacity management","Performance monitoring"] },
+    { name:"Manage Access Control", subtopics:["Physical & logical access","Account provisioning","Privileged account management","Access reviews & recertification"] },
+    { name:"Security Operations Center", subtopics:["SIEM implementation","Incident triage","Forensics in cloud","Log management"] },
+    { name:"Vulnerability Assessment", subtopics:["Vulnerability scanning","Penetration testing","Configuration review","Compliance scanning"] },
+  ]},
+  { id:6, name:"Legal, Risk & Compliance", weight:"13%", color:"#FF9F43", icon:"⚖️", topics:[
+    { name:"Legal Requirements & Unique Risks", subtopics:["Conflicting international laws","Evaluation of legal risks","Legal frameworks by region","eDiscovery in cloud"] },
+    { name:"Privacy Issues", subtopics:["Difference between privacy & security","Privacy data types","Privacy impact assessment (PIA)","Data residency & sovereignty"] },
+    { name:"Audit Process, Methodologies & Adaptations", subtopics:["Audit scope","Gap analysis","Audit planning","Types of audit reports (SOC 1/2/3)"] },
+    { name:"Implications of Cloud to Enterprise Risk", subtopics:["Risk frameworks","Risk treatment options","Vendor risk management","Risk metrics & KPIs"] },
+    { name:"Outsourcing & Cloud Contracts", subtopics:["Contract requirements for cloud","Right to audit clauses","SLA negotiation","Exit strategy & portability clauses"] },
+  ]},
+];
+
+const FLASHCARDS = [
+  { q:"What are the 5 essential characteristics of cloud computing per NIST?", a:"On-demand self-service, Broad network access, Resource pooling, Rapid elasticity, Measured service." },
+  { q:"What is the difference between RTO and RPO?", a:"RTO (Recovery Time Objective) = max acceptable downtime. RPO (Recovery Point Objective) = max acceptable data loss measured in time." },
+  { q:"What does the Shared Responsibility Model define?", a:"It defines which security controls are managed by the cloud provider vs the customer, varying by service model (IaaS/PaaS/SaaS)." },
+  { q:"Name the 6 phases of the Data Security Lifecycle.", a:"Create → Store → Use → Share → Archive → Destroy" },
+  { q:"What is a SOC 2 Type II report?", a:"An audit report covering the design AND operating effectiveness of controls over a period of time (min 6 months), based on TSC criteria." },
+  { q:"What is data sovereignty?", a:"The concept that data is subject to the laws and governance structures of the nation where it is collected or stored." },
+  { q:"Define VM escape.", a:"A vulnerability where an attacker on a guest VM breaks out to access the hypervisor or other VMs on the same host." },
+  { q:"What is tokenization?", a:"Replacing sensitive data with non-sensitive placeholders (tokens) that map back to the original via a secure token vault." },
+  { q:"What is the CSA Cloud Controls Matrix (CCM)?", a:"A cybersecurity framework of cloud-specific controls mapped to compliance standards like ISO 27001, NIST, PCI DSS, and HIPAA." },
+  { q:"What is federated identity?", a:"A system where a user's identity is established in one domain and trusted across multiple domains without separate login credentials." },
+];
+
+const QUIZ = [
+  { q:"Which cloud deployment model is exclusively operated for a single organization?", opts:["Public Cloud","Private Cloud","Hybrid Cloud","Community Cloud"], correct:1 },
+  { q:"What does IaaS stand for?", opts:["Infrastructure as a Service","Information as a Service","Identity as a Service","Integration as a Service"], correct:0 },
+  { q:"Which CCSP domain carries the highest exam weight?", opts:["Cloud Data Security","Cloud Concepts, Architecture & Design","Legal, Risk & Compliance","Cloud Application Security"], correct:0 },
+  { q:"What type of encryption protects data while it is being transmitted over a network?", opts:["Encryption at rest","Encryption in transit","End-to-end encryption","Homomorphic encryption"], correct:1 },
+  { q:"Which standard specifically covers cloud security controls and maps to multiple compliance frameworks?", opts:["ISO 27001","SOC 2","CSA CCM","NIST 800-53"], correct:2 },
+  { q:"What is the primary purpose of a Data Loss Prevention (DLP) solution?", opts:["Encrypt all data at rest","Monitor and prevent unauthorized data exfiltration","Manage encryption keys","Perform vulnerability scans"], correct:1 },
+  { q:"Which of the following best describes 'multi-tenancy'?", opts:["Multiple users on separate physical hardware","Multiple customers sharing the same infrastructure","Multiple administrators managing one system","Multiple copies of data across regions"], correct:1 },
+  { q:"A company wants to move to the cloud but must retain full control over hardware. Which model fits best?", opts:["Public Cloud","Community Cloud","Private Cloud","SaaS"], correct:2 },
+];
+
+// --- STATE ---
+let progress = {}; // key: "domainId-topicIdx"
+let currentDomain = null;
+let flashIndex = 0, flashFlipped = false;
+let quizIndex = 0, quizScore = 0, quizAnswered = false, quizDone = false;
+let expandedTopic = null;
+
+const totalTopics = DOMAINS.reduce((a,d) => a + d.topics.length, 0);
+
+// --- NAV ---
+function navigate(view) {
+  const content = document.getElementById('content');
+  content.classList.add('fade-out');
+  setTimeout(() => {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    const el = document.getElementById('view-' + view);
+    if (el) el.classList.add('active');
+    document.querySelectorAll('.nav-btn').forEach(b => {
+      if (b.textContent.toLowerCase().includes(view) || (view==='home' && b.textContent==='Home')) b.classList.add('active');
+    });
+    if (view === 'home') renderHome();
+    if (view === 'flash') renderFlash();
+    if (view === 'quiz') renderQuiz();
+    content.classList.remove('fade-out');
+  }, 200);
+}
+
+// --- PROGRESS ---
+function updateGlobalProgress() {
+  const studied = Object.keys(progress).length;
+  const pct = Math.round(studied / totalTopics * 100);
+  document.getElementById('header-progress').style.width = pct + '%';
+  document.getElementById('header-pct').textContent = pct + '%';
+  const sc = document.getElementById('studied-count');
+  if (sc) sc.textContent = studied;
+  const op = document.getElementById('overall-prog');
+  if (op) op.style.width = (studied / totalTopics * 100) + '%';
+}
+
+// --- HOME ---
+function renderHome() {
+  updateGlobalProgress();
+  const grid = document.getElementById('domain-grid');
+  grid.innerHTML = '';
+  DOMAINS.forEach(d => {
+    const studied = d.topics.filter((_,i) => progress[`${d.id}-${i}`]).length;
+    const pct = Math.round(studied / d.topics.length * 100);
+    const card = document.createElement('div');
+    card.className = 'domain-card';
+    card.style.cssText = `background:linear-gradient(135deg,${d.color}12,${d.color}05);border:1px solid ${d.color}25;`;
+    card.innerHTML = `
+      <div class="domain-icon">${d.icon}</div>
+      <div class="domain-name">${d.name}</div>
+      <div class="domain-weight" style="color:${d.color}">${d.weight}</div>
+      <div class="badge" style="background:${d.color}20;color:${d.color};border:1px solid ${d.color}30">${d.topics.length} topics</div>
+      <div class="domain-prog-track"><div class="domain-prog-fill" style="width:${pct}%;background:${d.color}"></div></div>
+      <div class="domain-prog-text">${studied}/${d.topics.length} reviewed</div>
+    `;
+    card.onmouseenter = () => { card.style.transform = 'translateY(-4px)'; card.style.boxShadow = `0 12px 40px ${d.color}20`; };
+    card.onmouseleave = () => { card.style.transform = ''; card.style.boxShadow = ''; };
+    card.onclick = () => openDomain(d);
+    grid.appendChild(card);
+  });
+}
+
+// --- DOMAIN ---
+function openDomain(d) {
+  currentDomain = d;
+  expandedTopic = null;
+  document.getElementById('d-icon').textContent = d.icon;
+  document.getElementById('d-num').textContent = `DOMAIN ${d.id} · ${d.weight} OF EXAM`;
+  document.getElementById('d-num').style.color = d.color;
+  document.getElementById('d-name').textContent = d.name;
+  renderTopics();
+  navigate('domain');
+}
+
+function renderTopics() {
+  if (!currentDomain) return;
+  const d = currentDomain;
+  const list = document.getElementById('topic-list');
+  list.innerHTML = '';
+  d.topics.forEach((t, i) => {
+    const key = `${d.id}-${i}`;
+    const studied = !!progress[key];
+    const isExpanded = expandedTopic === key;
+    const card = document.createElement('div');
+    card.className = 'topic-card';
+    card.id = `topic-${key}`;
+    card.style.cssText = studied
+      ? `background:${d.color}15;border:1px solid ${d.color}40;`
+      : 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);';
+
+    const subtopicHTML = isExpanded ? `
+      <div class="subtopic-list">${t.subtopics.map(s => `<span class="subtopic-tag" style="background:${d.color}15;color:${d.color};border:1px solid ${d.color}30">${s}</span>`).join('')}</div>
+      <button class="mark-btn" style="background:${studied?'rgba(255,107,107,0.1)':d.color+'18'};border-color:${studied?'#FF6B6B40':d.color+'40'};color:${studied?'#FF6B6B':d.color}" onclick="toggleStudied('${key}',event)">${studied?'✕ Mark Unread':'✓ Mark as Studied'}</button>
+    ` : '';
+
+    card.innerHTML = `
+      <div class="topic-name">
+        <span class="topic-check" style="color:${studied?d.color:'#445566'}">${studied?'✓':'○'}</span>
+        ${t.name}
+        <span class="topic-chevron">${isExpanded?'▲':'▼'}</span>
+      </div>
+      ${subtopicHTML}
+    `;
+    card.onclick = (e) => {
+      if (e.target.closest('.mark-btn')) return;
+      expandedTopic = isExpanded ? null : key;
+      renderTopics();
+    };
+    list.appendChild(card);
+  });
+}
+
+function toggleStudied(key, e) {
+  e.stopPropagation();
+  if (progress[key]) { delete progress[key]; } else { progress[key] = true; }
+  renderTopics();
+  updateGlobalProgress();
+}
+
+// --- FLASHCARDS ---
+function renderFlash() {
+  document.getElementById('flash-sub').textContent = `${FLASHCARDS.length} key CCSP concepts · Click card to reveal answer`;
+  updateFlashCard();
+}
+
+function updateFlashCard() {
+  const f = FLASHCARDS[flashIndex];
+  document.getElementById('flash-label').textContent = `${flashFlipped?'ANSWER':'QUESTION'} · ${flashIndex+1} / ${FLASHCARDS.length}`;
+  const content = document.getElementById('flash-content');
+  if (flashFlipped) {
+    content.style.color = '#00D4FF';
+    content.style.fontSize = '17px';
+    content.style.lineHeight = '1.7';
+    content.textContent = f.a;
+  } else {
+    content.style.color = '#E8EDF5';
+    content.style.fontSize = '20px';
+    content.style.lineHeight = '1.5';
+    content.textContent = f.q;
+  }
+  document.getElementById('flash-hint').textContent = flashFlipped ? 'Click to hide' : 'Click to reveal';
+  document.getElementById('flash-counter').textContent = `${flashIndex+1} / ${FLASHCARDS.length}`;
+}
+
+function flipCard() { flashFlipped = !flashFlipped; updateFlashCard(); }
+function flashPrev() { flashIndex = (flashIndex - 1 + FLASHCARDS.length) % FLASHCARDS.length; flashFlipped = false; updateFlashCard(); }
+function flashNext() { flashIndex = (flashIndex + 1) % FLASHCARDS.length; flashFlipped = false; updateFlashCard(); }
+function flashShuffle() { flashIndex = Math.floor(Math.random() * FLASHCARDS.length); flashFlipped = false; updateFlashCard(); }
+
+// --- QUIZ ---
+function renderQuiz() {
+  quizIndex = 0; quizScore = 0; quizAnswered = false; quizDone = false;
+  renderQuizQuestion();
+}
+
+function renderQuizQuestion() {
+  const card = document.getElementById('quiz-card');
+  if (quizDone) {
+    const pass = quizScore >= 6;
+    card.innerHTML = `
+      <div class="quiz-result">
+        <div class="quiz-result-emoji">${pass?'🎉':'📚'}</div>
+        <div class="quiz-result-score" style="color:${pass?'#6BCB77':'#FF6B6B'}">${quizScore}/${QUIZ.length}</div>
+        <div class="quiz-result-msg">${pass?'Great work! Keep it up.':'Review the domains and try again.'}</div>
+        <button class="quiz-retry-btn" onclick="renderQuiz()">Try Again</button>
+      </div>`;
+    return;
+  }
+  const q = QUIZ[quizIndex];
+  card.innerHTML = `
+    <div class="quiz-meta">
+      <span class="tag">Question ${quizIndex+1} of ${QUIZ.length}</span>
+      <span class="quiz-score-label">Score: ${quizScore}</span>
+    </div>
+    <div class="quiz-q">${q.q}</div>
+    ${q.opts.map((o,i) => `<button class="option-btn" id="opt-${i}" onclick="answerQuiz(${i})">${o}</button>`).join('')}
+    <div class="quiz-next-wrap" id="quiz-next" style="display:none">
+      <button class="quiz-next-btn" onclick="nextQuestion()">${quizIndex+1===QUIZ.length?'See Results':'Next →'}</button>
+    </div>`;
+}
+
+function answerQuiz(idx) {
+  if (quizAnswered) return;
+  quizAnswered = true;
+  const q = QUIZ[quizIndex];
+  if (idx === q.correct) quizScore++;
+  document.querySelectorAll('.option-btn').forEach((b,i) => {
+    b.disabled = true;
+    if (i === q.correct) b.classList.add('correct');
+    else if (i === idx && i !== q.correct) b.classList.add('wrong');
+  });
+  document.getElementById('quiz-next').style.display = 'block';
+}
+
+function nextQuestion() {
+  quizIndex++;
+  quizAnswered = false;
+  if (quizIndex >= QUIZ.length) quizDone = true;
+  renderQuizQuestion();
+}
+
+// --- AI ---
+function setPrompt(btn) {
+  document.getElementById('ai-input').value = btn.textContent;
+}
+
+async function askAI() {
+  const input = document.getElementById('ai-input').value.trim();
+  if (!input) return;
+  const btn = document.getElementById('ai-submit');
+  const loading = document.getElementById('ai-loading');
+  const response = document.getElementById('ai-response');
+  btn.textContent = 'Thinking...';
+  btn.disabled = true;
+  loading.style.display = 'block';
+  response.style.display = 'none';
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        system: "You are a CCSP (Certified Cloud Security Professional) exam tutor. Answer questions clearly and concisely, referencing relevant CCSP domains and concepts. Use bullet points where helpful. Keep answers focused and exam-oriented.",
+        messages: [{ role: "user", content: input }]
+      })
+    });
+    const data = await res.json();
+    response.textContent = data.content?.[0]?.text || "No response.";
+    response.style.display = 'block';
+  } catch(e) {
+    response.textContent = "Error connecting to AI tutor. Please try again.";
+    response.style.display = 'block';
+  }
+  btn.textContent = 'Ask Tutor →';
+  btn.disabled = false;
+  loading.style.display = 'none';
+}
+
+// Init
+renderHome();
+renderFlash();
+</script>
+</body>
+</html>
