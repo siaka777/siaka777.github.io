@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About Me</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-2: #1e293b;
+      --text: #f1f5f9;
+      --muted: rgba(241,245,249,0.5);
+      --subtle: rgba(241,245,249,0.08);
+      --sky: rgba(56,189,248,1);
+      --sky-dim: rgba(56,189,248,0.15);
+      --sky-glow: rgba(56,189,248,0.07);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      font-family: 'DM Sans', Arial, sans-serif;
+      background:
+        radial-gradient(circle at top right, rgba(56,189,248,0.10), transparent 28%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+
+    /* ── HERO ── */
+    .hero {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 6rem 2rem 4rem;
+      opacity: 0;
+      transform: translateY(24px);
+      animation: fadeUp 0.7s ease forwards 0.1s;
+    }
+
+    .hero-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--sky);
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-label::before {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 1px;
+      background: var(--sky);
+    }
+
+    .hero h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(2.6rem, 6vw, 4.2rem);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin-bottom: 1.5rem;
+      color: var(--text);
+    }
+
+    .hero h1 em {
+      font-style: italic;
+      color: var(--sky);
+    }
+
+    .hero-lead {
+      font-size: 1.15rem;
+      line-height: 1.75;
+      color: var(--muted);
+      max-width: 600px;
+      font-weight: 300;
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      max-width: 860px;
+      margin: 0 auto 3rem;
+      padding: 0 2rem;
+      border: none;
+      border-top: 1px solid var(--subtle);
+    }
+
+    /* ── SECTIONS ── */
+    .section {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 2rem 4rem;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    .section.visible {
+      animation: fadeUp 0.6s ease forwards;
+    }
+
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--sky);
+      margin-bottom: 1.25rem;
+    }
+
+    .section p {
+      font-size: 1rem;
+      line-height: 1.8;
+      color: rgba(241,245,249,0.75);
+      font-weight: 300;
+      max-width: 640px;
+    }
+
+    .section p + p { margin-top: 1rem; }
+
+    /* ── DOMAINS GRID ── */
+    .domains {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+    }
+
+    .domain-chip {
+      background: var(--subtle);
+      border: 1px solid rgba(241,245,249,0.1);
+      border-radius: 10px;
+      padding: 1rem 1.1rem;
+      transition: background 0.2s, border-color 0.2s, transform 0.15s;
+      cursor: default;
+    }
+
+    .domain-chip:hover {
+      background: var(--sky-dim);
+      border-color: rgba(56,189,248,0.3);
+      transform: translateY(-2px);
+    }
+
+    .domain-chip .chip-icon {
+      font-size: 1.3rem;
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+
+    .domain-chip .chip-title {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 0.2rem;
+    }
+
+    .domain-chip .chip-sub {
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    /* ── PHILOSOPHY QUOTE ── */
+    .philosophy {
+      max-width: 860px;
+      margin: 0 auto 4rem;
+      padding: 0 2rem;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    .philosophy.visible {
+      animation: fadeUp 0.6s ease forwards;
+    }
+
+    .philosophy-inner {
+      border-left: 2px solid var(--sky);
+      padding: 1.25rem 0 1.25rem 1.75rem;
+    }
+
+    .philosophy-inner p {
+      font-family: 'DM Serif Display', serif;
+      font-style: italic;
+      font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+      line-height: 1.55;
+      color: rgba(241,245,249,0.85);
+      margin-bottom: 0.75rem;
+    }
+
+    .philosophy-inner span {
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ── HOW I LEARN ── */
+    .learn-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 1px;
+      border: 1px solid rgba(241,245,249,0.1);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-top: 1.5rem;
+    }
+
+    .learn-item {
+      background: var(--subtle);
+      padding: 1.25rem 1rem;
+      text-align: center;
+      transition: background 0.2s;
+    }
+
+    .learn-item:hover { background: var(--sky-dim); }
+
+    .learn-item .li-icon {
+      font-size: 1.4rem;
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+
+    .learn-item .li-text {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    /* ── CTA ── */
+    .cta-row {
+      max-width: 860px;
+      margin: 0 auto 6rem;
+      padding: 0 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    .cta-row.visible {
+      animation: fadeUp 0.6s ease forwards;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0.7rem 1.4rem;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.18s;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--sky);
+      color: #0f172a;
+    }
+
+    .btn-primary:hover {
+      background: #7dd3fc;
+      transform: translateY(-1px);
+    }
+
+    .btn-ghost {
+      background: var(--subtle);
+      color: var(--text);
+      border: 1px solid rgba(241,245,249,0.12);
+    }
+
+    .btn-ghost:hover {
+      background: rgba(241,245,249,0.12);
+      transform: translateY(-1px);
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--subtle);
+      padding: 1.5rem 3rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    footer span {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    footer a {
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    footer a:hover { color: var(--text); }
+
+    /* ── ANIMATION ── */
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      nav { padding: 1.2rem 1.5rem; }
+      .nav-links { gap: 1.2rem; }
+      .hero, .section, .philosophy, .cta-row { padding-left: 1.25rem; padding-right: 1.25rem; }
+      footer { padding: 1.25rem 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-label">About me</div>
+    <h1>Engineer by trade.<br><em>Perpetual learner</em><br>by nature.</h1>
+    <p class="hero-lead">
+      I've spent over a decade writing software and designing systems — and the thing
+      that still gets me out of bed is the same thing that did on day one: the feeling
+      of understanding something I didn't understand yesterday.
+    </p>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- STORY -->
+  <section class="section" id="s1">
+    <div class="section-label">The story so far</div>
+    <p>
+      More than ten years in software engineering has taken me across the full stack —
+      from architecting distributed systems to shipping frontend experiences — but what
+      has stayed constant is a deliberate pull toward the edges of my knowledge. I don't
+      just want to be good at what I already know. I want to be uncomfortable in the best
+      possible way.
+    </p>
+    <p>
+      Right now that discomfort looks like diving deep into AI and machine learning,
+      exploring web security and cybersecurity principles, and pushing the boundaries of
+      what I can build on the web. Each domain feeds the others in ways I never expect.
+    </p>
+  </section>
+
+  <!-- DOMAINS -->
+  <section class="section" id="s2">
+    <div class="section-label">Current obsessions</div>
+    <div class="domains">
+      <div class="domain-chip">
+        <span class="chip-icon">🤖</span>
+        <div class="chip-title">AI & Machine Learning</div>
+        <div class="chip-sub">Models, fine-tuning, agents, and what comes next</div>
+      </div>
+      <div class="domain-chip">
+        <span class="chip-icon">🌐</span>
+        <div class="chip-title">Web Dev & Tools</div>
+        <div class="chip-sub">Modern stacks, DX, and building things people actually use</div>
+      </div>
+      <div class="domain-chip">
+        <span class="chip-icon">🏗️</span>
+        <div class="chip-title">Systems & Architecture</div>
+        <div class="chip-sub">Distributed systems, scalability, and elegant design under pressure</div>
+      </div>
+      <div class="domain-chip">
+        <span class="chip-icon">🔐</span>
+        <div class="chip-title">Cybersecurity</div>
+        <div class="chip-sub">Threat modeling, secure design, and thinking like an attacker</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PHILOSOPHY QUOTE -->
+  <div class="philosophy" id="s3">
+    <div class="philosophy-inner">
+      <p>"The best engineers I know aren't the ones who know the most — they're the ones who are most honest about what they don't know yet, and most energised by closing that gap."</p>
+      <span>A belief I keep coming back to</span>
+    </div>
+  </div>
+
+  <!-- HOW I LEARN -->
+  <section class="section" id="s4">
+    <div class="section-label">How I learn</div>
+    <p>
+      There's no single method that works for everything. Some concepts click through
+      building — a quick prototype that breaks in interesting ways. Others need slow
+      reading, a paper printed out with margin notes. Others need a structured course
+      to give them shape. I use all of it, switching modes based on the material.
+    </p>
+    <div class="learn-row">
+      <div class="learn-item">
+        <span class="li-icon">🔨</span>
+        <div class="li-text">Build & break things</div>
+      </div>
+      <div class="learn-item">
+        <span class="li-icon">📄</span>
+        <div class="li-text">Read papers & docs</div>
+      </div>
+      <div class="learn-item">
+        <span class="li-icon">🗺️</span>
+        <div class="li-text">Map ideas visually</div>
+      </div>
+      <div class="learn-item">
+        <span class="li-icon">🎛️</span>
+        <div class="li-text">Interactive exploration</div>
+      </div>
+      <div class="learn-item">
+        <span class="li-icon">⚡</span>
+        <div class="li-text">Distil into cheat sheets</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <div class="cta-row" id="s5">
+    <a class="btn btn-primary" href="projects.html">↗ See my projects</a>
+    <a class="btn btn-ghost" href="interactive-learning.html">Explore learning resources</a>
+    <a class="btn btn-ghost" href="contact.html">Get in touch</a>
+  </div>
+
+  <footer>
+    <span>Hosted on GitHub Pages</span>
+    <a href="index.html">← Back to home</a>
+  </footer>
+
+  <script>
+    const els = document.querySelectorAll('.section, .philosophy, .cta-row');
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e, i) => {
+        if (e.isIntersecting) {
+          e.target.style.animationDelay = '0.05s';
+          e.target.classList.add('visible');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    els.forEach(el => io.observe(el));
+  </script>
+
+</body>
+</html>
