@@ -72,7 +72,7 @@
   },
   {
     "title": "Elastic Certified Observability",
-  "path": "ECSiem",
+  "path": "ECObservability/",
   "description": "Full study guide to ECO",
   "tags": ["elastic", "certification","observability"],
   "pages": [
@@ -87,7 +87,7 @@
   },
   {
     "title": "Elastic Certified SIEM",
-   "path": "ECObservability/",
+   "path": "ECSiem/",
   "description": "Full study guide to ECS",
   "tags": ["elastic", "certification","SIEM"],
   "pages": [
