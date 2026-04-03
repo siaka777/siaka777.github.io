@@ -46,5 +46,33 @@
     "path": "osquery-threat-hunt.html",
     "description": "osquery threat hunt",
     "tags": ["osquery", "threat-hunting", "security", "endpoint", "detection"]
+  },
+  {
+    "title": "Elastic Certified Analyst",
+  "path": "il/",
+  "description": "Full study guide to ECA",
+  "tags": ["elastic", "certification","analyst"],
+  "pages": [
+    { "title": "Overview",  "path": "ECA/elastic-analyst-topic1-searching-data.html" },
+    { "title": "Queries",   "path": "ECA/elastic-analyst-topic2-visualizing-data.html" },
+    { "title": "Practice",  "path": "ECA/elastic-analyst-topic3-analyzing-data.html" }
+  ]  },
+  {
+    "title": "osquery threat hunt",
+    "path": "osquery-threat-hunt.html",
+    "description": "osquery threat hunt",
+    "tags": ["osquery", "threat-hunting", "security", "endpoint", "detection"]
+  },
+  {
+    "title": "osquery threat hunt",
+    "path": "osquery-threat-hunt.html",
+    "description": "osquery threat hunt",
+    "tags": ["osquery", "threat-hunting", "security", "endpoint", "detection"]
+  },
+  {
+    "title": "osquery threat hunt",
+    "path": "osquery-threat-hunt.html",
+    "description": "osquery threat hunt",
+    "tags": ["osquery", "threat-hunting", "security", "endpoint", "detection"]
   }
 ]
