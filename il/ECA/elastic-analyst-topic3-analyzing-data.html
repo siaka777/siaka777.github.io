@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elastic Certified Analyst — Topic 3: Analyzing Data</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #050d1a;
+  --bg2:      #071428;
+  --surface:  #0a1c35;
+  --surface2: #0e2340;
+  --border:   #0f3060;
+  --border2:  #1a4a8a;
+  --text:     #cde4ff;
+  --text-dim: #7aaad4;
+  --text-muted:#3d6a9e;
+  --glow:     #00c8ff;
+  --glow2:    #00ff9d;
+  --amber:    #ffb830;
+  --red:      #ff4d6a;
+  --purple:   #c084fc;
+  --elastic:  #ff6900;
+  --teal:     #0fc4b0;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'IBM Plex Sans',sans-serif;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ── STARFIELD ── */
+.stars{
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 25% 40%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 40% 8%, rgba(255,255,255,0.7) 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 55%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 20%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 80% 70%, rgba(255,255,255,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 35%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 15% 75%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 60% 85%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(2px 2px at 35% 60%, rgba(0,200,255,0.3) 0%, transparent 100%),
+    radial-gradient(2px 2px at 75% 45%, rgba(0,255,157,0.2) 0%, transparent 100%);
+}
+
+/* ── SCAN-LINE OVERLAY ── */
+body::after{
+  content:'';
+  position:fixed;inset:0;
+  background:repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0,200,255,0.012) 3px,
+    rgba(0,200,255,0.012) 4px
+  );
+  pointer-events:none;z-index:0;
+}
+
+/* ── CORNER ACCENTS ── */
+.corner{position:fixed;width:60px;height:60px;z-index:2;pointer-events:none}
+.corner-tl{top:16px;left:16px;border-top:2px solid var(--glow);border-left:2px solid var(--glow);opacity:.5}
+.corner-tr{top:16px;right:16px;border-top:2px solid var(--glow);border-right:2px solid var(--glow);opacity:.5}
+.corner-bl{bottom:16px;left:16px;border-bottom:2px solid var(--glow);border-left:2px solid var(--glow);opacity:.5}
+.corner-br{bottom:16px;right:16px;border-bottom:2px solid var(--glow);border-right:2px solid var(--glow);opacity:.5}
+
+.wrap{max-width:1100px;margin:0 auto;padding:0 36px;position:relative;z-index:1}
+
+/* ── HEADER ── */
+header{
+  padding:52px 36px 0;
+  position:relative;z-index:1;
+  border-bottom:1px solid var(--border);
+  padding-bottom:48px;
+  margin-bottom:48px;
+}
+
+.mission-tag{
+  display:inline-flex;align-items:center;gap:10px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;letter-spacing:3px;text-transform:uppercase;
+  color:var(--glow);
+  margin-bottom:24px;
+}
+.mission-tag::before{
+  content:'';width:28px;height:1px;background:var(--glow);
+  box-shadow:0 0 8px var(--glow);
+}
+.mission-tag::after{
+  content:'';width:6px;height:6px;border:1px solid var(--glow);
+  border-radius:50%;box-shadow:0 0 6px var(--glow);
+}
+
+h1{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(42px,7vw,82px);
+  line-height:1.0;
+  letter-spacing:-1px;
+  margin-bottom:20px;
+  text-shadow:0 0 40px rgba(0,200,255,0.2);
+}
+h1 .t1{display:block;color:var(--text);}
+h1 .t2{display:block;color:var(--glow);font-style:italic;}
+
+.sub{
+  font-size:15px;color:var(--text-dim);
+  max-width:620px;line-height:1.75;
+  margin-bottom:36px;font-weight:300;
+}
+
+/* ── TOPIC NAV ── */
+.tnav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:32px}
+.tnav-btn{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;
+  padding:6px 14px;border:1px solid var(--border2);border-radius:2px;
+  color:var(--text-muted);background:none;cursor:pointer;
+  transition:all .2s;letter-spacing:.5px;
+}
+.tnav-btn:hover,.tnav-btn.active{
+  border-color:var(--glow);color:var(--glow);
+  background:rgba(0,200,255,.06);
+  box-shadow:0 0 12px rgba(0,200,255,.15);
+}
+.tnav-btn.done{border-color:var(--glow2);color:var(--glow2);}
+
+/* ── PROGRESS ── */
+.prog-row{
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  background:var(--surface);border:1px solid var(--border);
+  padding:14px 20px;border-radius:3px;
+}
+.prog-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--text-muted)}
+.prog-track{flex:1;min-width:160px;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--glow),var(--glow2));transition:width .6s ease;width:0%;box-shadow:0 0 10px var(--glow)}
+.prog-count{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--glow);white-space:nowrap}
+
+/* ── CARDS ── */
+.cards{display:flex;flex-direction:column;gap:3px;margin-bottom:60px}
+
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-left:3px solid transparent;
+  transition:all .2s;
+  animation:riseIn .5s ease both;
+}
+.card:nth-child(1){animation-delay:.05s}
+.card:nth-child(2){animation-delay:.10s}
+.card:nth-child(3){animation-delay:.15s}
+.card:nth-child(4){animation-delay:.20s}
+.card:nth-child(5){animation-delay:.25s}
+.card:nth-child(6){animation-delay:.30s}
+.card:nth-child(7){animation-delay:.35s}
+@keyframes riseIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+.card:hover{border-color:var(--border2);}
+.card.open{border-left-color:var(--glow);}
+.card.done{border-left-color:var(--glow2);}
+
+.card-hd{
+  display:flex;align-items:center;gap:16px;
+  padding:18px 24px;cursor:pointer;user-select:none;
+}
+.card-hd:hover{background:rgba(0,200,255,.03)}
+.card-num{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;
+  color:var(--text-muted);min-width:28px;letter-spacing:1px;
+}
+.card-title{flex:1;font-size:15px;font-weight:600;color:var(--text)}
+.card-tags{display:flex;gap:6px}
+.ctag{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;
+  padding:2px 8px;border-radius:2px;letter-spacing:.5px;
+}
+.ctag.ml   {background:rgba(192,132,252,.12);color:var(--purple)}
+.ctag.kb   {background:rgba(0,200,255,.1);   color:var(--glow)}
+.ctag.adv  {background:rgba(255,184,48,.1);  color:var(--amber)}
+.ctag.space{background:rgba(0,255,157,.1);   color:var(--glow2)}
+.ctag.exam {background:rgba(255,105,0,.1);   color:var(--elastic)}
+
+.done-chip{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;
+  color:var(--glow2);background:rgba(0,255,157,.08);
+  padding:2px 10px;border-radius:2px;letter-spacing:1px;
+  display:none;
+}
+.card.done .done-chip{display:block}
+.chevron{font-size:11px;color:var(--text-muted);transition:transform .25s}
+.card.open .chevron{transform:rotate(180deg)}
+
+.card-body{
+  display:none;padding:0 24px 28px;
+  border-top:1px solid var(--border);
+  animation:fadeUp .3s ease;
+}
+.card.open .card-body{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── SECTION LABEL ── */
+.slbl{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;
+  letter-spacing:2.5px;text-transform:uppercase;color:var(--glow);
+  margin-top:24px;margin-bottom:12px;
+  display:flex;align-items:center;gap:10px;
+}
+.slbl::after{content:'';flex:1;height:1px;background:var(--border);}
+.slbl .dot{
+  width:5px;height:5px;background:var(--glow);border-radius:50%;
+  box-shadow:0 0 6px var(--glow);flex-shrink:0;
+}
+
+/* ── PROSE ── */
+.prose{
+  font-size:14px;color:var(--text-dim);line-height:1.78;
+  margin-bottom:14px;font-weight:300;
+}
+.prose strong{color:var(--text);font-weight:600}
+.prose code{
+  font-family:'IBM Plex Mono',monospace;font-size:12px;
+  background:var(--bg2);padding:1px 7px;border-radius:2px;
+  color:var(--glow);border:1px solid var(--border);
+}
+
+/* ── CODE BLOCKS ── */
+.code{
+  background:#020810;
+  border:1px solid var(--border);
+  border-radius:3px;
+  padding:18px 20px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:12px;line-height:1.75;
+  overflow-x:auto;margin-bottom:16px;
+  position:relative;
+  box-shadow:inset 0 0 30px rgba(0,200,255,.03);
+}
+.code .cm {color:#2a5a8a}
+.code .kw {color:var(--amber)}
+.code .st {color:var(--glow2)}
+.code .fd {color:var(--glow)}
+.code .vl {color:#ffd700}
+.code .hl {color:var(--purple)}
+.code .rd {color:var(--red)}
+
+.copy-btn{
+  position:absolute;top:10px;right:10px;
+  background:var(--border);border:none;
+  color:var(--text-muted);
+  font-family:'IBM Plex Mono',monospace;font-size:10px;
+  padding:3px 10px;border-radius:2px;cursor:pointer;
+  transition:all .2s;letter-spacing:.5px;
+}
+.copy-btn:hover{background:var(--glow);color:var(--bg)}
+
+/* ── CALLOUTS ── */
+.callout{
+  display:flex;gap:14px;padding:13px 18px;
+  border-radius:3px;margin-bottom:14px;
+  font-size:13px;line-height:1.65;color:var(--text-dim);
+}
+.callout.exam {background:rgba(255,105,0,.07);border-left:3px solid var(--elastic)}
+.callout.tip  {background:rgba(0,200,255,.06);border-left:3px solid var(--glow)}
+.callout.warn {background:rgba(255,184,48,.06);border-left:3px solid var(--amber)}
+.callout.good {background:rgba(0,255,157,.06);border-left:3px solid var(--glow2)}
+.callout-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.callout strong{color:var(--text)}
+
+/* ── TABLE ── */
+.rtable{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px}
+.rtable th{
+  text-align:left;padding:8px 14px;background:var(--surface2);
+  color:var(--glow);font-family:'IBM Plex Mono',monospace;
+  font-size:10px;letter-spacing:1.5px;text-transform:uppercase;
+  border-bottom:1px solid var(--border2);font-weight:400;
+}
+.rtable td{
+  padding:10px 14px;border-bottom:1px solid var(--border);
+  color:var(--text-dim);vertical-align:top;line-height:1.5;font-weight:300;
+}
+.rtable td:first-child{
+  font-family:'IBM Plex Mono',monospace;font-size:12px;
+  color:var(--amber);white-space:nowrap;font-weight:400;
+}
+.rtable tr:last-child td{border-bottom:none}
+.rtable tr:hover td{background:rgba(0,200,255,.03)}
+
+/* ── STEPS ── */
+.steps{display:flex;flex-direction:column;gap:0;margin-bottom:16px}
+.step{display:flex;gap:16px;padding:14px 0;border-bottom:1px solid var(--border)}
+.step:last-child{border-bottom:none}
+.step-num{
+  width:28px;height:28px;
+  background:transparent;border:1px solid var(--glow);
+  color:var(--glow);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;
+  flex-shrink:0;margin-top:1px;
+  box-shadow:0 0 10px rgba(0,200,255,.2);
+}
+.step-content{flex:1}
+.step-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px}
+.step-desc{font-size:13px;color:var(--text-dim);line-height:1.5;font-weight:300}
+.step-desc code{
+  font-family:'IBM Plex Mono',monospace;font-size:12px;
+  background:var(--bg2);padding:1px 6px;border-radius:2px;
+  color:var(--glow);border:1px solid var(--border);
+}
+
+/* ── QUIZ ── */
+.quiz{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:3px;padding:20px;margin-top:8px;
+}
+.quiz-q{font-size:14px;font-weight:600;color:var(--text);margin-bottom:16px;line-height:1.55}
+.quiz-opts{display:flex;flex-direction:column;gap:8px}
+.qopt{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:11px 16px;background:var(--surface);
+  border:1px solid var(--border);border-radius:3px;
+  cursor:pointer;transition:all .2s;
+  font-size:13px;color:var(--text-dim);line-height:1.45;font-weight:300;
+}
+.qopt:hover:not(.ans){border-color:var(--glow);color:var(--text);background:rgba(0,200,255,.04)}
+.qopt.correct{border-color:var(--glow2);background:rgba(0,255,157,.07);color:var(--text)}
+.qopt.wrong  {border-color:var(--red);background:rgba(255,77,106,.06);color:var(--text-muted)}
+.qopt.ans    {cursor:default}
+.qletter{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;
+  min-width:20px;color:var(--text-muted);font-weight:500;margin-top:1px;
+}
+.qopt.correct .qletter{color:var(--glow2)}
+.qopt.wrong   .qletter{color:var(--red)}
+.qfb{
+  margin-top:12px;padding:12px 16px;border-radius:3px;
+  font-size:13px;font-family:'IBM Plex Mono',monospace;
+  line-height:1.6;display:none;font-weight:300;
+}
+.qfb.show{display:block}
+.qfb.correct{background:rgba(0,255,157,.08);border-left:3px solid var(--glow2);color:var(--text-dim)}
+.qfb.wrong  {background:rgba(255,77,106,.08);border-left:3px solid var(--red);  color:var(--text-dim)}
+
+/* ── COMPLETE BTN ── */
+.done-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  margin-top:20px;background:transparent;
+  border:1px solid rgba(0,255,157,.4);
+  color:var(--glow2);
+  font-family:'IBM Plex Sans',sans-serif;
+  font-weight:600;font-size:13px;
+  padding:9px 20px;border-radius:2px;
+  cursor:pointer;transition:all .2s;
+}
+.done-btn:hover{background:rgba(0,255,157,.07);box-shadow:0 0 14px rgba(0,255,157,.15)}
+.done-btn.marked{background:rgba(0,255,157,.1)}
+
+/* ═══════════════════════════════
+   INTERACTIVE DEMOS
+═══════════════════════════════ */
+
+/* ── ANOMALY CHART ── */
+.anomaly-demo{
+  background:#020810;border:1px solid var(--border);
+  border-radius:3px;overflow:hidden;margin-bottom:16px;
+}
+.anomaly-toolbar{
+  background:var(--surface2);border-bottom:1px solid var(--border);
+  padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+}
+.demo-label{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;
+  color:var(--text-muted);letter-spacing:1px;flex:1;
+}
+.demo-btn{
+  background:var(--border);border:none;
+  color:var(--text-dim);
+  font-family:'IBM Plex Mono',monospace;font-size:11px;
+  padding:4px 12px;border-radius:2px;cursor:pointer;transition:all .2s;
+}
+.demo-btn:hover{background:var(--glow);color:var(--bg)}
+.demo-btn.active{background:var(--glow);color:var(--bg)}
+.anomaly-chart-area{padding:16px;position:relative}
+
+/* ML Job Config Simulator */
+.ml-sim{
+  background:#020810;border:1px solid var(--border);
+  border-radius:3px;overflow:hidden;margin-bottom:16px;
+}
+.ml-sim-toolbar{
+  background:var(--surface2);border-bottom:1px solid var(--border);
+  padding:10px 16px;display:flex;align-items:center;gap:10px;
+}
+.ml-sim-title{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);flex:1;letter-spacing:1px}
+.ml-form{padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.ml-form-group{display:flex;flex-direction:column;gap:6px}
+.ml-form-group.full{grid-column:1/-1}
+.ml-form label{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;
+  letter-spacing:1px;color:var(--glow);text-transform:uppercase;
+}
+.ml-select,.ml-input{
+  background:var(--surface2);border:1px solid var(--border2);
+  color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;
+  padding:8px 12px;border-radius:2px;outline:none;transition:border-color .2s;
+}
+.ml-select:focus,.ml-input:focus{border-color:var(--glow);box-shadow:0 0 8px rgba(0,200,255,.15)}
+.ml-output{
+  padding:16px 20px;border-top:1px solid var(--border);
+  font-family:'IBM Plex Mono',monospace;font-size:12px;
+  color:var(--text-dim);line-height:1.7;background:#020810;
+}
+.ml-output .ok{color:var(--glow2)}
+.ml-output .info{color:var(--glow)}
+.ml-output .warn{color:var(--amber)}
+.run-btn{
+  grid-column:1/-1;
+  background:var(--glow);border:none;
+  color:var(--bg);
+  font-family:'IBM Plex Sans',sans-serif;font-weight:700;
+  font-size:13px;padding:10px;border-radius:2px;cursor:pointer;
+  transition:all .2s;letter-spacing:.5px;
+}
+.run-btn:hover{background:#00b0e0;box-shadow:0 0 20px rgba(0,200,255,.3)}
+
+/* ── SCRIPTED FIELD DEMO ── */
+.sf-demo{
+  background:#020810;border:1px solid var(--border);
+  border-radius:3px;overflow:hidden;margin-bottom:16px;
+}
+.sf-toolbar{
+  background:var(--surface2);border-bottom:1px solid var(--border);
+  padding:10px 16px;display:flex;align-items:center;gap:10px;
+}
+.sf-editor-area{padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.sf-editor-area textarea{
+  background:var(--bg);border:1px solid var(--border2);
+  color:var(--glow);font-family:'IBM Plex Mono',monospace;font-size:12px;
+  padding:12px;border-radius:2px;resize:vertical;min-height:100px;
+  outline:none;transition:border-color .2s;line-height:1.6;
+}
+.sf-editor-area textarea:focus{border-color:var(--glow);box-shadow:0 0 8px rgba(0,200,255,.15)}
+.sf-preview{
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:2px;padding:12px;
+  font-family:'IBM Plex Mono',monospace;font-size:12px;
+  color:var(--text-dim);line-height:1.7;min-height:100px;
+}
+.sf-preview .result-row{
+  display:flex;justify-content:space-between;
+  padding:4px 0;border-bottom:1px solid var(--border);
+}
+.sf-preview .result-row:last-child{border-bottom:none}
+.sf-preview .result-key{color:var(--text-muted)}
+.sf-preview .result-val{color:var(--glow2)}
+
+/* ── SPACE DIAGRAM ── */
+.space-diagram{
+  background:#020810;border:1px solid var(--border);
+  border-radius:3px;padding:20px;margin-bottom:16px;
+  display:flex;gap:12px;flex-wrap:wrap;justify-content:center;
+}
+.space-box{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:4px;padding:16px;width:140px;text-align:center;
+  cursor:pointer;transition:all .2s;position:relative;
+}
+.space-box:hover{border-color:var(--glow);box-shadow:0 0 18px rgba(0,200,255,.15)}
+.space-box.active-space{border-color:var(--glow);box-shadow:0 0 18px rgba(0,200,255,.2)}
+.space-icon{font-size:28px;margin-bottom:8px}
+.space-name{font-weight:700;font-size:13px;color:var(--text);margin-bottom:4px}
+.space-desc{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-muted);line-height:1.4}
+.space-items{
+  display:flex;flex-direction:column;gap:3px;margin-top:8px;
+}
+.space-item{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;
+  background:rgba(0,200,255,.06);padding:2px 6px;border-radius:2px;
+  color:var(--glow);text-align:left;
+}
+.space-arrow{
+  display:flex;align-items:center;
+  font-family:'IBM Plex Mono',monospace;font-size:20px;
+  color:var(--border2);
+}
+
+/* ── ANOMALY SCORE INDICATOR ── */
+.score-meter{
+  display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;
+}
+.score-box{
+  flex:1;min-width:100px;padding:14px 16px;
+  border-radius:3px;text-align:center;border:1px solid;
+}
+.score-box.low   {background:rgba(0,255,157,.08);border-color:rgba(0,255,157,.3)}
+.score-box.med   {background:rgba(255,184,48,.08);border-color:rgba(255,184,48,.3)}
+.score-box.high  {background:rgba(255,105,0,.08);border-color:rgba(255,105,0,.3)}
+.score-box.crit  {background:rgba(255,77,106,.08);border-color:rgba(255,77,106,.3)}
+.score-val{
+  font-family:'Playfair Display',serif;
+  font-size:28px;font-weight:700;margin-bottom:4px;
+}
+.score-box.low  .score-val{color:var(--glow2)}
+.score-box.med  .score-val{color:var(--amber)}
+.score-box.high .score-val{color:var(--elastic)}
+.score-box.crit .score-val{color:var(--red)}
+.score-label{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;
+  letter-spacing:1px;color:var(--text-muted);text-transform:uppercase;
+}
+
+/* ── FINAL CHEATSHEET ── */
+.cheatsheet{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:3px;overflow:hidden;margin-bottom:60px;
+}
+.cs-hd{
+  display:flex;align-items:center;gap:16px;
+  padding:18px 24px;cursor:pointer;
+  background:linear-gradient(90deg,var(--surface2),var(--surface));
+  border-bottom:1px solid var(--border);
+}
+.cs-hd-title{
+  font-family:'Playfair Display',serif;font-size:20px;
+  color:var(--text);flex:1;
+}
+.cs-chevron{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;
+  color:var(--text-muted);transition:transform .25s;
+}
+.cs-body{display:none;padding:24px}
+.cs-body.open{display:block}
+.cs-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:12px;margin-bottom:20px;
+}
+.cs-item{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:3px;padding:14px 16px;
+}
+.cs-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
+.cs-detail{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);line-height:1.6}
+
+/* ── SUMMARY CARD ── */
+.summary-card{
+  background:linear-gradient(135deg,var(--surface2),var(--surface));
+  border:1px solid var(--border2);border-radius:3px;
+  padding:28px;margin-bottom:24px;
+  box-shadow:0 0 40px rgba(0,200,255,.05);
+}
+.summary-card h3{
+  font-family:'Playfair Display',serif;font-size:22px;
+  color:var(--glow);margin-bottom:16px;font-style:italic;
+}
+
+/* ── FOOTER ── */
+footer{
+  border-top:1px solid var(--border);
+  padding:32px 36px;
+  display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:16px;position:relative;z-index:1;
+}
+.footer-text{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;
+  color:var(--text-muted);letter-spacing:1.5px;
+}
+.nav-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--surface);border:1px solid var(--border2);
+  color:var(--text-dim);
+  font-family:'IBM Plex Sans',sans-serif;font-weight:600;
+  font-size:13px;padding:10px 20px;border-radius:2px;
+  cursor:pointer;text-decoration:none;transition:all .2s;
+}
+.nav-btn:hover{border-color:var(--glow);color:var(--glow);box-shadow:0 0 12px rgba(0,200,255,.15)}
+.nav-btn.primary{background:var(--glow);border-color:var(--glow);color:var(--bg);font-weight:700}
+.nav-btn.primary:hover{background:#00b0e0;box-shadow:0 0 20px rgba(0,200,255,.3)}
+
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+</style>
+</head>
+<body>
+
+<div class="stars"></div>
+<div class="corner corner-tl"></div>
+<div class="corner corner-tr"></div>
+<div class="corner corner-bl"></div>
+<div class="corner corner-br"></div>
+
+<!-- ═══ HEADER ═══ -->
+<header>
+  <div class="wrap">
+    <div class="mission-tag">Elastic Certified Analyst · Final Module</div>
+    <h1>
+      <span class="t1">Topic 3:</span>
+      <span class="t2">Analyzing Data</span>
+    </h1>
+    <p class="sub">The final frontier — Machine Learning jobs, anomaly detection, scripted fields, and Kibana Spaces. Smaller in volume but high in exam weight. Master these and you're certified-ready.</p>
+
+    <div class="tnav">
+      <button class="tnav-btn done" onclick="alert('Open Topic 1 page!')">01 · Searching Data ✓</button>
+      <button class="tnav-btn done" onclick="alert('Open Topic 2 page!')">02 · Visualizing Data ✓</button>
+      <button class="tnav-btn active">03 · Analyzing Data</button>
+    </div>
+
+    <div class="prog-row">
+      <span class="prog-label">TOPIC PROGRESS</span>
+      <div class="prog-track"><div class="prog-fill" id="pFill"></div></div>
+      <span class="prog-count" id="pCount">0 / 7 objectives</span>
+    </div>
+  </div>
+</header>
+
+<!-- ═══ MAIN ═══ -->
+<main>
+<div class="wrap">
+<div class="cards" id="cardList">
+
+<!-- ══════════════════════════════════
+  OBJ 1 — Answering questions with search & viz
+══════════════════════════════════ -->
+<div class="card open" id="c1">
+  <div class="card-hd" onclick="tog('c1')">
+    <span class="card-num">01</span>
+    <span class="card-title">Answer Questions Using Search &amp; Visualizations</span>
+    <div class="card-tags"><span class="ctag kb">Kibana</span><span class="ctag exam">Core Exam</span></div>
+    <span class="done-chip">✓ DONE</span>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="card-body">
+    <p class="prose">This objective is about combining everything from Topics 1 &amp; 2 to <strong>derive insight from data</strong>. The exam gives you a dataset and asks you to answer a specific question — you need to pick the right query, visualization, and interpretation.</p>
+
+    <div class="callout exam"><span class="callout-icon">🎯</span><div><strong>Exam objective:</strong> "Answer questions about a given dataset using search and visualizations." This is typically the final synthesis task — you're expected to use KQL + a chart to surface the answer.</div></div>
+
+    <div class="slbl"><span class="dot"></span>Analytical Workflow</div>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-content">
+        <div class="step-title">Understand the question</div>
+        <div class="step-desc">Read carefully — is it "top N," "count where X," "trend over time," or "distribution of Y"?</div>
+      </div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-content">
+        <div class="step-title">Select the right data view</div>
+        <div class="step-desc">Make sure the index pattern covers the time range and fields needed.</div>
+      </div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-content">
+        <div class="step-title">Write a KQL filter to scope the data</div>
+        <div class="step-desc">e.g. <code>event.action : "ssh_login" AND event.outcome : "failure"</code></div>
+      </div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-content">
+        <div class="step-title">Choose the best visualization type</div>
+        <div class="step-desc">Count → Metric. Ranking → Bar chart. Over time → Line. Distribution → Pie/Histogram.</div>
+      </div></div>
+      <div class="step"><div class="step-num">5</div><div class="step-content">
+        <div class="step-title">Read &amp; state the answer</div>
+        <div class="step-desc">The exam may ask you to save the viz with a specific name AND write the answer value in a text field or Markdown panel.</div>
+      </div></div>
+    </div>
+
+    <div class="callout tip"><span class="callout-icon">💡</span><div>If the question asks "which country had the most X" — use a <strong>Data Table</strong> or <strong>Horizontal Bar</strong> sorted descending. The answer is right there in the first row.</div></div>
+    <button class="done-btn" onclick="markDone('c1',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  OBJ 2 — Find anomalies with visualizations
+══════════════════════════════════ -->
+<div class="card" id="c2">
+  <div class="card-hd" onclick="tog('c2')">
+    <span class="card-num">02</span>
+    <span class="card-title">Use Visualizations to Find Anomalies</span>
+    <div class="card-tags"><span class="ctag kb">Kibana</span><span class="ctag adv">Anomaly</span></div>
+    <span class="done-chip">✓ DONE</span>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="card-body">
+    <p class="prose">Before using ML, you can spot anomalies manually using visualizations — sudden spikes, drops, or outliers that deviate from normal patterns. This objective is about <strong>visual anomaly detection</strong> using standard Kibana charts.</p>
+
+    <div class="slbl"><span class="dot"></span>Anomaly Score Scale (ML)</div>
+    <div class="score-meter">
+      <div class="score-box low" ><div class="score-val">0–24</div> <div class="score-label">Low</div></div>
+      <div class="score-box med" ><div class="score-val">25–49</div><div class="score-label">Warning</div></div>
+      <div class="score-box high"><div class="score-val">50–74</div><div class="score-label">Minor</div></div>
+      <div class="score-box crit"><div class="score-val">75–100</div><div class="score-label">Critical</div></div>
+    </div>
+
+    <div class="slbl"><span class="dot"></span>Visual Anomaly Detection Demo</div>
+    <div class="anomaly-demo">
+      <div class="anomaly-toolbar">
+        <span class="demo-label">TIME SERIES — DETECT THE SPIKE</span>
+        <button class="demo-btn active" id="btnNorm" onclick="showAnomaly('normal')">Normal</button>
+        <button class="demo-btn" id="btnSpike" onclick="showAnomaly('spike')">+ Anomaly</button>
+        <button class="demo-btn" id="btnBand" onclick="showAnomaly('band')">+ ML Bounds</button>
+      </div>
+      <div class="anomaly-chart-area">
+        <svg id="anomSvg" width="100%" height="150" viewBox="0 0 640 150" preserveAspectRatio="xMidYMid meet"></svg>
+        <div id="anomLegend" style="display:flex;gap:16px;margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);justify-content:center;flex-wrap:wrap"></div>
+      </div>
+    </div>
+
+    <div class="slbl"><span class="dot"></span>Techniques for Visual Anomaly Detection</div>
+    <table class="rtable">
+      <tr><th>Technique</th><th>How</th><th>What to look for</th></tr>
+      <tr><td>Time series + Moving Avg</td><td>Overlay MA on raw line chart</td><td>Points far above/below the moving average</td></tr>
+      <tr><td>Standard deviation bands</td><td>TSVB with ±2σ series</td><td>Values outside the expected band</td></tr>
+      <tr><td>Derivative chart</td><td>Show rate-of-change over time</td><td>Sudden large positive/negative spikes</td></tr>
+      <tr><td>Histogram</td><td>Distribution of a metric</td><td>Values in tail buckets (outliers)</td></tr>
+      <tr><td>Data table sorted desc</td><td>Sort by metric, check top rows</td><td>Disproportionately large values vs. peers</td></tr>
+    </table>
+
+    <div class="callout tip"><span class="callout-icon">💡</span><div>In Kibana, the <strong>Anomaly Explorer</strong> and <strong>Single Metric Viewer</strong> in the Machine Learning app show a model-based expected range (blue band). Points in <span style="color:var(--amber)">yellow/orange</span> are anomalies — the further outside the band, the higher the anomaly score.</div></div>
+    <button class="done-btn" onclick="markDone('c2',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  OBJ 3 — Single Metric ML Job
+══════════════════════════════════ -->
+<div class="card" id="c3">
+  <div class="card-hd" onclick="tog('c3')">
+    <span class="card-num">03</span>
+    <span class="card-title">Define a Single Metric Machine Learning Job</span>
+    <div class="card-tags"><span class="ctag ml">ML</span><span class="ctag exam">High Priority</span></div>
+    <span class="done-chip">✓ DONE</span>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="card-body">
+    <p class="prose">A <strong>Single Metric job</strong> is the simplest ML job type in Kibana. It monitors one metric (like request count or response time) over time and learns its normal behavior — then flags deviations as anomalies.</p>
+
+    <div class="callout exam"><span class="callout-icon">🎯</span><div><strong>Exam objective:</strong> "Define a single metric, multi-metric, or population Machine Learning job." Know all three types. Single Metric is the most commonly tested — but the exam may ask for any of them.</div></div>
+
+    <div class="slbl"><span class="dot"></span>ML Job Configuration Simulator</div>
+    <div class="ml-sim">
+      <div class="ml-sim-toolbar">
+        <span class="ml-sim-title">MACHINE LEARNING → CREATE JOB → SINGLE METRIC</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--glow)">LIVE SIMULATOR</span>
+      </div>
+      <div class="ml-form">
+        <div class="ml-form-group">
+          <label>Job Type</label>
+          <select class="ml-select" id="mlJobType" onchange="updateMLOutput()">
+            <option value="single">Single Metric</option>
+            <option value="multi">Multi-Metric</option>
+            <option value="pop">Population</option>
+          </select>
+        </div>
+        <div class="ml-form-group">
+          <label>Detector Function</label>
+          <select class="ml-select" id="mlFunc" onchange="updateMLOutput()">
+            <option value="count">count</option>
+            <option value="mean">mean(field)</option>
+            <option value="sum">sum(field)</option>
+            <option value="max">max(field)</option>
+            <option value="min">min(field)</option>
+            <option value="rare">rare</option>
+            <option value="high_count">high_count</option>
+            <option value="low_count">low_count</option>
+          </select>
+        </div>
+        <div class="ml-form-group">
+          <label>Field (if applicable)</label>
+          <input class="ml-input" id="mlField" value="response_time" oninput="updateMLOutput()"/>
+        </div>
+        <div class="ml-form-group">
+          <label>Bucket Span</label>
+          <select class="ml-select" id="mlBucket" onchange="updateMLOutput()">
+            <option value="5m">5 minutes</option>
+            <option value="15m">15 minutes</option>
+            <option value="1h" selected>1 hour</option>
+            <option value="1d">1 day</option>
+          </select>
+        </div>
+        <div class="ml-form-group" id="splitGroup" style="display:none">
+          <label>Split Field (Multi/Population)</label>
+          <input class="ml-input" id="mlSplit" value="host.name" oninput="updateMLOutput()"/>
+        </div>
+        <div class="ml-form-group">
+          <label>Data Feed Index</label>
+          <input class="ml-input" id="mlIndex" value="filebeat-*" oninput="updateMLOutput()"/>
+        </div>
+        <button class="run-btn" onclick="updateMLOutput()">⚡ Generate Job Config Preview</button>
+      </div>
+      <div class="ml-output" id="mlOutput"></div>
+    </div>
+
+    <div class="slbl"><span class="dot"></span>ML Job Types Comparison</div>
+    <table class="rtable">
+      <tr><th>Type</th><th>What it detects</th><th>Key setting</th></tr>
+      <tr><td>Single Metric</td><td>Anomalies in ONE metric for the whole dataset</td><td>Detector function (count, mean, sum…)</td></tr>
+      <tr><td>Multi-Metric</td><td>Anomalies in MULTIPLE metrics simultaneously</td><td>Multiple detectors, optional split field</td></tr>
+      <tr><td>Population</td><td>Entities behaving differently from the population norm</td><td>"Over field" = the entity (e.g. user, IP, host)</td></tr>
+    </table>
+
+    <div class="slbl"><span class="dot"></span>Practice Quiz</div>
+    <div class="quiz" id="q3">
+      <div class="quiz-q">You want to detect when a specific user is making an unusually high number of requests compared to ALL other users. Which ML job type is most appropriate?</div>
+      <div class="quiz-opts" id="qo3">
+        <div class="qopt" onclick="doQuiz('q3',0,2)"><span class="qletter">A</span><span>Single Metric — count of requests over time</span></div>
+        <div class="qopt" onclick="doQuiz('q3',1,2)"><span class="qletter">B</span><span>Multi-Metric — count + bytes for each user</span></div>
+        <div class="qopt" onclick="doQuiz('q3',2,2)"><span class="qletter">C</span><span>Population — over field: user.name (compares each user to population)</span></div>
+        <div class="qopt" onclick="doQuiz('q3',3,2)"><span class="qletter">D</span><span>Single Metric with a KQL filter for that user</span></div>
+      </div>
+      <div class="qfb" id="qf3"></div>
+    </div>
+    <button class="done-btn" onclick="markDone('c3',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  OBJ 4 — Multi-Metric ML Job
+══════════════════════════════════ -->
+<div class="card" id="c4">
+  <div class="card-hd" onclick="tog('c4')">
+    <span class="card-num">04</span>
+    <span class="card-title">Define a Multi-Metric ML Job</span>
+    <div class="card-tags"><span class="ctag ml">ML</span></div>
+    <span class="done-chip">✓ DONE</span>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="card-body">
+    <p class="prose">A <strong>Multi-Metric job</strong> analyzes multiple detectors at once — for example, monitoring both <code>request count</code> AND <code>response time</code> on the same job. It can also split results by a keyword field (e.g., per <code>host.name</code>).</p>
+
+    <div class="code">
+<button class="copy-btn" onclick="copyCode(this)">copy</button>
+<span class="cm"># Multi-Metric Job — Key Configuration</span>
+
+<span class="kw">Navigation:</span>
+  ML → Anomaly Detection → Create job → <span class="vl">Multi-metric</span>
+
+<span class="kw">Detectors</span> (add multiple):
+  Detector 1: <span class="st">count</span>                    <span class="cm"># monitors request volume</span>
+  Detector 2: <span class="st">mean</span>(<span class="fd">http.response.bytes</span>)  <span class="cm"># monitors response size</span>
+  Detector 3: <span class="st">high_mean</span>(<span class="fd">response_time</span>)    <span class="cm"># only flags high values</span>
+
+<span class="kw">Split Field</span> (optional):
+  <span class="fd">host.name.keyword</span>  <span class="cm"># runs all detectors per host separately</span>
+
+<span class="kw">Bucket Span:</span> <span class="vl">15m</span>  <span class="cm"># time window for each analysis bucket</span>
+
+<span class="kw">Datafeed:</span>
+  Index: <span class="vl">filebeat-*</span>
+  Query: <span class="hl">{"match_all": {}}</span>  <span class="cm"># or add a filter</span>
+
+<span class="kw">Result:</span> One job monitors ALL detectors simultaneously
+  → Fewer jobs, correlated anomaly detection
+    </div>
+
+    <div class="callout tip"><span class="callout-icon">💡</span><div>The <strong>Split Field</strong> (also called "by field") partitions the analysis per entity. If split by <code>host.name</code>, the job independently models each host — so host A's anomaly doesn't mask host B's normal behavior.</div></div>
+
+    <div class="callout warn"><span class="callout-icon">⚠️</span><div>The <strong>bucket span</strong> affects how much data is analyzed per bucket. Too short = noisy. Too long = slow detection. Kibana's wizard suggests an appropriate bucket span based on your data volume — accept it if unsure.</div></div>
+    <button class="done-btn" onclick="markDone('c4',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  OBJ 5 — Population ML Job
+══════════════════════════════════ -->
+<div class="card" id="c5">
+  <div class="card-hd" onclick="tog('c5')">
+    <span class="card-num">05</span>
+    <span class="card-title">Define a Population ML Job</span>
+    <div class="card-tags"><span class="ctag ml">ML</span></div>
+    <span class="done-chip">✓ DONE</span>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="card-body">
+    <p class="prose">A <strong>Population job</strong> compares entities to each other — finding the ones that behave differently from their peers. Perfect for security use cases: "which user is doing something unusual compared to all other users?"</p>
+
+    <div class="code">
+<button class="copy-btn" onclick="copyCode(this)">copy</button>
+<span class="cm"># Population Job — Key Configuration</span>
+
+<span class="kw">Navigation:</span>
+  ML → Anomaly Detection → Create job → <span class="vl">Population</span>
+
+<span class="kw">Detector:</span>
+  Function: <span class="st">count</span> (or mean, sum, etc.)
+  <span class="fd">Over field</span>: <span class="vl">user.name.keyword</span>  <span class="cm">← THE KEY FIELD</span>
+  <span class="cm"># "over field" = the entity being compared to the population</span>
+  <span class="cm"># Each unique user gets its own model, compared to all users</span>
+
+<span class="kw">Optional — Partition By:</span>
+  <span class="fd">source.geo.country_name</span>  <span class="cm"># further segment the population</span>
+
+<span class="kw">Bucket Span:</span> <span class="vl">1h</span>
+
+<span class="kw">Example Use Cases:</span>
+  — User making unusually many requests vs. other users    (<span class="st">count over user.name</span>)
+  — IP downloading unusually large files vs. other IPs    (<span class="st">sum(bytes) over source.ip</span>)
+  — Host with unusual error rate vs. other hosts          (<span class="st">count over host.name</span>)
+    </div>
+
+    <div class="slbl"><span class="dot"></span>Population vs. Single Metric — When to Use Which</div>
+    <table class="rtable">
+      <tr><th>Scenario</th><th>Use</th><th>Why</th></tr>
+      <tr><td>"Unusual spike in total request count"</td><td>Single Metric</td><td>One aggregate metric, no per-entity comparison needed</td></tr>
+      <tr><td>"User making far more requests than peers"</td><td>Population (over: user)</td><td>Comparing entity to population baseline</td></tr>
+      <tr><td>"Unusual count AND bytes per host"</td><td>Multi-Metric + split by host</td><td>Multiple correlated metrics per entity</td></tr>
+      <tr><td>"Rare event — new user agent never seen before"</td><td>Single Metric (rare detector)</td><td>Rarity detection, no peer comparison needed</td></tr>
+    </table>
+
+    <div class="slbl"><span class="dot"></span>Practice Quiz</div>
+    <div class="quiz" id="q5">
+      <div class="quiz-q">In a Population ML job, what does the <strong>"over field"</strong> represent?</div>
+      <div class="quiz-opts" id="qo5">
+        <div class="qopt" onclick="doQuiz('q5',0,2)"><span class="qletter">A</span><span>The time field used for bucketing analysis</span></div>
+        <div class="qopt" onclick="doQuiz('q5',1,2)"><span class="qletter">B</span><span>A filter to restrict which documents are analyzed</span></div>
+        <div class="qopt" onclick="doQuiz('q5',2,2)"><span class="qletter">C</span><span>The entity field — each unique value is modeled and compared to its peers</span></div>
+        <div class="qopt" onclick="doQuiz('q5',3,2)"><span class="qletter">D</span><span>The metric field whose values are aggregated</span></div>
+      </div>
+      <div class="qfb" id="qf5"></div>
+    </div>
+    <button class="done-btn" onclick="markDone('c5',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  OBJ 6 — Scripted Fields
+══════════════════════════════════ -->
+<div class="card" id="c6">
+  <div class="card-hd" onclick="tog('c6')">
+    <span class="card-num">06</span>
+    <span class="card-title">Define and Use a Scripted Field</span>
+    <div class="card-tags"><span class="ctag adv">Advanced</span><span class="ctag kb">Kibana</span></div>
+    <span class="done-chip">✓ DONE</span>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="card-body">
+    <p class="prose">A <strong>Scripted Field</strong> is a computed field defined in a Kibana Data View using <strong>Painless</strong> (Elasticsearch's scripting language). It doesn't exist in Elasticsearch — it's calculated at query time in Kibana. Use it to derive new values from existing fields for display or visualization.</p>
+
+    <div class="callout exam"><span class="callout-icon">🎯</span><div><strong>Exam objective:</strong> "Define and use a scripted field for an index." You'll be asked to create one, then use it in Discover or a visualization. Know Painless syntax basics.</div></div>
+
+    <div class="slbl"><span class="dot"></span>Creating a Scripted Field</div>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-content">
+        <div class="step-title">Go to Stack Management → Data Views</div>
+        <div class="step-desc">Select the data view you want to add the field to.</div>
+      </div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-content">
+        <div class="step-title">Click the "Scripted fields" tab → Add scripted field</div>
+      </div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-content">
+        <div class="step-title">Set Name, Language (Painless), Type, and Script</div>
+        <div class="step-desc">The <code>Type</code> determines how the value is displayed (number, string, date, boolean, etc.)</div>
+      </div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-content">
+        <div class="step-title">Use the Preview to test before saving</div>
+        <div class="step-desc">The preview shows sample results from your index — verify the output looks correct.</div>
+      </div></div>
+      <div class="step"><div class="step-num">5</div><div class="step-content">
+        <div class="step-title">Save — the field now appears in Discover and Visualize</div>
+      </div></div>
+    </div>
+
+    <div class="slbl"><span class="dot"></span>Interactive Painless Script Tester</div>
+    <div class="sf-demo">
+      <div class="sf-toolbar">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-muted);flex:1;letter-spacing:1px">PAINLESS SCRIPT EDITOR — PREVIEW RESULTS</span>
+        <button class="demo-btn" onclick="runScript()">▶ Run Preview</button>
+      </div>
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <select class="ml-select" id="scriptPreset" onchange="loadPreset()" style="width:100%">
+          <option value="kb_to_mb">Convert bytes → megabytes</option>
+          <option value="url_extract">Extract URL path segment</option>
+          <option value="classify">Classify status code as pass/fail</option>
+          <option value="concat">Concatenate two string fields</option>
+          <option value="duration">Calculate duration in seconds</option>
+        </select>
+      </div>
+      <div class="sf-editor-area">
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--glow);letter-spacing:1px;margin-bottom:6px">PAINLESS SCRIPT</div>
+          <textarea id="scriptArea" spellcheck="false">doc['http.response.bytes'].value / 1048576.0</textarea>
+        </div>
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--glow);letter-spacing:1px;margin-bottom:6px">PREVIEW OUTPUT</div>
+          <div class="sf-preview" id="sfPreview">
+            <div style="color:var(--text-muted);font-size:11px">Click ▶ Run Preview to see results →</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slbl"><span class="dot"></span>Painless Quick Reference</div>
+    <div class="code">
+<span class="cm"># Access a field value</span>
+<span class="st">doc['field_name'].value</span>
+
+<span class="cm"># Check if field exists first (safe access)</span>
+<span class="kw">if</span> (doc['field_name'].size() > 0) {
+  <span class="kw">return</span> doc['field_name'].value;
+} <span class="kw">else</span> {
+  <span class="kw">return</span> <span class="vl">null</span>;
+}
+
+<span class="cm"># Arithmetic</span>
+doc['bytes'].value / <span class="hl">1048576.0</span>          <span class="cm"># bytes → MB</span>
+doc['end_time'].value - doc['start_time'].value   <span class="cm"># duration</span>
+
+<span class="cm"># String operations</span>
+doc['host.name'].value + <span class="st">':'</span> + doc['port'].value  <span class="cm"># concat</span>
+
+<span class="cm"># Conditional (ternary)</span>
+doc['status'].value >= <span class="hl">400</span> ? <span class="st">'error'</span> : <span class="st">'success'</span>
+
+<span class="cm"># Working with .keyword fields</span>
+doc['url.path.keyword'].value           <span class="cm"># exact string from keyword field</span>
+
+<span class="cm"># Accessing text field (requires fielddata: true on the field)</span>
+doc['message'].value                    <span class="cm"># may need fielddata enabled</span>
+    </div>
+
+    <div class="callout warn"><span class="callout-icon">⚠️</span><div><strong>Use .keyword fields!</strong> For string fields, always use <code>doc['field.keyword'].value</code> not <code>doc['field'].value</code> (which requires fielddata enabled on the text field). The <code>.keyword</code> subfield is always directly accessible.</div></div>
+
+    <div class="callout tip"><span class="callout-icon">💡</span><div>After creating a scripted field, go to <strong>Discover</strong> and add it as a column — confirm it shows the expected computed values. Then use it in a visualization like any other field.</div></div>
+
+    <div class="slbl"><span class="dot"></span>Practice Quiz</div>
+    <div class="quiz" id="q6">
+      <div class="quiz-q">You want to create a scripted field that shows <code>true</code> if <code>http.response.status_code</code> is 200, and <code>false</code> otherwise. Which script is correct?</div>
+      <div class="quiz-opts" id="qo6">
+        <div class="qopt" onclick="doQuiz('q6',0,3)"><span class="qletter">A</span><span><code>doc['status_code'] == 200</code></span></div>
+        <div class="qopt" onclick="doQuiz('q6',1,3)"><span class="qletter">B</span><span><code>if (status_code = 200) { return true; }</code></span></div>
+        <div class="qopt" onclick="doQuiz('q6',2,3)"><span class="qletter">C</span><span><code>doc.http.response.status_code.value === 200</code></span></div>
+        <div class="qopt" onclick="doQuiz('q6',3,3)"><span class="qletter">D</span><span><code>doc['http.response.status_code'].value == 200</code></span></div>
+      </div>
+      <div class="qfb" id="qf6"></div>
+    </div>
+    <button class="done-btn" onclick="markDone('c6',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+  OBJ 7 — Kibana Spaces
+══════════════════════════════════ -->
+<div class="card" id="c7">
+  <div class="card-hd" onclick="tog('c7')">
+    <span class="card-num">07</span>
+    <span class="card-title">Define and Use a Kibana Space</span>
+    <div class="card-tags"><span class="ctag space">Spaces</span><span class="ctag kb">Kibana</span></div>
+    <span class="done-chip">✓ DONE</span>
+    <span class="chevron">▾</span>
+  </div>
+  <div class="card-body">
+    <p class="prose">A <strong>Kibana Space</strong> is an isolated environment within a single Kibana instance. Each Space has its own saved objects (dashboards, data views, visualizations, ML jobs) and optionally its own feature access settings. Great for multi-team environments.</p>
+
+    <div class="callout exam"><span class="callout-icon">🎯</span><div><strong>Exam objective:</strong> "Define and use a Space in Kibana." You may be asked to create a new Space, switch to it, create objects within it, and verify isolation from the Default space.</div></div>
+
+    <div class="slbl"><span class="dot"></span>Space Isolation Diagram</div>
+    <div class="space-diagram" id="spaceDiagram">
+      <div class="space-box active-space" onclick="selectSpace(this,'default')">
+        <div class="space-icon">🏠</div>
+        <div class="space-name">Default</div>
+        <div class="space-desc">The main space</div>
+        <div class="space-items">
+          <div class="space-item">📊 Dashboard A</div>
+          <div class="space-item">🔍 DataView: logs-*</div>
+          <div class="space-item">📈 Viz: Request Rate</div>
+        </div>
+      </div>
+      <div class="space-arrow">⟷</div>
+      <div class="space-box" onclick="selectSpace(this,'security')">
+        <div class="space-icon">🔒</div>
+        <div class="space-name">Security</div>
+        <div class="space-desc">SOC team space</div>
+        <div class="space-items">
+          <div class="space-item">📊 SIEM Dashboard</div>
+          <div class="space-item">🔍 DataView: security-*</div>
+          <div class="space-item">🤖 ML: Threat Detection</div>
+        </div>
+      </div>
+      <div class="space-arrow">⟷</div>
+      <div class="space-box" onclick="selectSpace(this,'ops')">
+        <div class="space-icon">⚙️</div>
+        <div class="space-name">Operations</div>
+        <div class="space-desc">Infra team space</div>
+        <div class="space-items">
+          <div class="space-item">📊 Infra Dashboard</div>
+          <div class="space-item">🔍 DataView: metrics-*</div>
+          <div class="space-item">🌡️ APM: Services</div>
+        </div>
+      </div>
+    </div>
+    <div id="spaceInfo" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-muted);text-align:center;margin-bottom:16px">
+      Click a space above to see details ↑
+    </div>
+
+    <div class="slbl"><span class="dot"></span>Managing Spaces</div>
+    <div class="code">
+<button class="copy-btn" onclick="copyCode(this)">copy</button>
+<span class="cm"># Creating a new Space</span>
+<span class="kw">Navigate to:</span>
+  Stack Management → <span class="vl">Spaces</span> → Create a space
+
+<span class="kw">Required fields:</span>
+  Name: <span class="st">"Security Operations"</span>
+  Space ID: <span class="st">security-ops</span>  <span class="cm"># auto-generated, used in URLs</span>
+  Description: <span class="st">"Space for the SOC team"</span>
+  Color &amp; initials: for the space avatar in the top menu
+
+<span class="kw">Feature visibility</span> (optional — customize per space):
+  — Hide ML, APM, Maps etc. for spaces that don't need them
+  — Useful for reducing UI complexity for specific teams
+
+<span class="cm"># Switching spaces</span>
+  Click the space avatar (top-left) → select space from menu
+  Or navigate directly: <span class="fd">kibana_url/s/space-id/app/dashboards</span>
+
+<span class="cm"># Copying objects between spaces</span>
+  Stack Management → Saved Objects → select objects
+  → <span class="vl">Copy to space</span> → select target space
+  → Choose whether to include references (data views, etc.)
+    </div>
+
+    <div class="slbl"><span class="dot"></span>Space Rules &amp; Isolation</div>
+    <table class="rtable">
+      <tr><th>What is isolated per Space</th><th>What is SHARED across Spaces</th></tr>
+      <tr><td>Dashboards, Visualizations, Saved Searches</td><td>Elasticsearch indices and data</td></tr>
+      <tr><td>Data Views (index patterns)</td><td>Users and roles</td></tr>
+      <tr><td>ML Jobs</td><td>Elasticsearch cluster settings</td></tr>
+      <tr><td>Canvas workpads, Maps</td><td>Feature licenses</td></tr>
+      <tr><td>APM service settings</td><td>Kibana system config</td></tr>
+    </table>
+
+    <div class="callout tip"><span class="callout-icon">💡</span><div>The exam often asks you to work "In the Default space" — this is simply the pre-existing space Kibana comes with. When no space is specified in the URL (<code>/app/</code> rather than <code>/s/myspace/app/</code>), you are in the Default space.</div></div>
+
+    <div class="slbl"><span class="dot"></span>Practice Quiz</div>
+    <div class="quiz" id="q7">
+      <div class="quiz-q">You create a Dashboard in the "Security" space. A colleague opens the "Default" space. Can they see your dashboard?</div>
+      <div class="quiz-opts" id="qo7">
+        <div class="qopt" onclick="doQuiz('q7',0,1)"><span class="qletter">A</span><span>Yes — all saved objects are visible across all spaces</span></div>
+        <div class="qopt" onclick="doQuiz('q7',1,1)"><span class="qletter">B</span><span>No — spaces isolate saved objects; they must switch to the Security space or copy the dashboard</span></div>
+        <div class="qopt" onclick="doQuiz('q7',2,1)"><span class="qletter">C</span><span>Yes — but only if they have admin privileges</span></div>
+        <div class="qopt" onclick="doQuiz('q7',3,1)"><span class="qletter">D</span><span>No — spaces also isolate Elasticsearch indices so they cannot even query the data</span></div>
+      </div>
+      <div class="qfb" id="qf7"></div>
+    </div>
+    <button class="done-btn" onclick="markDone('c7',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+</div><!-- /cards -->
+
+<!-- ══════════════════════════════════
+   FINAL EXAM READINESS SUMMARY
+══════════════════════════════════ -->
+<div class="summary-card">
+  <h3>🚀 Full Exam Readiness Overview</h3>
+  <div class="code" style="margin-bottom:0">
+<span class="cm">╔══════════════════════════════════════════════════════════════╗</span>
+<span class="cm">║           ELASTIC CERTIFIED ANALYST — MASTER CHECKLIST       ║</span>
+<span class="cm">╚══════════════════════════════════════════════════════════════╝</span>
+
+<span class="kw">TOPIC 1 · SEARCHING DATA</span>
+  <span class="st">□</span> Create Data View with/without time filter field
+  <span class="st">□</span> Set absolute and relative time ranges
+  <span class="st">□</span> Write KQL queries (field:value, ranges, wildcards, AND/OR/NOT)
+  <span class="st">□</span> Create, invert, toggle, and PIN filters
+  <span class="st">□</span> Save searches and apply to dashboards
+
+<span class="kw">TOPIC 2 · VISUALIZING DATA</span>
+  <span class="st">□</span> Lens: Bar, Line, Area, Pie, Metric, Data Table
+  <span class="st">□</span> Classic: Tag Cloud (ONLY available here)
+  <span class="st">□</span> TSVB: Time Series, Filter Ratio, Math, Metric/Top N/Gauge/Table
+  <span class="st">□</span> Maps: Document points, Choropleth, Heatmap layers
+  <span class="st">□</span> Sub-bucket aggregations / Break down by
+  <span class="st">□</span> Moving Average, Derivative, Serial Diff
+  <span class="st">□</span> Dashboard: Controls, Markdown, Filters, Time range
+  <span class="st">□</span> Save everything with EXACT names from task
+
+<span class="kw">TOPIC 3 · ANALYZING DATA</span>
+  <span class="st">□</span> Answer questions using search + visualization
+  <span class="st">□</span> Identify visual anomalies (spikes, outliers)
+  <span class="st">□</span> ML Single Metric job (one detector, one metric)
+  <span class="st">□</span> ML Multi-Metric job (multiple detectors, optional split)
+  <span class="st">□</span> ML Population job (over field = entity)
+  <span class="st">□</span> Scripted field: Painless syntax, doc['field'].value
+  <span class="st">□</span> Kibana Spaces: create, switch, isolate saved objects
+
+<span class="kw">EXAM FORMAT REMINDERS</span>
+  <span class="vl">⏱</span>  2 hours, 10–12 performance-based tasks
+  <span class="vl">📖</span>  Elastic documentation available during exam
+  <span class="vl">📝</span>  Naming is worth points — copy names EXACTLY
+  <span class="vl">🔢</span>  Complete every task — partial credit is given
+  <span class="vl">⚡</span>  ~10–15 minutes per task — don't over-polish
+  <span class="vl">🔍</span>  Use Ctrl+F in docs to find topics quickly
+  </div>
+</div>
+
+<!-- ── CHEATSHEET ── -->
+<div class="cheatsheet">
+  <div class="cs-hd" onclick="toggleCS()">
+    <span class="cs-hd-title">📋 Topic 3 Cheatsheet — ML &amp; Scripted Fields Quick Reference</span>
+    <span class="cs-chevron" id="csChev">▾ expand</span>
+  </div>
+  <div class="cs-body" id="csBody">
+    <div class="cs-grid">
+      <div class="cs-item"><div class="cs-title">Single Metric Job</div><div class="cs-detail">One detector. One metric for the whole dataset.<br>e.g. count, mean(bytes)<br>Best for: overall traffic anomalies</div></div>
+      <div class="cs-item"><div class="cs-title">Multi-Metric Job</div><div class="cs-detail">Multiple detectors at once.<br>Optional split field per entity.<br>Best for: correlated metric monitoring</div></div>
+      <div class="cs-item"><div class="cs-title">Population Job</div><div class="cs-detail">One detector + "over field".<br>Compares entities to each other.<br>Best for: outlier users / IPs / hosts</div></div>
+      <div class="cs-item"><div class="cs-title">Anomaly Score</div><div class="cs-detail">0–24: Low (informational)<br>25–49: Warning<br>50–74: Minor anomaly<br>75–100: Critical anomaly</div></div>
+      <div class="cs-item"><div class="cs-title">Scripted Field — Access</div><div class="cs-detail">doc['field.keyword'].value<br>doc['numeric_field'].value<br>Use .keyword for strings!</div></div>
+      <div class="cs-item"><div class="cs-title">Scripted Field — Types</div><div class="cs-detail">Number, String, Boolean,<br>Date, Geo Point, IP<br>Set correctly for proper display</div></div>
+      <div class="cs-item"><div class="cs-title">Spaces — Isolated</div><div class="cs-detail">Dashboards, Data Views,<br>Visualizations, ML Jobs,<br>Saved Searches, Canvas</div></div>
+      <div class="cs-item"><div class="cs-title">Spaces — Shared</div><div class="cs-detail">Elasticsearch data &amp; indices,<br>Users and roles,<br>Kibana config &amp; license</div></div>
+      <div class="cs-item"><div class="cs-title">ML Navigation</div><div class="cs-detail">Kibana → Machine Learning<br>→ Anomaly Detection<br>→ Create job</div></div>
+      <div class="cs-item"><div class="cs-title">Scripted Field Nav</div><div class="cs-detail">Stack Management<br>→ Data Views → [select view]<br>→ Scripted fields tab</div></div>
+      <div class="cs-item"><div class="cs-title">Bucket Span</div><div class="cs-detail">Time window per analysis bucket.<br>Wizard auto-suggests.<br>Shorter = more sensitive, noisier</div></div>
+      <div class="cs-item"><div class="cs-title">Detector Functions</div><div class="cs-detail">count, rare, mean(f), sum(f),<br>max(f), min(f), distinct_count(f),<br>high_count, low_count, high_mean…</div></div>
+    </div>
+    <div class="slbl"><span class="dot"></span>Painless One-Liners</div>
+    <div class="code" style="margin-bottom:0">
+<span class="st">doc['bytes'].value / 1048576.0</span>                           <span class="cm"># bytes → MB</span>
+<span class="st">doc['status'].value >= 400 ? 'error' : 'ok'</span>              <span class="cm"># classify status</span>
+<span class="st">doc['end'].value.millis - doc['start'].value.millis</span>       <span class="cm"># duration ms</span>
+<span class="st">doc['host'].value + ':' + doc['port'].value.toString()</span>    <span class="cm"># concatenate</span>
+<span class="st">Math.round(doc['score'].value * 100) / 100.0</span>             <span class="cm"># round to 2dp</span>
+    </div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+</main>
+
+<footer>
+  <div class="wrap" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;width:100%">
+    <span class="footer-text">ELASTIC CERTIFIED ANALYST · TOPIC 3 OF 3 · ANALYZING DATA · SERIES COMPLETE</span>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <a href="#" class="nav-btn" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">↑ Top</a>
+      <a href="#" class="nav-btn" onclick="alert('Open Topic 2 page!');return false;">← Topic 2</a>
+      <a href="#" class="nav-btn primary" onclick="alert('🎓 All three topics complete!\n\nNext steps:\n1. Practice on a live Kibana instance\n2. Use the Elastic sample data (filebeat, logs, metrics)\n3. Time yourself on mock tasks (~10 min each)\n4. Read the official Elastic certification guide\n\nGood luck on the exam! 🚀');return false;">🎓 Series Complete!</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ── TOGGLE ──
+function tog(id){
+  const c=document.getElementById(id);
+  c.classList.toggle('open');
+}
+
+// ── MARK DONE ──
+let doneCount=0;
+const TOTAL=7;
+function markDone(id,btn){
+  const c=document.getElementById(id);
+  if(c.classList.contains('done'))return;
+  c.classList.add('done');
+  btn.classList.add('marked');
+  btn.textContent='✓ Understood';
+  doneCount++;
+  document.getElementById('pFill').style.width=(doneCount/TOTAL*100)+'%';
+  document.getElementById('pCount').textContent=doneCount+' / '+TOTAL+' objectives';
+}
+
+// ── QUIZ ──
+const qAnswers={
+  q3:{c:2,ok:'✓ Correct! A Population job with "over field: user.name" compares each user to the population baseline — perfect for finding the outlier user.',fail:'✗ Population job is the right answer. The "over field" (user.name) tells the ML engine to compare each user to their peers in the population.'},
+  q5:{c:2,ok:'✓ Correct! The "over field" defines the entity being compared. Each unique value (each user, IP, host) gets its own model and is benchmarked against the population.',fail:'✗ The "over field" is the entity field. Each unique value is independently modeled and compared to how all other entities behave.'},
+  q6:{c:3,ok:'✓ Correct! In Painless, the proper syntax is doc[\'field.name\'].value == 200. Note: use == for comparison (not ===), and access with doc[\'field\'].value.',fail:'✗ The correct Painless syntax is: doc[\'http.response.status_code\'].value == 200. Use dot notation in brackets, and .value to get the actual value.'},
+  q7:{c:1,ok:'✓ Correct! Spaces isolate saved objects — dashboards, data views, ML jobs, etc. To share, use "Copy to space" in Stack Management → Saved Objects.',fail:'✗ Spaces DO isolate saved objects. A dashboard in the Security space is NOT visible in Default space. The colleague needs to switch spaces or the object needs to be copied.'},
+};
+
+function doQuiz(qid,sel,correct){
+  const opts=document.getElementById('qo'+qid.replace('q',''));
+  if(opts.querySelector('.ans'))return;
+  opts.querySelectorAll('.qopt').forEach((o,i)=>{
+    o.classList.add('ans');
+    if(i===correct)o.classList.add('correct');
+    else if(i===sel&&sel!==correct)o.classList.add('wrong');
+  });
+  const fb=document.getElementById('qf'+qid.replace('q',''));
+  const ok=sel===correct;
+  fb.className='qfb show '+(ok?'correct':'wrong');
+  fb.textContent=qAnswers[qid][ok?'ok':'fail'];
+}
+
+// ── ANOMALY CHART ──
+const baseVals=[28,32,35,30,34,31,29,33,36,31,34,30,32,35,29,31];
+const anomVals=[28,32,35,30,34,31,29,33,36,31,34,30,32,95,29,31];
+
+function movAvg(arr,w){
+  return arr.map((v,i)=>{
+    const s=Math.max(0,i-w+1);
+    const sl=arr.slice(s,i+1);
+    return sl.reduce((a,b)=>a+b,0)/sl.length;
+  });
+}
+const ma=movAvg(baseVals,4);
+const maX=35, sigma=6;
+
+function showAnomaly(mode){
+  ['btnNorm','btnSpike','btnBand'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  document.getElementById(mode==='normal'?'btnNorm':mode==='spike'?'btnSpike':'btnBand').classList.add('active');
+
+  const svg=document.getElementById('anomSvg');
+  const data=mode==='normal'?baseVals:anomVals;
+  const W=640,H=140,pad=24;
+  const maxV=Math.max(...data,maX+sigma*2)+5;
+  const xs=data.map((_,i)=>pad+(i/(data.length-1))*(W-2*pad));
+  const ys=v=>pad+(1-v/maxV)*(H-2*pad);
+
+  let content='';
+
+  // ML bounds band
+  if(mode==='band'){
+    const upper=ma.map(v=>v+sigma*1.5);
+    const lower=ma.map(v=>Math.max(0,v-sigma*1.5));
+    const uPath=xs.map((x,i)=>`${i===0?'M':'L'}${x},${ys(upper[i])}`).join(' ');
+    const lPath=xs.map((x,i)=>`${i===0?'M':'L'}${x},${ys(lower[i])}`).join(' ');
+    const bandPath=uPath+' '+xs.map((x,i)=>`${i===0?'L':'L'}${x},${ys(lower[i])}`).reverse().join(' ')+' Z';
+    content+=`<path d="${bandPath}" fill="rgba(0,200,255,0.1)" stroke="none"/>`;
+    content+=`<path d="${uPath}" stroke="rgba(0,200,255,0.3)" stroke-width="1" fill="none" stroke-dasharray="4,3"/>`;
+    content+=`<path d="${lPath}" stroke="rgba(0,200,255,0.3)" stroke-width="1" fill="none" stroke-dasharray="4,3"/>`;
+    // MA line
+    const maPath=xs.map((x,i)=>`${i===0?'M':'L'}${x},${ys(ma[i])}`).join(' ');
+    content+=`<path d="${maPath}" stroke="rgba(0,200,255,0.7)" stroke-width="1.5" fill="none" stroke-dasharray="6,3"/>`;
+  }
+
+  // Area fill
+  const areaPath=xs.map((x,i)=>`${i===0?'M':'L'}${x},${ys(data[i])}`).join(' ')
+    +` L${xs[xs.length-1]},${H} L${xs[0]},${H} Z`;
+  content+=`<path d="${areaPath}" fill="rgba(0,200,255,0.07)"/>`;
+
+  // Line
+  const linePath=xs.map((x,i)=>`${i===0?'M':'L'}${x},${ys(data[i])}`).join(' ');
+  content+=`<path d="${linePath}" stroke="var(--glow)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+
+  // Dots — highlight anomaly
+  xs.forEach((x,i)=>{
+    const isAnom=mode!=='normal'&&i===13;
+    const color=isAnom?'var(--red)':'var(--glow)';
+    const r=isAnom?7:3;
+    content+=`<circle cx="${x}" cy="${ys(data[i])}" r="${r}" fill="${color}"${isAnom?' filter="url(#glow)"':''}><title>${data[i]}</title></circle>`;
+    if(isAnom){
+      content+=`<text x="${x+10}" y="${ys(data[i])-4}" fill="var(--red)" font-family="IBM Plex Mono" font-size="10" font-weight="500">⚠ ANOMALY (score:94)</text>`;
+    }
+  });
+
+  // Y-axis labels
+  [0,25,50,75].forEach(v=>{
+    if(v<=maxV){
+      content+=`<text x="${pad-4}" y="${ys(v)+4}" fill="#2a5a8a" font-family="IBM Plex Mono" font-size="9" text-anchor="end">${v}</text>`;
+    }
+  });
+
+  svg.innerHTML=`<defs><filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>${content}`;
+
+  // Legend
+  const legend=document.getElementById('anomLegend');
+  let ld=`<span style="color:var(--glow)">— Raw data</span>`;
+  if(mode==='band') ld+=`<span style="color:rgba(0,200,255,0.6)">-- Expected range (ML bounds)</span>`;
+  if(mode!=='normal') ld+=`<span style="color:var(--red)">● Anomaly detected</span>`;
+  legend.innerHTML=ld;
+}
+
+// ── ML OUTPUT ──
+function updateMLOutput(){
+  const type=document.getElementById('mlJobType').value;
+  const func=document.getElementById('mlFunc').value;
+  const field=document.getElementById('mlField').value;
+  const bucket=document.getElementById('mlBucket').value;
+  const idx=document.getElementById('mlIndex').value;
+  const split=document.getElementById('mlSplit').value;
+
+  document.getElementById('splitGroup').style.display=(type!=='single')?'flex':'none';
+
+  const needsField=['mean','sum','max','min','high_mean','low_mean','high_sum','low_sum'];
+  const fieldStr=needsField.some(f=>func.startsWith(f))?`(${field||'field_name'})`:'';
+
+  let config=`<span class="ok">✓ Job configuration preview:</span>\n\n`;
+  config+=`<span class="info">Job type:</span>    ${type==='single'?'Single Metric':type==='multi'?'Multi-Metric':'Population'}\n`;
+  config+=`<span class="info">Detector:</span>   ${func}${fieldStr}`;
+  if(type!=='single'&&split) config+=`  over ${split}`;
+  config+=`\n`;
+  config+=`<span class="info">Bucket:</span>     ${bucket}\n`;
+  config+=`<span class="info">Index:</span>      ${idx||'index-*'}\n`;
+
+  if(type==='pop'){
+    config+=`<span class="info">Over field:</span> ${split||'entity.keyword'}\n`;
+    config+=`\n<span class="warn">→ Each unique "${split||'entity'}" will be compared to population peers</span>`;
+  } else if(type==='multi'){
+    config+=`\n<span class="warn">→ Add more detectors below to monitor multiple metrics simultaneously</span>`;
+    if(split) config+=`\n<span class="warn">→ Split by "${split}" — separate model per entity</span>`;
+  } else {
+    config+=`\n<span class="warn">→ Monitors ${func}${fieldStr} across the entire dataset</span>`;
+  }
+
+  config+=`\n\n<span class="ok">→ Job ready to create. Review and submit.</span>`;
+  document.getElementById('mlOutput').innerHTML=config;
+}
+
+// ── SCRIPTED FIELD DEMOS ──
+const presets={
+  kb_to_mb:{
+    script:"doc['http.response.bytes'].value / 1048576.0",
+    results:[
+      {doc:'doc_1',bytes:1048576,result:'1.00 MB'},
+      {doc:'doc_2',bytes:524288, result:'0.50 MB'},
+      {doc:'doc_3',bytes:2097152,result:'2.00 MB'},
+      {doc:'doc_4',bytes:131072, result:'0.13 MB'},
+    ]
+  },
+  url_extract:{
+    script:"doc['url.path.keyword'].value.splitOnToken('/')[1]",
+    results:[
+      {doc:'doc_1',bytes:'/api/users',  result:'api'},
+      {doc:'doc_2',bytes:'/v1/search',  result:'v1'},
+      {doc:'doc_3',bytes:'/api/login',  result:'api'},
+      {doc:'doc_4',bytes:'/health',     result:'health'},
+    ]
+  },
+  classify:{
+    script:"doc['http.response.status_code'].value >= 400 ? 'error' : 'success'",
+    results:[
+      {doc:'doc_1',bytes:200,result:'success'},
+      {doc:'doc_2',bytes:404,result:'error'},
+      {doc:'doc_3',bytes:500,result:'error'},
+      {doc:'doc_4',bytes:301,result:'success'},
+    ]
+  },
+  concat:{
+    script:"doc['host.name.keyword'].value + ':' + doc['port'].value.toString()",
+    results:[
+      {doc:'doc_1',bytes:'web-01 / 443', result:'web-01:443'},
+      {doc:'doc_2',bytes:'api-02 / 8080',result:'api-02:8080'},
+      {doc:'doc_3',bytes:'db-01 / 5432', result:'db-01:5432'},
+    ]
+  },
+  duration:{
+    script:"(doc['@timestamp'].value.millis - doc['start_time'].value.millis) / 1000.0",
+    results:[
+      {doc:'doc_1',bytes:'end=T+2400ms',result:'2.40 sec'},
+      {doc:'doc_2',bytes:'end=T+560ms', result:'0.56 sec'},
+      {doc:'doc_3',bytes:'end=T+8900ms',result:'8.90 sec'},
+    ]
+  }
+};
+
+function loadPreset(){
+  const key=document.getElementById('scriptPreset').value;
+  document.getElementById('scriptArea').value=presets[key].script;
+  document.getElementById('sfPreview').innerHTML='<div style="color:var(--text-muted);font-size:11px">Click ▶ Run Preview to see results →</div>';
+}
+
+function runScript(){
+  const key=document.getElementById('scriptPreset').value;
+  const p=presets[key];
+  const rows=p.results.map(r=>`<div class="result-row">
+    <span class="result-key">${r.doc} [${r.bytes}]</span>
+    <span class="result-val">→ ${r.result}</span>
+  </div>`).join('');
+  document.getElementById('sfPreview').innerHTML=rows;
+}
+
+// ── SPACES ──
+const spaceInfo={
+  default:'Default Space — The pre-existing space. All objects created without specifying a space land here. URL: /app/dashboards',
+  security:'Security Space — Contains SOC dashboards, SIEM data views, ML threat detection jobs. URL: /s/security/app/dashboards',
+  ops:'Operations Space — Contains infrastructure dashboards, metrics data views, APM service maps. URL: /s/operations/app/dashboards',
+};
+function selectSpace(el,id){
+  document.querySelectorAll('.space-box').forEach(b=>b.classList.remove('active-space'));
+  el.classList.add('active-space');
+  document.getElementById('spaceInfo').textContent=spaceInfo[id];
+}
+
+// ── CHEATSHEET TOGGLE ──
+function toggleCS(){
+  const b=document.getElementById('csBody');
+  const ch=document.getElementById('csChev');
+  const open=b.classList.toggle('open');
+  ch.textContent=open?'▴ collapse':'▾ expand';
+}
+
+// ── COPY ──
+function copyCode(btn){
+  const pre=btn.parentElement;
+  const text=pre.textContent.replace('copy','').trim();
+  navigator.clipboard.writeText(text).catch(()=>{});
+  btn.textContent='✓';
+  setTimeout(()=>btn.textContent='copy',1500);
+}
+
+// ── INIT ──
+showAnomaly('normal');
+updateMLOutput();
+document.getElementById('c1').classList.add('open');
+</script>
+</body>
+</html>

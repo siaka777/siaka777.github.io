@@ -1,0 +1,1991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elastic Certified Analyst — Topic 2: Visualizing Data</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #faf8f4;
+  --bg2: #f2ede4;
+  --surface: #ffffff;
+  --surface2: #f7f3ec;
+  --border: #e5ddd0;
+  --border2: #d4c9b8;
+  --text: #1a1410;
+  --text-muted: #7a6e62;
+  --text-dim: #4a4039;
+  --accent: #c2600a;
+  --accent2: #1a7a5e;
+  --accent3: #5b3fa0;
+  --blue: #1a5fa0;
+  --gold: #c2920a;
+  --red: #b02020;
+  --elastic: #ff6900;
+  --tag-bg: rgba(194,96,10,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Paper texture */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.6;
+}
+
+/* ── DECORATIVE SIDE RULE ── */
+.side-rule {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(to bottom, var(--accent), var(--gold), var(--accent2));
+  z-index: 10;
+}
+
+.container {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 40px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── HEADER ── */
+header {
+  padding: 56px 40px 0;
+  position: relative;
+  z-index: 1;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 48px;
+  margin-bottom: 48px;
+}
+
+.series-tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.series-tag::before {
+  content: '';
+  display: inline-block;
+  width: 32px;
+  height: 2px;
+  background: var(--accent);
+}
+
+h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(44px, 7vw, 80px);
+  line-height: 1.0;
+  letter-spacing: -1px;
+  margin-bottom: 20px;
+}
+h1 em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+.subtitle {
+  font-size: 16px;
+  color: var(--text-muted);
+  max-width: 640px;
+  line-height: 1.7;
+  margin-bottom: 36px;
+  font-weight: 300;
+}
+
+/* ── PROGRESS ── */
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.progress-track {
+  flex: 1;
+  min-width: 180px;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--gold));
+  border-radius: 2px;
+  transition: width 0.6s ease;
+  width: 0%;
+}
+.progress-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+.progress-count {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ── TOPIC NAV ── */
+.topic-nav {
+  display: flex;
+  gap: 8px;
+  margin-top: 32px;
+  flex-wrap: wrap;
+}
+.tnav-item {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  padding: 6px 14px;
+  border: 1px solid var(--border2);
+  border-radius: 2px;
+  color: var(--text-muted);
+  cursor: pointer;
+  background: none;
+  transition: all 0.2s;
+  letter-spacing: 0.5px;
+}
+.tnav-item:hover { border-color: var(--accent); color: var(--accent); background: var(--tag-bg); }
+.tnav-item.active { border-color: var(--accent); color: var(--accent); background: var(--tag-bg); font-weight: 500; }
+.tnav-item.done { border-color: var(--accent2); color: var(--accent2); background: rgba(26,122,94,0.06); }
+
+/* ── OBJECTIVE CARDS ── */
+.objectives-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 60px;
+}
+
+.obj-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid transparent;
+  transition: all 0.2s;
+}
+.obj-card:hover { border-left-color: var(--border2); }
+.obj-card.open { border-left-color: var(--accent); }
+.obj-card.completed { border-left-color: var(--accent2); }
+
+.obj-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 24px;
+  cursor: pointer;
+  user-select: none;
+}
+.obj-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  min-width: 28px;
+  letter-spacing: 1px;
+}
+.obj-title {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+.obj-tags {
+  display: flex;
+  gap: 6px;
+}
+.otag {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  letter-spacing: 0.5px;
+}
+.otag.lens   { background: rgba(91,63,160,0.1);  color: var(--accent3); }
+.otag.tsvb   { background: rgba(26,95,160,0.1);  color: var(--blue); }
+.otag.maps   { background: rgba(26,122,94,0.1);  color: var(--accent2); }
+.otag.classic{ background: rgba(194,146,10,0.1); color: var(--gold); }
+.otag.dash   { background: rgba(194,96,10,0.1);  color: var(--accent); }
+.otag.ml     { background: rgba(176,32,32,0.1);  color: var(--red); }
+.done-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--accent2);
+  background: rgba(26,122,94,0.1);
+  padding: 2px 10px;
+  border-radius: 2px;
+  display: none;
+}
+.obj-card.completed .done-badge { display: block; }
+.obj-chevron {
+  font-size: 12px;
+  color: var(--text-muted);
+  transition: transform 0.25s;
+}
+.obj-card.open .obj-chevron { transform: rotate(180deg); }
+
+.obj-body {
+  display: none;
+  padding: 0 24px 28px;
+  border-top: 1px solid var(--border);
+  animation: fadeSlide 0.3s ease;
+}
+.obj-card.open .obj-body { display: block; }
+
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── SECTION LABEL ── */
+.slabel {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-top: 24px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.slabel::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ── PROSE ── */
+.prose {
+  font-size: 14px;
+  color: var(--text-dim);
+  line-height: 1.75;
+  margin-bottom: 14px;
+}
+.prose strong { color: var(--text); font-weight: 600; }
+.prose code {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  background: var(--bg2);
+  padding: 1px 6px;
+  border-radius: 3px;
+  color: var(--accent);
+}
+
+/* ── CODE BLOCKS ── */
+.code-block {
+  background: #1a1410;
+  color: #d4c9b8;
+  border-radius: 4px;
+  padding: 18px 20px;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-x: auto;
+  margin-bottom: 16px;
+  position: relative;
+}
+.code-block .cm  { color: #7a6e62; }
+.code-block .kw  { color: #f4a460; }
+.code-block .st  { color: #90ee90; }
+.code-block .fd  { color: #87ceeb; }
+.code-block .vl  { color: #ffd700; }
+.code-block .hl  { color: #ff9f7a; }
+
+.copy-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255,255,255,0.07);
+  border: none;
+  color: #7a6e62;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  padding: 3px 10px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.5px;
+}
+.copy-btn:hover { background: var(--accent); color: white; }
+
+/* ── CALLOUT BOXES ── */
+.callout {
+  display: flex;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 4px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--text-dim);
+}
+.callout.exam  { background: rgba(255,105,0,0.06); border-left: 3px solid var(--elastic); }
+.callout.tip   { background: rgba(194,96,10,0.06); border-left: 3px solid var(--accent); }
+.callout.warn  { background: rgba(194,146,10,0.06); border-left: 3px solid var(--gold); }
+.callout.info  { background: rgba(26,95,160,0.06); border-left: 3px solid var(--blue); }
+.callout.good  { background: rgba(26,122,94,0.06); border-left: 3px solid var(--accent2); }
+.callout-icon  { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.callout strong { color: var(--text); }
+
+/* ── REFERENCE TABLE ── */
+.ref-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.ref-table th {
+  text-align: left;
+  padding: 8px 14px;
+  background: var(--bg2);
+  color: var(--text-muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--border);
+  font-weight: 400;
+}
+.ref-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dim);
+  vertical-align: top;
+  line-height: 1.5;
+}
+.ref-table td:first-child {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.ref-table tr:last-child td { border-bottom: none; }
+.ref-table tr:hover td { background: var(--bg2); }
+
+/* ── GRID: Viz type cards ── */
+.viz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.viz-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 14px 16px;
+  transition: border-color 0.2s, transform 0.2s;
+  cursor: default;
+}
+.viz-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.viz-card-icon { font-size: 24px; margin-bottom: 8px; }
+.viz-card-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.viz-card-desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+
+/* ── INTERACTIVE CHART DEMO ── */
+.chart-demo {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.chart-demo-toolbar {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.chart-demo-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  flex: 1;
+}
+.demo-select {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 2px;
+  cursor: pointer;
+  outline: none;
+}
+.demo-select:focus { border-color: var(--accent); }
+.chart-canvas-area {
+  padding: 20px;
+  min-height: 180px;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  justify-content: center;
+}
+
+/* Bar chart bars */
+.bar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.bar {
+  width: 36px;
+  border-radius: 3px 3px 0 0;
+  transition: height 0.5s ease, background 0.3s;
+  cursor: pointer;
+  position: relative;
+}
+.bar:hover { filter: brightness(1.15); }
+.bar-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  text-align: center;
+  max-width: 50px;
+  word-break: break-all;
+}
+.bar-val {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* Pie chart */
+.pie-container {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  justify-content: center;
+  padding: 20px;
+  flex-wrap: wrap;
+}
+.pie-svg { flex-shrink: 0; }
+.pie-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pie-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-family: 'DM Mono', monospace;
+  color: var(--text-dim);
+}
+.pie-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* Tag cloud */
+.tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 20px;
+  justify-content: center;
+  min-height: 140px;
+  align-items: center;
+}
+.tag-word {
+  font-family: 'DM Serif Display', serif;
+  color: var(--accent);
+  cursor: pointer;
+  transition: transform 0.2s, opacity 0.2s;
+  line-height: 1;
+}
+.tag-word:hover { transform: scale(1.1); opacity: 0.7; }
+
+/* Metric / Gauge */
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  padding: 20px;
+}
+.metric-item {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 16px;
+  text-align: center;
+}
+.metric-val {
+  font-family: 'DM Serif Display', serif;
+  font-size: 32px;
+  color: var(--accent);
+  margin-bottom: 6px;
+  line-height: 1;
+}
+.metric-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* Gauge */
+.gauge-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.gauge-val {
+  font-family: 'DM Serif Display', serif;
+  font-size: 24px;
+  color: var(--accent);
+}
+.gauge-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}
+
+/* Data table demo */
+.data-table-demo {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-family: 'DM Mono', monospace;
+}
+.data-table-demo th {
+  background: var(--bg2);
+  padding: 8px 12px;
+  text-align: right;
+  color: var(--text-muted);
+  font-size: 10px;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--border);
+}
+.data-table-demo th:first-child { text-align: left; }
+.data-table-demo td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dim);
+  text-align: right;
+}
+.data-table-demo td:first-child { text-align: left; color: var(--accent); }
+.data-table-demo tr:hover td { background: var(--bg2); }
+
+/* TSVB style line chart */
+.line-chart {
+  padding: 20px;
+  position: relative;
+  min-height: 140px;
+}
+
+/* ── QUIZ ── */
+.quiz-box {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 20px;
+  margin-top: 8px;
+}
+.quiz-q {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 16px;
+  line-height: 1.55;
+}
+.quiz-opts { display: flex; flex-direction: column; gap: 8px; }
+.quiz-opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 11px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+.quiz-opt:hover:not(.answered) { border-color: var(--accent); color: var(--text); background: var(--tag-bg); }
+.quiz-opt.correct { border-color: var(--accent2); background: rgba(26,122,94,0.07); color: var(--text); }
+.quiz-opt.wrong   { border-color: var(--red); background: rgba(176,32,32,0.05); color: var(--text-muted); }
+.quiz-opt.answered { cursor: default; }
+.opt-letter {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  min-width: 20px;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-top: 1px;
+}
+.quiz-opt.correct .opt-letter { color: var(--accent2); }
+.quiz-opt.wrong   .opt-letter { color: var(--red); }
+.quiz-feedback {
+  margin-top: 12px;
+  padding: 12px 16px;
+  border-radius: 3px;
+  font-size: 13px;
+  font-family: 'DM Mono', monospace;
+  line-height: 1.6;
+  display: none;
+}
+.quiz-feedback.show { display: block; }
+.quiz-feedback.correct { background: rgba(26,122,94,0.08); border-left: 3px solid var(--accent2); color: var(--text-dim); }
+.quiz-feedback.wrong   { background: rgba(176,32,32,0.08); border-left: 3px solid var(--red);     color: var(--text-dim); }
+
+/* ── COMPLETE BUTTON ── */
+.complete-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  background: transparent;
+  border: 1px solid var(--accent2);
+  color: var(--accent2);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 9px 20px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.complete-btn:hover { background: rgba(26,122,94,0.08); }
+.complete-btn.done  { background: rgba(26,122,94,0.1); }
+
+/* ── AGGREGATION BUILDER DEMO ── */
+.agg-builder {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.agg-toolbar {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.agg-toolbar-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  flex: 1;
+  letter-spacing: 1px;
+}
+.agg-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.agg-row:last-child { border-bottom: none; }
+.agg-type {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 2px;
+  font-weight: 500;
+  min-width: 80px;
+  text-align: center;
+}
+.agg-type.metric { background: rgba(91,63,160,0.1); color: var(--accent3); }
+.agg-type.bucket { background: rgba(26,95,160,0.1); color: var(--blue); }
+.agg-details {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: 'DM Mono', monospace;
+}
+.agg-details .agg-fn { color: var(--accent); }
+.agg-details .agg-field { color: var(--gold); }
+
+/* ── STEP LIST ── */
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 16px;
+}
+.step {
+  display: flex;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+.step:last-child { border-bottom: none; }
+.step-num {
+  width: 28px;
+  height: 28px;
+  background: var(--accent);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.step-content { flex: 1; }
+.step-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.step-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+.step-desc code {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  background: var(--bg2);
+  padding: 1px 6px;
+  border-radius: 3px;
+  color: var(--accent);
+}
+
+/* ── CHEATSHEET PANEL ── */
+.cheatsheet-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 60px;
+}
+.cs-header {
+  background: var(--text);
+  color: var(--bg);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+}
+.cs-header-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 20px;
+  flex: 1;
+}
+.cs-body {
+  display: none;
+  padding: 24px;
+}
+.cs-body.open { display: block; }
+.cs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.cs-item {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 14px 16px;
+}
+.cs-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.cs-detail {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: 'DM Mono', monospace;
+  line-height: 1.55;
+}
+
+/* ── FOOTER ── */
+footer {
+  border-top: 2px solid var(--border);
+  padding: 32px 40px;
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
+.footer-text {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}
+.nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  color: var(--text-dim);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 10px 20px;
+  border-radius: 2px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+.nav-btn.primary { background: var(--accent); border-color: var(--accent); color: white; }
+.nav-btn.primary:hover { background: #a84e08; }
+
+/* SVG chart helpers */
+.svg-line { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.svg-area { opacity: 0.12; }
+.svg-dot  { cursor: pointer; transition: r 0.2s; }
+.svg-dot:hover { r: 6; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* Staggered entrance */
+.obj-card { animation: cardIn 0.4s ease both; }
+.obj-card:nth-child(1)  { animation-delay: 0.05s; }
+.obj-card:nth-child(2)  { animation-delay: 0.10s; }
+.obj-card:nth-child(3)  { animation-delay: 0.15s; }
+.obj-card:nth-child(4)  { animation-delay: 0.20s; }
+.obj-card:nth-child(5)  { animation-delay: 0.25s; }
+.obj-card:nth-child(6)  { animation-delay: 0.30s; }
+.obj-card:nth-child(7)  { animation-delay: 0.35s; }
+.obj-card:nth-child(8)  { animation-delay: 0.40s; }
+.obj-card:nth-child(9)  { animation-delay: 0.45s; }
+.obj-card:nth-child(10) { animation-delay: 0.50s; }
+.obj-card:nth-child(11) { animation-delay: 0.55s; }
+.obj-card:nth-child(12) { animation-delay: 0.60s; }
+.obj-card:nth-child(13) { animation-delay: 0.65s; }
+.obj-card:nth-child(14) { animation-delay: 0.70s; }
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+
+<div class="side-rule"></div>
+
+<header>
+  <div class="container">
+    <div class="series-tag">Elastic Certified Analyst · Exam Prep</div>
+    <h1>Topic 2:<br><em>Visualizing Data</em></h1>
+    <p class="subtitle">Master every chart type in Kibana — Lens, TSVB, Maps, Tag Clouds, Data Tables, Dashboards, and more. The largest topic on the exam with 14 distinct objectives.</p>
+
+    <div class="topic-nav">
+      <button class="tnav-item done" onclick="alert('Open Topic 1 page!')">01 · Searching Data ✓</button>
+      <button class="tnav-item active">02 · Visualizing Data</button>
+      <button class="tnav-item" onclick="alert('Ask Claude to generate Topic 3: Analyzing Data!')">03 · Analyzing Data</button>
+    </div>
+
+    <div class="progress-row" style="margin-top:28px;">
+      <span class="progress-label">PROGRESS</span>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <span class="progress-count" id="progressCount">0 / 14 objectives</span>
+    </div>
+  </div>
+</header>
+
+<main>
+<div class="container">
+<div class="objectives-list" id="objList">
+
+  <!-- ═══ OBJ 1 ═══ -->
+  <div class="obj-card open" id="obj1">
+    <div class="obj-header" onclick="toggle('obj1')">
+      <span class="obj-num">01</span>
+      <span class="obj-title">Metric &amp; Gauge Visualizations</span>
+      <div class="obj-tags"><span class="otag classic">Classic</span><span class="otag lens">Lens</span></div>
+      <span class="done-badge">✓ DONE</span>
+      <span class="obj-chevron">▾</span>
+    </div>
+    <div class="obj-body">
+      <p class="prose">A <strong>Metric</strong> visualization displays a single aggregated number (count, sum, average, etc.). A <strong>Gauge</strong> shows that value relative to a min/max range, like a speedometer. Both are useful for KPI dashboards.</p>
+      <div class="callout exam"><span class="callout-icon">🎯</span><div><strong>Exam objective:</strong> "Create a Metric or Gauge visualization that displays a value satisfying a given criteria." You'll often be asked to show a Count, Sum, or Unique Count of a field — sometimes filtered by a specific condition.</div></div>
+
+      <div class="slabel">How to create (Lens)</div>
+      <div class="steps">
+        <div class="step"><div class="step-num">1</div><div class="step-content"><div class="step-title">Open Visualize Library → Create visualization</div><div class="step-desc">Choose <code>Lens</code> as the editor.</div></div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-content"><div class="step-title">Select chart type: Metric</div><div class="step-desc">Click the chart type icon (top-left in Lens) → select <code>Metric</code>.</div></div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-content"><div class="step-title">Choose your data view &amp; metric</div><div class="step-desc">Drag a field to the <code>Primary metric</code> slot, or choose an aggregation like <code>Count</code>. For Gauge, also set <code>Minimum</code> and <code>Maximum</code>.</div></div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-content"><div class="step-title">Apply KQL filter if needed</div><div class="step-desc">Use the Filters bar or add a filter in the aggregation. e.g., only count documents where <code>status:error</code>.</div></div></div>
+        <div class="step"><div class="step-num">5</div><div class="step-content"><div class="step-title">Save with the exact task name</div><div class="step-desc">Click <code>Save</code> → enter the name from the task → Save to library.</div></div></div>
+      </div>
+
+      <div class="slabel">Live Demo</div>
+      <div class="chart-demo">
+        <div class="chart-demo-toolbar">
+          <span class="chart-demo-title">METRIC / GAUGE PREVIEW</span>
+          <select class="demo-select" onchange="updateMetricDemo(this.value)">
+            <option value="count">Count: 1,284</option>
+            <option value="avg">Avg Response: 234ms</option>
+            <option value="sum">Sum Bytes: 48.2 MB</option>
+            <option value="uniq">Unique Users: 97</option>
+          </select>
+        </div>
+        <div class="metric-grid" id="metricDemoGrid">
+          <div class="metric-item"><div class="metric-val" id="metricVal">1,284</div><div class="metric-label" id="metricLbl">Document Count</div></div>
+          <div class="metric-item" style="background:linear-gradient(135deg,rgba(194,96,10,0.05),rgba(194,146,10,0.08))">
+            <svg width="100" height="60" id="gaugeSvg" viewBox="0 0 100 60">
+              <path d="M10 55 A 40 40 0 0 1 90 55" stroke="#e5ddd0" stroke-width="8" fill="none" stroke-linecap="round"/>
+              <path id="gaugeArc" d="M10 55 A 40 40 0 0 1 90 55" stroke="#c2600a" stroke-width="8" fill="none" stroke-linecap="round" stroke-dasharray="125" stroke-dashoffset="50"/>
+              <text x="50" y="52" text-anchor="middle" font-family="DM Serif Display" font-size="13" fill="#c2600a" id="gaugeText">73%</text>
+            </svg>
+            <div class="metric-label">Gauge</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout tip"><span class="callout-icon">💡</span><div>In TSVB (Time Series Visual Builder), you can also create Metric and Gauge panels — see Objective 8 for TSVB-specific details.</div></div>
+      <button class="complete-btn" onclick="markDone('obj1',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ═══ OBJ 2 ═══ -->
+  <div class="obj-card" id="obj2">
+    <div class="obj-header" onclick="toggle('obj2')">
+      <span class="obj-num">02</span>
+      <span class="obj-title">Lens Visualizations</span>
+      <div class="obj-tags"><span class="otag lens">Lens</span></div>
+      <span class="done-badge">✓ DONE</span>
+      <span class="obj-chevron">▾</span>
+    </div>
+    <div class="obj-body">
+      <p class="prose"><strong>Lens</strong> is Kibana's modern, drag-and-drop visualization editor. It intelligently suggests chart types based on your data and lets you switch between chart types without losing your configuration. It's the <em>primary</em> editor for most visualizations.</p>
+
+      <div class="slabel">Lens Chart Types</div>
+      <div class="viz-grid">
+        <div class="viz-card"><div class="viz-card-icon">📊</div><div class="viz-card-name">Bar (Vertical/Horizontal)</div><div class="viz-card-desc">Compare values across categories</div></div>
+        <div class="viz-card"><div class="viz-card-icon">📈</div><div class="viz-card-name">Line</div><div class="viz-card-desc">Trends over time</div></div>
+        <div class="viz-card"><div class="viz-card-icon">🏔️</div><div class="viz-card-name">Area</div><div class="viz-card-desc">Volume over time, stacked areas</div></div>
+        <div class="viz-card"><div class="viz-card-icon">🥧</div><div class="viz-card-name">Pie / Donut</div><div class="viz-card-desc">Part-to-whole proportions</div></div>
+        <div class="viz-card"><div class="viz-card-icon">🔢</div><div class="viz-card-name">Metric</div><div class="viz-card-desc">Single KPI number</div></div>
+        <div class="viz-card"><div class="viz-card-icon">📋</div><div class="viz-card-name">Data Table</div><div class="viz-card-desc">Tabular aggregated data</div></div>
+        <div class="viz-card"><div class="viz-card-icon">🗺️</div><div class="viz-card-name">Treemap</div><div class="viz-card-desc">Hierarchical proportions</div></div>
+        <div class="viz-card"><div class="viz-card-icon">🌡️</div><div class="viz-card-name">Heatmap</div><div class="viz-card-desc">Values in a 2D matrix</div></div>
+      </div>
+
+      <div class="slabel">Lens Anatomy</div>
+      <div class="code-block">
+<span class="cm"># Lens Editor Layout</span>
+┌─────────────────────────────────────────────────┐
+│  [Chart Type ▾]  [Data View ▾]   [Time Range]   │  ← Toolbar
+├──────────────┬──────────────────────────────────┤
+│              │                                  │
+│  FIELD LIST  │      CHART PREVIEW               │
+│  (drag →)    │                                  │
+│              │                                  │
+├──────────────┴──────────────────────────────────┤
+│  LAYER PANEL  (Y-axis, X-axis, Break down by)   │  ← Config
+└─────────────────────────────────────────────────┘
+
+<span class="kw">Y-axis</span>  = the metric (Count, Sum, Avg, Max, Min, Unique Count…)
+<span class="kw">X-axis</span>  = the dimension (date histogram, terms, ranges…)
+<span class="kw">Break down by</span> = sub-aggregation (split series by field)
+      </div>
+
+      <div class="callout warn"><span class="callout-icon">⚠️</span><div><strong>Lens vs Classic:</strong> Some older exam tasks say "create a visualization using the Aggregation-based editor." Classic is still available under "Aggregation based" when creating a new visualization. Know both workflows.</div></div>
+
+      <div class="slabel">Interactive Bar Chart Demo</div>
+      <div class="chart-demo">
+        <div class="chart-demo-toolbar">
+          <span class="chart-demo-title">LENS BAR CHART — HTTP STATUS CODES</span>
+          <select class="demo-select" onchange="updateBarChart(this.value)">
+            <option value="count">Y-axis: Count</option>
+            <option value="bytes">Y-axis: Avg Bytes</option>
+          </select>
+          <select class="demo-select" onchange="updateBarOrientation(this.value)">
+            <option value="vertical">Vertical</option>
+            <option value="horizontal">Horizontal</option>
+          </select>
+        </div>
+        <div id="barChartArea" class="chart-canvas-area"></div>
+      </div>
+
+      <div class="slabel">Practice Quiz</div>
+      <div class="quiz-box" id="q2">
+        <div class="quiz-q">In Lens, you want to show the <em>count of documents</em> per <code>host.name</code> for the top 10 hosts. Which configuration is correct?</div>
+        <div class="quiz-opts" id="qo2">
+          <div class="quiz-opt" onclick="quiz('q2',0,2)"><span class="opt-letter">A</span><span>Y-axis: host.name (Terms) · X-axis: Count</span></div>
+          <div class="quiz-opt" onclick="quiz('q2',1,2)"><span class="opt-letter">B</span><span>Y-axis: Count · X-axis: host.name (Terms, size 10)</span></div>
+          <div class="quiz-opt" onclick="quiz('q2',2,2)"><span class="opt-letter">C</span><span>Y-axis: Count · X-axis: @timestamp (Date histogram)</span></div>
+          <div class="quiz-opt" onclick="quiz('q2',3,2)"><span class="opt-letter">D</span><span>Y-axis: Sum(host.name) · X-axis: Count</span></div>
+        </div>
+        <div class="quiz-feedback" id="qf2"></div>
+      </div>
+      <button class="complete-btn" onclick="markDone('obj2',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ═══ OBJ 3 ═══ -->
+  <div class="obj-card" id="obj3">
+    <div class="obj-header" onclick="toggle('obj3')">
+      <span class="obj-num">03</span>
+      <span class="obj-title">Area, Line, Pie, Bar Charts</span>
+      <div class="obj-tags"><span class="otag lens">Lens</span><span class="otag classic">Classic</span></div>
+      <span class="done-badge">✓ DONE</span>
+      <span class="obj-chevron">▾</span>
+    </div>
+    <div class="obj-body">
+      <p class="prose">These are the core chart types you'll create most often. The exam may ask for any of them — know the key settings for each.</p>
+
+      <div class="slabel">Chart Type Quick Reference</div>
+      <table class="ref-table">
+        <tr><th>Chart</th><th>Best for</th><th>Key settings</th></tr>
+        <tr><td>Vertical Bar</td><td>Comparing discrete categories</td><td>X: terms/ranges, Y: metric. Stacked or side-by-side.</td></tr>
+        <tr><td>Horizontal Bar</td><td>Long category labels, rankings</td><td>Same as vertical, rotated. Good for top-N queries.</td></tr>
+        <tr><td>Line</td><td>Time series trends</td><td>X: date histogram, Y: metric. Multiple series possible.</td></tr>
+        <tr><td>Area</td><td>Volume/magnitude over time</td><td>Like line but filled. Stacked area = part-to-whole over time.</td></tr>
+        <tr><td>Pie / Donut</td><td>Part-to-whole proportions</td><td>Slice: terms (top 5 by default). Inner radius for donut.</td></tr>
+      </table>
+
+      <div class="slabel">Live Pie Chart Demo</div>
+      <div class="chart-demo">
+        <div class="chart-demo-toolbar">
+          <span class="chart-demo-title">PIE CHART — TOP RESPONSE CODES</span>
+          <select class="demo-select" onchange="updatePie(this.value)">
+            <option value="status">By Status Code</option>
+            <option value="method">By HTTP Method</option>
+          </select>
+        </div>
+        <div class="pie-container" id="pieArea"></div>
+      </div>
+
+      <div class="callout exam"><span class="callout-icon">🎯</span><div><strong>Exam tip:</strong> "Create an Area/Line/Bar visualization" — make sure you pick the <em>exact</em> chart sub-type. Vertical Bar ≠ Horizontal Bar. Read the task carefully for whether it asks stacked, side-by-side, or percentage.</div></div>
+      <button class="complete-btn" onclick="markDone('obj3',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ═══ OBJ 4 ═══ -->
+  <div class="obj-card" id="obj4">
+    <div class="obj-header" onclick="toggle('obj4')">
+      <span class="obj-num">04</span>
+      <span class="obj-title">Sub-bucket Aggregations (Split Series)</span>
+      <div class="obj-tags"><span class="otag lens">Lens</span><span class="otag classic">Classic</span></div>
+      <span class="done-badge">✓ DONE</span>
+      <span class="obj-chevron">▾</span>
+    </div>
+    <div class="obj-body">
+      <p class="prose">A <strong>sub-bucket aggregation</strong> splits a visualization into multiple series or segments by a second dimension. In Lens, this is called <strong>"Break down by"</strong>. In Classic, it's <strong>"Add sub-buckets"</strong> → Split Series.</p>
+
+      <div class="slabel">Aggregation Structure</div>
+      <div class="agg-builder">
+        <div class="agg-toolbar"><span class="agg-toolbar-title">AGGREGATION CONFIGURATION</span></div>
+        <div class="agg-row">
+          <span class="agg-type metric">METRIC</span>
+          <span class="agg-details"><span class="agg-fn">Count</span> of documents</span>
+        </div>
+        <div class="agg-row">
+          <span class="agg-type bucket">BUCKET</span>
+          <span class="agg-details">X-axis: <span class="agg-fn">Date Histogram</span> on <span class="agg-field">@timestamp</span> (interval: 1h)</span>
+        </div>
+        <div class="agg-row" style="background:rgba(26,95,160,0.04)">
+          <span class="agg-type bucket">SUB-BUCKET</span>
+          <span class="agg-details">Split Series: <span class="agg-fn">Terms</span> on <span class="agg-field">http.response.status_code</span> (top 5)</span>
+        </div>
+      </div>
+
+      <p class="prose">The example above creates a line chart with one line per HTTP status code, all over time — a classic multi-series visualization.</p>
+
+      <div class="slabel">Sub-bucket types</div>
+      <table class="ref-table">
+        <tr><th>Type</th><th>Use case</th></tr>
+        <tr><td>Terms</td><td>Split by keyword field values (e.g., per country, per host)</td></tr>
+        <tr><td>Date Histogram</td><td>Split by time intervals (can be nested)</td></tr>
+        <tr><td>Range</td><td>Split numeric field into custom ranges</td></tr>
+        <tr><td>IPv4 Range</td><td>Split by IP address ranges</td></tr>
+        <tr><td>Significant Terms</td><td>Terms that are unusually frequent</td></tr>
+        <tr><td>Filters</td><td>Split by multiple KQL filter conditions</td></tr>
+      </table>
+
+      <div class="callout tip"><span class="callout-icon">💡</span><div>In Lens, "Break down by" achieves the same result as sub-buckets. You can add it by dragging a field to the <strong>"Break down by"</strong> slot in the layer panel.</div></div>
+      <button class="complete-btn" onclick="markDone('obj4',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ═══ OBJ 5 ═══ -->
+  <div class="obj-card" id="obj5">
+    <div class="obj-header" onclick="toggle('obj5')">
+      <span class="obj-num">05</span>
+      <span class="obj-title">Moving Average, Derivative &amp; Serial Diff</span>
+      <div class="obj-tags"><span class="otag lens">Lens</span><span class="otag tsvb">TSVB</span></div>
+      <span class="done-badge">✓ DONE</span>
+      <span class="obj-chevron">▾</span>
+    </div>
+    <div class="obj-body">
+      <p class="prose">These are <strong>pipeline aggregations</strong> — they run on the output of another aggregation (not raw documents). They're used to smooth data, detect rate-of-change, or compare consecutive buckets.</p>
+
+      <div class="slabel">Three Pipeline Aggregations</div>
+      <table class="ref-table">
+        <tr><th>Aggregation</th><th>What it does</th><th>Use case</th></tr>
+        <tr><td>Moving Average</td><td>Rolling average of the last N buckets</td><td>Smoothing out noise in time series</td></tr>
+        <tr><td>Derivative</td><td>Rate of change between consecutive buckets (bucket[n] − bucket[n-1])</td><td>Detecting spikes/drops in velocity</td></tr>
+        <tr><td>Serial Differencing</td><td>Difference between current and a bucket N periods ago</td><td>Removing seasonal patterns, finding anomalies</td></tr>
+      </table>
+
+      <div class="code-block">
+<span class="cm"># How to add a Moving Average in Lens</span>
+<span class="kw">1.</span> Create a Line chart with Date Histogram (X) + Count (Y)
+<span class="kw">2.</span> Click <span class="st">"+"</span> to add a second layer, OR click the Y-axis metric
+<span class="kw">3.</span> Select <span class="vl">"Moving Average"</span> from the formula functions
+   Formula example: <span class="hl">moving_average(count(), window=5)</span>
+<span class="kw">4.</span> Style the moving average line differently (dashed, different color)
+
+<span class="cm"># In Classic editor (Aggregation-based)</span>
+<span class="kw">Metrics</span> → Add metric → <span class="vl">Moving Avg</span>
+  Parent pipeline: select your existing Count metric
+  Window: 5 (number of buckets to average)
+      </div>
+
+      <div class="slabel">Visual Demo — Moving Average Smoothing</div>
+      <div class="chart-demo">
+        <div class="chart-demo-toolbar">
+          <span class="chart-demo-title">LINE + MOVING AVERAGE OVERLAY</span>
+          <select class="demo-select" onchange="updateLineDemo(this.value)">
+            <option value="both">Show Raw + Moving Avg</option>
+            <option value="raw">Raw data only</option>
+            <option value="avg">Moving average only</option>
+          </select>
+        </div>
+        <div class="line-chart" id="lineChartArea">
+          <svg id="lineSvg" width="100%" height="140" viewBox="0 0 600 140" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+      </div>
+
+      <div class="callout exam"><span class="callout-icon">🎯</span><div><strong>Exam tip:</strong> Pipeline aggregations require a <em>parent</em> metric. You cannot use them as the only metric — first define a Count/Sum, then add Moving Average on top of it.</div></div>
+      <button class="complete-btn" onclick="markDone('obj5',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ═══ OBJ 6 ═══ -->
+  <div class="obj-card" id="obj6">
+    <div class="obj-header" onclick="toggle('obj6')">
+      <span class="obj-num">06</span>
+      <span class="obj-title">Customize Colors &amp; Format of Charts</span>
+      <div class="obj-tags"><span class="otag lens">Lens</span></div>
+      <span class="done-badge">✓ DONE</span>
+      <span class="obj-chevron">▾</span>
+    </div>
+    <div class="obj-body">
+      <p class="prose">Kibana lets you customize colors, labels, axes, legends, and number formatting of charts. The exam may ask you to set specific colors or formatting.</p>
+
+      <div class="slabel">Key Customization Options</div>
+      <table class="ref-table">
+        <tr><th>Setting</th><th>Where to find it</th><th>Notes</th></tr>
+        <tr><td>Series color</td><td>Lens: click the colored circle next to a series name</td><td>Pick any hex color; can also use "Value" color mode to map colors to values</td></tr>
+        <tr><td>Axis labels</td><td>Visualization Settings panel → Axes</td><td>Toggle labels, rotate, set custom axis title</td></tr>
+        <tr><td>Legend position</td><td>Settings → Legend → Position (top/bottom/left/right/off)</td><td>Can hide legend entirely</td></tr>
+        <tr><td>Number format</td><td>Click Y-axis metric → Number format dropdown</td><td>Options: Number, Percent, Bytes, Duration, Custom</td></tr>
+        <tr><td>Line style</td><td>Series settings → Line style (solid/dashed/dotted)</td><td>Also set line width and point visibility</td></tr>
+        <tr><td>Bar orientation</td><td>Chart type selector → Horizontal Bar</td><td>Swap vertical ↔ horizontal</td></tr>
+      </table>
+
+      <div class="callout tip"><span class="callout-icon">💡</span><div>To change a color in Lens: hover over the series in the legend and click the colored dot. A color picker appears. You can also click the series name in the layer panel.</div></div>
+      <button class="complete-btn" onclick="markDone('obj6',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ═══ OBJ 7 ═══ -->
+  <div class="obj-card" id="obj7">
+    <div class="obj-header" onclick="toggle('obj7')">
+      <span class="obj-num">07</span>
+      <span class="obj-title">Elastic Maps (Geo Data)</span>
+      <div class="obj-tags"><span class="otag maps">Maps</span></div>
+      <span class="done-badge">✓ DONE</span>
+      <span class="obj-chevron">▾</span>
+    </div>
+    <div class="obj-body">
+      <p class="prose"><strong>Elastic Maps</strong> is Kibana's dedicated mapping application. It visualizes geo_point and geo_shape fields from your Elasticsearch indices as interactive map layers.</p>
+
+      <div class="callout exam"><span class="callout-icon">🎯</span><div><strong>Exam objective:</strong> "Using geo data, create an Elastic map that satisfies a given criteria." You need to know how to add layers, choose layer types, and configure them.</div></div>
+
+      <div class="slabel">Map Layer Types</div>
+      <div class="viz-grid">
+        <div class="viz-card"><div class="viz-card-icon">📍</div><div class="viz-card-name">Document Points</div><div class="viz-card-desc">Individual geo_point documents as dots on the map</div></div>
+        <div class="viz-card"><div class="viz-card-icon">🔥</div><div class="viz-card-name">Heat Map</div><div class="viz-card-desc">Density of geo_points as a heat gradient</div></div>
+        <div class="viz-card"><div class="viz-card-icon">🗺️</div><div class="viz-card-name">Choropleth</div><div class="viz-card-desc">Color regions (countries, states) by a metric value</div></div>
+        <div class="viz-card"><div class="viz-card-icon">⬡</div><div class="viz-card-name">Clusters &amp; Grids</div><div class="viz-card-desc">Aggregate many points into grid cells or clusters</div></div>
+        <div class="viz-card"><div class="viz-card-icon">🧩</div><div class="viz-card-name">EMS Boundaries</div><div class="viz-card-desc">Elastic Maps Service world/regional boundaries</div></div>
+        <div class="viz-card"><div class="viz-card-icon">🔷</div><div class="viz-card-name">geo_shape Layer</div><div class="viz-card-desc">Polygons, lines, complex geographic shapes</div></div>
+      </div>
+
+      <div class="slabel">Creating an Elastic Map</div>
+      <div class="code-block">
+<span class="cm"># Navigation: Kibana → Maps → Create map</span>
+
+<span class="kw">Step 1:</span> Click <span class="st">"Add layer"</span>
+<span class="kw">Step 2:</span> Choose layer source:
+  — <span class="vl">Documents</span>           (individual geo_point records)
+  — <span class="vl">Clusters and grids</span>  (aggregated — faster for large data)
+  — <span class="vl">Heat map</span>
+  — <span class="vl">EMS boundaries</span>     (for choropleth with Elasticsearch data)
+
+<span class="kw">Step 3:</span> Select your data view and geo field
+<span class="kw">Step 4:</span> Configure layer settings:
+  — Layer style (color, size, opacity)
+  — Apply KQL filter to this layer
+  — Set tooltip fields
+
+<span class="kw">Step 5:</span> Repeat for multiple layers
+<span class="kw">Step 6:</span> Set map title and save
+      </div>
+
+      <div class="callout warn"><span class="callout-icon">⚠️</span><div>The geo field must be mapped as <code>geo_point</code> or <code>geo_shape</code> in Elasticsearch. If the field isn't appearing in the layer config, check the mapping — string fields won't work as geo fields.</div></div>
+      <button class="complete-btn" onclick="markDone('obj7',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ═══ OBJ 8 ═══ -->
+  <div class="obj-card" id="obj8">
+    <div class="obj-header" onclick="toggle('obj8')">
+      <span class="obj-num">08</span>
+      <span class="obj-title">TSVB — Time Series Visual Builder</span>
+      <div class="obj-tags"><span class="otag tsvb">TSVB</span></div>
+      <span class="done-badge">✓ DONE</span>
+      <span class="obj-chevron">▾</span>
+    </div>
+    <div class="obj-body">
+      <p class="prose"><strong>TSVB</strong> (Time Series Visual Builder) is a powerful visualization tool for time-series data. It supports advanced features like filter ratios, moving averages, and mathematical formulas between series — things that aren't easily done in Lens.</p>
+
+      <div class="callout exam"><span class="callout-icon">🎯</span><div><strong>High-priority exam topic!</strong> Multiple objectives relate to TSVB. Know how to create Time Series, Metric, Gauge, Table, and Top N panel types within TSVB.</div></div>
+
+      <div class="slabel">TSVB Panel Types</div>
+      <table class="ref-table">
+        <tr><th>Panel Type</th><th>What it shows</th></tr>
+        <tr><td>Time Series</td><td>Line/bar/area charts over time. Supports multiple series, custom intervals.</td></tr>
+        <tr><td>Metric</td><td>Single value (last value or aggregation). Supports threshold-based color changes.</td></tr>
+        <tr><td>Top N</td><td>Horizontal bar chart of top N values for a terms field.</td></tr>
+        <tr><td>Gauge</td><td>Gauge/dial showing a current value against a range.</td></tr>
+        <tr><td>Table</td><td>Tabular view of aggregated values, grouped by a terms field.</td></tr>
+        <tr><td>Markdown</td><td>Rich-text panel with optional embedded Mustache variables.</td></tr>
+      </table>
+
+      <div class="slabel">Key TSVB Features</div>
+      <div class="code-block">
+<span class="cm"># How to create a TSVB Time Series visualization</span>
+<span class="kw">1.</span> Kibana → Visualize → Create → <span class="vl">TSVB</span>
+<span class="kw">2.</span> The default panel type is <span class="st">Time Series</span>
+<span class="kw">3.</span> Under <span class="fd">Data</span> tab → configure Series:
+   — Aggregation: <span class="vl">Count / Sum / Avg / Max / Min…</span>
+   — Field: choose numeric field if needed
+   — Group by: optionally split by a terms field
+<span class="kw">4.</span> Click <span class="st">"+"</span> to add a second series (multi-series chart)
+<span class="kw">5.</span> Under <span class="fd">Panel options</span>: set index pattern, time field, interval
+<span class="kw">6.</span> Switch panel type (top-left) to Metric / Top N / Gauge / Table
+
+<span class="cm"># Filter Ratio (TSVB exclusive)</span>
+Series aggregation → <span class="vl">Filter Ratio</span>
+  Numerator filter: <span class="hl">status.keyword : "error"</span>
+  Denominator filter: <span class="hl">*</span>   (all docs)
+  → Shows percentage of errors to total requests
+      </div>
+
+      <div class="slabel">Multiple Series on One TSVB Chart</div>
+      <div class="code-block">
+<span class="cm"># Add multiple series in TSVB Time Series</span>
+<span class="kw">Series 1:</span> Count (all requests) → label: "Total"  → color: blue
+<span class="kw">Series 2:</span> Count + Filter: <span class="vl">status:200</span> → label: "Success" → color: green
+<span class="kw">Series 3:</span> Count + Filter: <span class="vl">status>=400</span> → label: "Errors"  → color: red
+
+Each series can have its own:
+  — Aggregation type
+  — KQL filter
+  — Color &amp; line style
+  — Sub-aggregation (optional)
+      </div>
+
+      <div class="slabel">Practice Quiz</div>
+      <div class="quiz-box" id="q8">
+        <div class="quiz-q">You need to show the percentage of 5xx errors relative to all requests over time. Which TSVB feature should you use?</div>
+        <div class="quiz-opts" id="qo8">
+          <div class="quiz-opt" onclick="quiz('q8',0,1)"><span class="opt-letter">A</span><span>Moving Average on a Count metric</span></div>
+          <div class="quiz-opt" onclick="quiz('q8',1,1)"><span class="opt-letter">B</span><span>Filter Ratio (numerator: status >= 500, denominator: *)</span></div>
+          <div class="quiz-opt" onclick="quiz('q8',2,1)"><span class="opt-letter">C</span><span>Two separate series with a Derivative</span></div>
+          <div class="quiz-opt" onclick="quiz('q8',3,1)"><span class="opt-letter">D</span><span>Math aggregation: Count / Max</span></div>
+        </div>
+        <div class="quiz-feedback" id="qf8"></div>
+      </div>
+      <button class="complete-btn" onclick="markDone('obj8',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ═══ OBJ 9 ═══ -->
+  <div class="obj-card" id="obj9">
+    <div class="obj-header" onclick="toggle('obj9')">
+      <span class="obj-num">09</span>
+      <span class="obj-title">TSVB: Filter Ratio, Moving Average &amp; Math</span>
+      <div class="obj-tags"><span class="otag tsvb">TSVB</span></div>
+      <span class="done-badge">✓ DONE</span>
+      <span class="obj-chevron">▾</span>
+    </div>
+    <div class="obj-body">
+      <p class="prose">TSVB provides three advanced series types that go beyond basic aggregations — perfect for calculating derived metrics.</p>
+
+      <table class="ref-table">
+        <tr><th>Feature</th><th>How it works</th><th>Example</th></tr>
+        <tr><td>Filter Ratio</td><td>Divides the count of docs matching filter A by docs matching filter B</td><td>Error rate = errors / total requests</td></tr>
+        <tr><td>Moving Average</td><td>Rolling mean over N previous time buckets</td><td>Smoothed request count over 5 intervals</td></tr>
+        <tr><td>Math</td><td>Arbitrary formula combining other series using variables</td><td><code>params.a * 100 / params.b</code></td></tr>
+        <tr><td>Positive Rate</td><td>Like derivative but always positive; for monotonic counters</td><td>Bytes received per second from cumulative total</td></tr>
+        <tr><td>Calculation (bucket script)</td><td>Scripts on existing metrics in a bucket</td><td>Custom percentage calculation</td></tr>
+      </table>
+
+      <div class="code-block">
+<span class="cm"># Math aggregation example in TSVB</span>
+<span class="cm"># Scenario: show error rate as a percentage</span>
+
+<span class="kw">Series A</span> (variable: <span class="vl">errors</span>):
+  Aggregation: Count
+  Filter: <span class="hl">http.response.status_code >= 500</span>
+
+<span class="kw">Series B</span> (variable: <span class="vl">total</span>):
+  Aggregation: Count
+  Filter: <span class="hl">*</span>
+
+<span class="kw">Series C</span>: Math
+  Formula: <span class="hl">params.errors / params.total * 100</span>
+  → Displays error percentage over time
+      </div>
+
+      <button class="complete-btn" onclick="markDone('obj9',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ═══ OBJ 10 ═══ -->
+  <div class="obj-card" id="obj10">
+    <div class="obj-header" onclick="toggle('obj10')">
+      <span class="obj-num">10</span>
+      <span class="obj-title">TSVB: Metric, Gauge, Table &amp; Top N</span>
+      <div class="obj-tags"><span class="otag tsvb">TSVB</span></div>
+      <span class="done-badge">✓ DONE</span>
+      <span class="obj-chevron">▾</span>
+    </div>
+    <div class="obj-body">
+      <p class="prose">Within TSVB, you can switch the panel type (top-left dropdown) to show data in different ways. All use the same data config but render it differently.</p>
+
+      <div class="code-block">
+<span class="cm"># Switching TSVB panel types</span>
+<span class="kw">Navigate to:</span>
+Visualize → Create → TSVB → [Panel Type dropdown, top-left]
+
+<span class="kw">METRIC</span>:
+  Shows the last value of the series as a large number
+  Set color thresholds: green/yellow/red based on value ranges
+  e.g. green if < 100ms, yellow if < 300ms, red if >= 300ms
+
+<span class="kw">TOP N</span>:
+  Horizontal bar chart showing top N values of a terms field
+  Configure: Group by → Terms → field → size (e.g. 5)
+  Useful for "top 5 slowest endpoints"
+
+<span class="kw">TABLE</span>:
+  Similar to Top N but in tabular format
+  Can show multiple metrics per row
+
+<span class="kw">GAUGE</span>:
+  Dial-style visualization
+  Set min/max values and color bands
+      </div>
+
+      <div class="callout tip"><span class="callout-icon">💡</span><div>In TSVB Metric, you can set <strong>color rules</strong> under Panel Options → Color Rules. Add multiple rules to get green/yellow/red traffic-light behavior based on thresholds.</div></div>
+      <button class="complete-btn" onclick="markDone('obj10',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ═══ OBJ 11 ═══ -->
+  <div class="obj-card" id="obj11">
+    <div class="obj-header" onclick="toggle('obj11')">
+      <span class="obj-num">11</span>
+      <span class="obj-title">Tag Cloud Visualization</span>
+      <div class="obj-tags"><span class="otag classic">Classic</span></div>
+      <span class="done-badge">✓ DONE</span>
+      <span class="obj-chevron">▾</span>
+    </div>
+    <div class="obj-body">
+      <p class="prose">A <strong>Tag Cloud</strong> displays terms from a keyword field with font size proportional to their frequency (or another metric). Only available in the <strong>Classic (Aggregation-based)</strong> editor, not in Lens.</p>
+
+      <div class="callout exam"><span class="callout-icon">🎯</span><div><strong>Exam objective:</strong> "Create a Tag Cloud visualization on a keyword field of an index." Make sure to use a <code>.keyword</code> field (not a <code>text</code> field) as the Tags bucket.</div></div>
+
+      <div class="slabel">Creating a Tag Cloud</div>
+      <div class="steps">
+        <div class="step"><div class="step-num">1</div><div class="step-content"><div class="step-title">Visualize → Create → Tag Cloud</div><div class="step-desc">Only available under "Aggregation based" visualizations.</div></div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-content"><div class="step-title">Select data view</div><div class="step-desc">Choose the appropriate index/data view.</div></div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-content"><div class="step-title">Buckets → Tags → Terms</div><div class="step-desc">Field: <code>response.keyword</code> or any <code>.keyword</code> field. Set size (e.g., 10).</div></div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-content"><div class="step-title">Metric (optional)</div><div class="step-desc">Default is Count. Can change to Sum/Avg of a numeric field — the metric controls font size.</div></div></div>
+        <div class="step"><div class="step-num">5</div><div class="step-content"><div class="step-title">Save with the exact name from the task</div></div></div>
+      </div>
+
+      <div class="slabel">Live Tag Cloud Demo</div>
+      <div class="chart-demo">
+        <div class="chart-demo-toolbar">
+          <span class="chart-demo-title">TAG CLOUD — TOP RESPONSE MESSAGES</span>
+          <button class="demo-select" onclick="shuffleTagCloud()" style="cursor:pointer">↻ Randomize</button>
+        </div>
+        <div class="tag-cloud" id="tagCloudArea"></div>
+      </div>
+
+      <button class="complete-btn" onclick="markDone('obj11',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ═══ OBJ 12 ═══ -->
+  <div class="obj-card" id="obj12">
+    <div class="obj-header" onclick="toggle('obj12')">
+      <span class="obj-num">12</span>
+      <span class="obj-title">Data Table Visualization</span>
+      <div class="obj-tags"><span class="otag lens">Lens</span><span class="otag classic">Classic</span></div>
+      <span class="done-badge">✓ DONE</span>
+      <span class="obj-chevron">▾</span>
+    </div>
+    <div class="obj-body">
+      <p class="prose">A <strong>Data Table</strong> shows aggregated data in tabular format — rows as buckets, columns as metrics. It's like a pivot table for Elasticsearch data.</p>
+
+      <div class="slabel">Live Data Table Demo</div>
+      <div class="chart-demo" style="padding:0">
+        <div class="chart-demo-toolbar">
+          <span class="chart-demo-title">DATA TABLE — HTTP RESPONSES BY COUNTRY</span>
+          <select class="demo-select" onchange="sortTable(this.value)">
+            <option value="count">Sort by Count ↓</option>
+            <option value="bytes">Sort by Bytes ↓</option>
+            <option value="alpha">Sort by Country A-Z</option>
+          </select>
+        </div>
+        <div style="padding:16px;overflow-x:auto">
+          <table class="data-table-demo" id="dataTableDemo">
+            <thead>
+              <tr><th>Country</th><th>Count</th><th>Avg Bytes</th><th>Error Rate</th></tr>
+            </thead>
+            <tbody id="dtBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="code-block">
+<span class="cm"># Classic Data Table configuration</span>
+<span class="kw">Metrics</span> (columns):
+  — Count
+  — Avg(bytes)
+  — Sum(bytes)
+  — Unique Count(user.id)
+
+<span class="kw">Buckets</span> (rows):
+  — Split Rows: Terms on <span class="vl">geo.country_name.keyword</span> (top 10)
+  — (optional) Sub-bucket: further split by status code
+
+<span class="kw">Options</span>:
+  — Show partial rows: include terms with incomplete data
+  — Show total: add a totals row
+  — Show metrics for every bucket: per-row metrics
+      </div>
+
+      <div class="callout tip"><span class="callout-icon">💡</span><div>In Lens, the Data Table supports conditional formatting — you can highlight cells above/below a threshold with custom colors. Great for creating heat-map-style tables.</div></div>
+      <button class="complete-btn" onclick="markDone('obj12',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ═══ OBJ 13 ═══ -->
+  <div class="obj-card" id="obj13">
+    <div class="obj-header" onclick="toggle('obj13')">
+      <span class="obj-num">13</span>
+      <span class="obj-title">Markdown Visualization &amp; Controls</span>
+      <div class="obj-tags"><span class="otag classic">Classic</span><span class="otag dash">Dashboard</span></div>
+      <span class="done-badge">✓ DONE</span>
+      <span class="obj-chevron">▾</span>
+    </div>
+    <div class="obj-body">
+      <p class="prose"><strong>Markdown</strong> panels let you add rich-text content (headers, links, images, formatted text) to a dashboard. <strong>Controls</strong> (Option List, Range Slider) let dashboard viewers filter all panels interactively.</p>
+
+      <div class="slabel">Markdown Visualization</div>
+      <div class="code-block">
+<span class="cm"># Creating a Markdown panel</span>
+<span class="kw">Visualize → Create → Markdown</span>
+
+<span class="cm"># Example markdown content</span>
+<span class="st">## SSH Authentication Dashboard</span>
+This dashboard monitors **failed SSH login attempts**.
+
+Use the controls below to filter by:
+- Time range
+- Source IP address
+
+> Data sourced from <span class="hl">filebeat-*</span> index
+
+[Elastic Docs](https://www.elastic.co/docs)
+      </div>
+
+      <div class="slabel">Controls (Option List &amp; Range Slider)</div>
+      <table class="ref-table">
+        <tr><th>Control Type</th><th>Purpose</th><th>How to configure</th></tr>
+        <tr><td>Option List</td><td>Dropdown to filter by keyword field values</td><td>Create control → Index: your data view → Field: keyword field (e.g. geo.country_name.keyword)</td></tr>
+        <tr><td>Range Slider</td><td>Slider to filter a numeric field by range</td><td>Create control → Field: numeric field (e.g. bytes). Set decimal places.</td></tr>
+      </table>
+
+      <div class="code-block">
+<span class="cm"># Adding Controls to a Dashboard</span>
+<span class="kw">Option 1</span>: Dashboard → Edit → Add panel → Controls
+<span class="kw">Option 2</span>: Dashboard → Edit → Add from library (saved control)
+
+<span class="cm"># Option List setup</span>
+Control type: <span class="vl">Options list</span>
+Data view: <span class="vl">filebeat-*</span>
+Field: <span class="vl">source.geo.country_name.keyword</span>
+Label: <span class="st">"Country"</span>
+
+<span class="cm"># Range Slider setup</span>
+Control type: <span class="vl">Range slider</span>
+Data view: <span class="vl">filebeat-*</span>
+Field: <span class="vl">network.bytes</span>
+Step size: <span class="vl">100</span>
+      </div>
+
+      <div class="callout exam"><span class="callout-icon">🎯</span><div><strong>Exam tip:</strong> When the task says "Define and use an Option List control," you need to create it, add it to the dashboard, AND demonstrate using it (select a value to filter). Check that it actually filters the other panels.</div></div>
+      <button class="complete-btn" onclick="markDone('obj13',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ═══ OBJ 14 ═══ -->
+  <div class="obj-card" id="obj14">
+    <div class="obj-header" onclick="toggle('obj14')">
+      <span class="obj-num">14</span>
+      <span class="obj-title">Creating a Dashboard</span>
+      <div class="obj-tags"><span class="otag dash">Dashboard</span></div>
+      <span class="done-badge">✓ DONE</span>
+      <span class="obj-chevron">▾</span>
+    </div>
+    <div class="obj-body">
+      <p class="prose">A <strong>Dashboard</strong> is a collection of visualizations, saved searches, maps, and controls assembled on a single canvas. The exam will ask you to create one combining several of the above.</p>
+
+      <div class="slabel">Full Dashboard Workflow</div>
+      <div class="steps">
+        <div class="step"><div class="step-num">1</div><div class="step-content"><div class="step-title">Navigate to Dashboard → Create dashboard</div></div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-content"><div class="step-title">Add panels from library</div><div class="step-desc">Click "Add from library" → select your saved visualizations, searches, maps.</div></div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-content"><div class="step-title">Create inline visualizations</div><div class="step-desc">Click "Create visualization" to build directly from the dashboard — saves to library automatically.</div></div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-content"><div class="step-title">Resize and arrange panels</div><div class="step-desc">Drag corners to resize. Drag the panel header to reposition. Click the panel menu (⋮) for options.</div></div></div>
+        <div class="step"><div class="step-num">5</div><div class="step-content"><div class="step-title">Set the global time range</div><div class="step-desc">Time picker (top-right) applies to ALL panels simultaneously.</div></div></div>
+        <div class="step"><div class="step-num">6</div><div class="step-content"><div class="step-title">Save with the exact task name</div><div class="step-desc">Click "Save" → enter the name specified in the task. Double-check spelling.</div></div></div>
+      </div>
+
+      <div class="callout exam"><span class="callout-icon">🎯</span><div><strong>Exam tips:</strong> Dashboard tasks often say "create a dashboard that consists of [list of specific visualizations]." Make sure every listed panel is present. After saving, verify by opening the dashboard from the Dashboard list.</div></div>
+
+      <div class="slabel">Dashboard Controls &amp; Filters</div>
+      <table class="ref-table">
+        <tr><th>Feature</th><th>Behavior</th></tr>
+        <tr><td>Global time filter</td><td>Applies to all time-aware panels. Override per-panel if needed.</td></tr>
+        <tr><td>Dashboard-level KQL</td><td>Typed in the search bar; applies to ALL panels simultaneously.</td></tr>
+        <tr><td>Dashboard-level filters</td><td>Filter chips at top; apply to all panels. Can be pinned.</td></tr>
+        <tr><td>Panel-level filter</td><td>Right-click chart element → "Filter for value" → only that panel's query changes.</td></tr>
+        <tr><td>Drill-down</td><td>Configure in panel settings → "Create drilldown" to navigate to another dashboard on click.</td></tr>
+      </table>
+
+      <div class="slabel">Practice Quiz</div>
+      <div class="quiz-box" id="q14">
+        <div class="quiz-q">You add a KQL query in the Dashboard's search bar. What does this affect?</div>
+        <div class="quiz-opts" id="qo14">
+          <div class="quiz-opt" onclick="quiz('q14',0,2)"><span class="opt-letter">A</span><span>Only the panel you most recently interacted with</span></div>
+          <div class="quiz-opt" onclick="quiz('q14',1,2)"><span class="opt-letter">B</span><span>Only saved searches added to the dashboard</span></div>
+          <div class="quiz-opt" onclick="quiz('q14',2,2)"><span class="opt-letter">C</span><span>All panels on the dashboard simultaneously</span></div>
+          <div class="quiz-opt" onclick="quiz('q14',3,2)"><span class="opt-letter">D</span><span>Only panels using the same data view as the query</span></div>
+        </div>
+        <div class="quiz-feedback" id="qf14"></div>
+      </div>
+      <button class="complete-btn" onclick="markDone('obj14',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+</div><!-- /objectives-list -->
+
+<!-- ══ CHEATSHEET ══ -->
+<div class="cheatsheet-panel">
+  <div class="cs-header" onclick="toggleCS()">
+    <span class="cs-header-title">📋 Topic 2 — Full Cheatsheet & Exam Decision Tree</span>
+    <span style="font-family:'DM Mono',monospace;font-size:12px;opacity:0.7" id="csChev">▾ expand</span>
+  </div>
+  <div class="cs-body" id="csBody">
+    <div class="slabel" style="margin-top:0">Which editor should I use?</div>
+    <div class="code-block">
+<span class="cm"># Exam decision: Lens vs TSVB vs Classic vs Maps</span>
+
+<span class="kw">Use LENS for:</span>
+  Bar, Line, Area, Pie, Metric, Data Table, Treemap, Heatmap
+  Most standard chart tasks. Preferred modern editor.
+
+<span class="kw">Use TSVB for:</span>
+  Filter Ratio, Math between series
+  Multiple overlaid time series
+  TSVB-specific panel types (Metric w/ color rules, Top N, Gauge, Table, Markdown)
+  Moving Average on time series in TSVB style
+
+<span class="kw">Use CLASSIC (Aggregation-based) for:</span>
+  Tag Cloud (only available here!)
+  When task specifically says "Aggregation-based"
+
+<span class="kw">Use MAPS for:</span>
+  Anything involving geo_point or geo_shape fields
+    </div>
+    <div class="slabel">Viz Type → Editor Matrix</div>
+    <div class="cs-grid">
+      <div class="cs-item"><div class="cs-title">Bar / Line / Area / Pie</div><div class="cs-detail">Lens (preferred) or Classic</div></div>
+      <div class="cs-item"><div class="cs-title">Metric / Gauge</div><div class="cs-detail">Lens OR TSVB (different features)</div></div>
+      <div class="cs-item"><div class="cs-title">Tag Cloud</div><div class="cs-detail">Classic ONLY</div></div>
+      <div class="cs-item"><div class="cs-title">Data Table</div><div class="cs-detail">Lens (conditional formatting) or Classic</div></div>
+      <div class="cs-item"><div class="cs-title">Maps</div><div class="cs-detail">Elastic Maps app</div></div>
+      <div class="cs-item"><div class="cs-title">TSVB Time Series</div><div class="cs-detail">TSVB editor</div></div>
+      <div class="cs-item"><div class="cs-title">Filter Ratio</div><div class="cs-detail">TSVB ONLY</div></div>
+      <div class="cs-item"><div class="cs-title">Controls (Option/Slider)</div><div class="cs-detail">Dashboard controls panel</div></div>
+      <div class="cs-item"><div class="cs-title">Markdown</div><div class="cs-detail">Classic OR Dashboard text panel</div></div>
+      <div class="cs-item"><div class="cs-title">Moving Average</div><div class="cs-detail">Lens (formula) or Classic pipeline or TSVB</div></div>
+    </div>
+    <div class="slabel">Exam Checklist — Visualizations</div>
+    <div class="code-block">
+<span class="vl">□</span> Choose correct chart type (read task carefully)
+<span class="vl">□</span> Select correct data view / index pattern
+<span class="vl">□</span> Correct metric (Count / Sum / Avg / Unique Count)
+<span class="vl">□</span> Correct bucket field and aggregation type
+<span class="vl">□</span> Apply any KQL filters specified in the task
+<span class="vl">□</span> Check time range is correct
+<span class="vl">□</span> Apply any sub-buckets / "break down by" if required
+<span class="vl">□</span> Save with the EXACT name from the task description
+<span class="vl">□</span> Add to dashboard if required
+<span class="vl">□</span> Verify the visualization renders data (not empty)
+    </div>
+  </div>
+</div>
+
+</div><!-- /container -->
+</main>
+
+<footer>
+  <span class="footer-text">ELASTIC CERTIFIED ANALYST · TOPIC 2 OF 3 · VISUALIZING DATA · 14 OBJECTIVES</span>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <a href="#" class="nav-btn" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">↑ Top</a>
+    <a href="#" class="nav-btn" onclick="alert('Open your Topic 1 page!');return false;">← Topic 1</a>
+    <a href="#" class="nav-btn primary" onclick="alert('Ask Claude to generate Topic 3: Analyzing Data!');return false;">Topic 3: Analyzing Data →</a>
+  </div>
+</footer>
+
+<script>
+// ── DATA ──
+const barData = {
+  count: [
+    { label:'200', val:842, color:'#1a7a5e' },
+    { label:'301', val:124, color:'#1a5fa0' },
+    { label:'404', val:203, color:'#c2920a' },
+    { label:'500', val: 67, color:'#b02020' },
+    { label:'403', val: 48, color:'#5b3fa0' },
+  ],
+  bytes: [
+    { label:'200', val:5200, color:'#1a7a5e' },
+    { label:'301', val: 340, color:'#1a5fa0' },
+    { label:'404', val: 190, color:'#c2920a' },
+    { label:'500', val:1100, color:'#b02020' },
+    { label:'403', val: 280, color:'#5b3fa0' },
+  ]
+};
+
+const pieDataSets = {
+  status: [
+    { label:'200 OK', val:842, color:'#1a7a5e' },
+    { label:'404 Not Found', val:203, color:'#c2920a' },
+    { label:'301 Redirect', val:124, color:'#1a5fa0' },
+    { label:'500 Error', val:67,  color:'#b02020' },
+    { label:'403 Forbidden', val:48, color:'#5b3fa0' },
+  ],
+  method: [
+    { label:'GET',    val:958, color:'#1a7a5e' },
+    { label:'POST',   val:234, color:'#1a5fa0' },
+    { label:'PUT',    val: 56, color:'#c2920a' },
+    { label:'DELETE', val: 36, color:'#b02020' },
+  ]
+};
+
+const tableData = [
+  { country:'United States', count:423, bytes:5240, errRate:'4.2%' },
+  { country:'Germany',       count:187, bytes:3810, errRate:'2.1%' },
+  { country:'Japan',         count:156, bytes:4120, errRate:'6.4%' },
+  { country:'UK',            count:134, bytes:2990, errRate:'1.8%' },
+  { country:'France',        count: 98, bytes:3340, errRate:'3.3%' },
+  { country:'Brazil',        count: 87, bytes:2100, errRate:'8.1%' },
+  { country:'Canada',        count: 76, bytes:4560, errRate:'2.9%' },
+];
+
+const tagWords = [
+  { word:'authentication', size:48 },
+  { word:'timeout', size:36 },
+  { word:'connection', size:30 },
+  { word:'error', size:44 },
+  { word:'success', size:40 },
+  { word:'login', size:34 },
+  { word:'denied', size:28 },
+  { word:'accepted', size:26 },
+  { word:'refused', size:22 },
+  { word:'invalid', size:32 },
+  { word:'session', size:24 },
+  { word:'expired', size:20 },
+  { word:'redirect', size:18 },
+  { word:'bytes', size:16 },
+];
+
+const tagColors = ['#c2600a','#1a7a5e','#1a5fa0','#5b3fa0','#c2920a','#b02020','#4a4039'];
+
+// ── BAR CHART ──
+let barOrientation = 'vertical';
+let barMetric = 'count';
+
+function updateBarChart(metric) { barMetric = metric; renderBar(); }
+function updateBarOrientation(o) { barOrientation = o; renderBar(); }
+
+function renderBar() {
+  const area = document.getElementById('barChartArea');
+  const data = barData[barMetric];
+  const max  = Math.max(...data.map(d=>d.val));
+  const maxH = 130;
+
+  if (barOrientation === 'vertical') {
+    area.style.flexDirection = 'row';
+    area.style.alignItems = 'flex-end';
+    area.innerHTML = data.map(d => {
+      const h = Math.round((d.val / max) * maxH);
+      return `<div class="bar-wrap">
+        <div class="bar-val">${d.val.toLocaleString()}</div>
+        <div class="bar" style="height:${h}px;background:${d.color}" title="${d.label}: ${d.val}"></div>
+        <div class="bar-label">${d.label}</div>
+      </div>`;
+    }).join('');
+  } else {
+    area.style.flexDirection = 'column';
+    area.style.alignItems = 'stretch';
+    area.style.padding = '12px 20px';
+    area.innerHTML = data.map(d => {
+      const w = Math.round((d.val / max) * 80);
+      return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:#7a6e62;min-width:40px">${d.label}</div>
+        <div style="height:22px;width:${w}%;background:${d.color};border-radius:2px;transition:width 0.5s;min-width:4px"></div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:#4a4039">${d.val.toLocaleString()}</div>
+      </div>`;
+    }).join('');
+  }
+}
+
+// ── PIE CHART ──
+function updatePie(dataset) { renderPie(pieDataSets[dataset]); }
+
+function renderPie(data) {
+  const total = data.reduce((s,d)=>s+d.val, 0);
+  const R = 70, cx = 80, cy = 80;
+  let angle = -Math.PI / 2;
+  let paths = '';
+  data.forEach(d => {
+    const slice = (d.val / total) * 2 * Math.PI;
+    const x1 = cx + R * Math.cos(angle);
+    const y1 = cy + R * Math.sin(angle);
+    const x2 = cx + R * Math.cos(angle + slice);
+    const y2 = cy + R * Math.sin(angle + slice);
+    const large = slice > Math.PI ? 1 : 0;
+    paths += `<path d="M${cx},${cy} L${x1},${y1} A${R},${R} 0 ${large},1 ${x2},${y2} Z"
+      fill="${d.color}" opacity="0.85" stroke="white" stroke-width="1.5">
+      <title>${d.label}: ${d.val}</title></path>`;
+    angle += slice;
+  });
+
+  const legend = data.map(d => `<div class="pie-legend-item">
+    <div class="pie-swatch" style="background:${d.color}"></div>
+    <span>${d.label} (${Math.round(d.val/total*100)}%)</span>
+  </div>`).join('');
+
+  document.getElementById('pieArea').innerHTML = `
+    <svg class="pie-svg" width="160" height="160" viewBox="0 0 160 160">${paths}</svg>
+    <div class="pie-legend">${legend}</div>`;
+}
+
+// ── LINE CHART ──
+const rawVals = [45,62,38,80,55,90,72,48,65,88,43,76,60,95,50];
+function movAvg(arr, w) {
+  return arr.map((v,i) => {
+    const start = Math.max(0, i - w + 1);
+    const slice = arr.slice(start, i+1);
+    return slice.reduce((a,b)=>a+b,0) / slice.length;
+  });
+}
+const maVals = movAvg(rawVals, 4);
+
+function updateLineDemo(mode) {
+  const svg = document.getElementById('lineSvg');
+  const W = 600, H = 130, pad = 20;
+  const maxV = Math.max(...rawVals);
+  const xs = rawVals.map((_,i) => pad + (i / (rawVals.length-1)) * (W-2*pad));
+  const ys = v => pad + (1 - v/maxV) * (H-2*pad);
+
+  const rawPath = xs.map((x,i)=>`${i===0?'M':'L'}${x},${ys(rawVals[i])}`).join(' ');
+  const maPath  = xs.map((x,i)=>`${i===0?'M':'L'}${x},${ys(maVals[i])}`).join(' ');
+  const areaPath = xs.map((x,i)=>`${i===0?'M':'L'}${x},${ys(rawVals[i])}`).join(' ') + ` L${xs[xs.length-1]},${H} L${xs[0]},${H} Z`;
+
+  let content = '';
+  if (mode !== 'avg') {
+    content += `<path d="${areaPath}" fill="#c2600a" class="svg-area"/>`;
+    content += `<path d="${rawPath}" class="svg-line" stroke="#c2600a"/>`;
+    xs.forEach((x,i) => { content += `<circle cx="${x}" cy="${ys(rawVals[i])}" r="3" fill="#c2600a" class="svg-dot"><title>${rawVals[i]}</title></circle>`; });
+  }
+  if (mode !== 'raw') {
+    content += `<path d="${maPath}" class="svg-line" stroke="#1a7a5e" stroke-dasharray="6,3"/>`;
+    xs.forEach((x,i) => { content += `<circle cx="${x}" cy="${ys(maVals[i])}" r="3" fill="#1a7a5e" class="svg-dot"><title>MA: ${maVals[i].toFixed(1)}</title></circle>`; });
+  }
+  // Legend
+  if (mode === 'both') {
+    content += `<rect x="420" y="10" width="10" height="10" fill="#c2600a" rx="1"/>
+      <text x="434" y="19" fill="#7a6e62" font-size="10" font-family="DM Mono">Raw</text>
+      <line x1="420" y1="30" x2="430" y2="30" stroke="#1a7a5e" stroke-width="2" stroke-dasharray="4,2"/>
+      <text x="434" y="34" fill="#7a6e62" font-size="10" font-family="DM Mono">Moving Avg (4)</text>`;
+  }
+  svg.innerHTML = content;
+}
+
+// ── TAG CLOUD ──
+function renderTagCloud() {
+  const area = document.getElementById('tagCloudArea');
+  const shuffled = [...tagWords].sort(()=>Math.random()-0.5);
+  area.innerHTML = shuffled.map((w, i) => {
+    const color = tagColors[i % tagColors.length];
+    const rotate = Math.random() > 0.7 ? `rotate(${Math.random()>0.5?-15:15}deg)` : '';
+    return `<span class="tag-word" style="font-size:${w.size}px;color:${color};transform:${rotate}" title="${w.word}: ${w.size}">${w.word}</span>`;
+  }).join('');
+}
+function shuffleTagCloud() { renderTagCloud(); }
+
+// ── DATA TABLE ──
+function sortTable(by) {
+  const sorted = [...tableData].sort((a,b) => {
+    if (by === 'count') return b.count - a.count;
+    if (by === 'bytes') return b.bytes - a.bytes;
+    return a.country.localeCompare(b.country);
+  });
+  renderTable(sorted);
+}
+
+function renderTable(data) {
+  document.getElementById('dtBody').innerHTML = data.map(r => `
+    <tr>
+      <td>${r.country}</td>
+      <td>${r.count.toLocaleString()}</td>
+      <td>${r.bytes.toLocaleString()}</td>
+      <td>${r.errRate}</td>
+    </tr>`).join('');
+}
+
+// ── METRIC DEMO ──
+const metricOptions = {
+  count: { val:'1,284', lbl:'Document Count', dash:50 },
+  avg:   { val:'234ms', lbl:'Avg Response Time', dash:80 },
+  sum:   { val:'48.2MB', lbl:'Total Bytes', dash:35 },
+  uniq:  { val:'97',    lbl:'Unique Users', dash:65 },
+};
+function updateMetricDemo(k) {
+  const m = metricOptions[k];
+  document.getElementById('metricVal').textContent = m.val;
+  document.getElementById('metricLbl').textContent = m.lbl;
+  document.getElementById('gaugeArc').setAttribute('stroke-dashoffset', m.dash);
+  document.getElementById('gaugeText').textContent = Math.round((125-m.dash)/125*100) + '%';
+}
+
+// ── TOGGLE / ACCORDION ──
+function toggle(id) {
+  const c = document.getElementById(id);
+  c.classList.toggle('open');
+}
+
+// ── MARK DONE ──
+let doneCount = 0;
+const TOTAL = 14;
+function markDone(id, btn) {
+  const c = document.getElementById(id);
+  if (c.classList.contains('completed')) return;
+  c.classList.add('completed');
+  btn.classList.add('done');
+  btn.textContent = '✓ Understood';
+  doneCount++;
+  document.getElementById('progressFill').style.width = (doneCount/TOTAL*100) + '%';
+  document.getElementById('progressCount').textContent = doneCount + ' / ' + TOTAL + ' objectives';
+}
+
+// ── QUIZ ──
+const quizAnswers = {
+  q2:  { c:1, ok:'✓ Correct! In Lens, the metric (Count) goes on Y-axis and the dimensional bucket (Terms aggregation on host.name) goes on X-axis. Size 10 means top 10 terms.', fail:'✗ In Lens: Y-axis = the metric (Count), X-axis = the dimension/bucket (Terms aggregation on host.name with size 10 for top 10).' },
+  q8:  { c:1, ok:'✓ Correct! Filter Ratio is the TSVB-exclusive feature for this. Numerator = errors (status >= 500), Denominator = all requests (*). It computes the ratio automatically.', fail:'✗ Filter Ratio is the right tool. It computes: count(numerator_filter) / count(denominator_filter). Set numerator to "status >= 500" and denominator to "*".' },
+  q14: { c:2, ok:'✓ Correct! A KQL query in the Dashboard search bar acts as a global filter — it applies to ALL panels on the dashboard simultaneously.', fail:'✗ The Dashboard search bar KQL applies GLOBALLY — to all panels at once. This is one of the most useful Dashboard features for quick cross-panel filtering.' },
+};
+
+function quiz(qid, sel, correct) {
+  const opts = document.getElementById('qo'+qid.replace('q',''));
+  if (opts.querySelector('.answered')) return;
+  const items = opts.querySelectorAll('.quiz-opt');
+  items.forEach((o,i) => {
+    o.classList.add('answered');
+    if (i === correct) o.classList.add('correct');
+    else if (i === sel && sel !== correct) o.classList.add('wrong');
+  });
+  const fb = document.getElementById('qf'+qid.replace('q',''));
+  const isRight = sel === correct;
+  fb.className = 'quiz-feedback show ' + (isRight ? 'correct' : 'wrong');
+  fb.textContent = quizAnswers[qid][isRight ? 'ok' : 'fail'];
+}
+
+// ── CHEATSHEET ──
+function toggleCS() {
+  const b = document.getElementById('csBody');
+  const ch = document.getElementById('csChev');
+  const open = b.classList.toggle('open');
+  ch.textContent = open ? '▴ collapse' : '▾ expand';
+}
+
+// ── INIT ──
+renderBar();
+renderPie(pieDataSets.status);
+updateLineDemo('both');
+renderTagCloud();
+renderTable(tableData);
+</script>
+</body>
+</html>

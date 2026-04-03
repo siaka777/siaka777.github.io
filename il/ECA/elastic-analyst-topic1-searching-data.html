@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elastic Certified Analyst — Topic 1: Searching Data</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e17;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: #1e2d45;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #7c3aed;
+    --text: #e2e8f0;
+    --text-muted: #64748b;
+    --text-dim: #94a3b8;
+    --green: #10b981;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --elastic-orange: #ff6900;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Glowing orbs */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .orb-1 { width: 400px; height: 400px; background: rgba(0,212,255,0.08); top: -100px; right: -100px; }
+  .orb-2 { width: 300px; height: 300px; background: rgba(124,58,237,0.1); bottom: 100px; left: -80px; }
+  .orb-3 { width: 200px; height: 200px; background: rgba(255,105,0,0.07); top: 40%; right: 20%; }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── HEADER ── */
+  header {
+    padding: 40px 24px 0;
+    position: relative;
+    z-index: 1;
+  }
+  .cert-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,105,0,0.12);
+    border: 1px solid rgba(255,105,0,0.3);
+    color: var(--elastic-orange);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 2px;
+    margin-bottom: 24px;
+  }
+  .cert-badge::before {
+    content: '◈';
+    font-size: 14px;
+  }
+
+  h1 {
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 800;
+    line-height: 1.0;
+    margin-bottom: 16px;
+    letter-spacing: -1px;
+  }
+  h1 .line1 { display: block; color: var(--text); }
+  h1 .line2 { display: block; color: var(--accent); }
+
+  .subtitle {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 48px;
+    max-width: 600px;
+    line-height: 1.6;
+  }
+
+  /* ── PROGRESS TRACKER ── */
+  .progress-bar-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px 24px;
+    margin-bottom: 48px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .progress-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+  .progress-track {
+    flex: 1;
+    min-width: 200px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    border-radius: 2px;
+    transition: width 0.5s ease;
+    width: 0%;
+  }
+  .progress-count {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  /* ── TOPIC CARDS ── */
+  .topics-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    margin-bottom: 60px;
+  }
+
+  .topic-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .topic-card:hover { border-color: rgba(0,212,255,0.3); }
+  .topic-card.completed { border-color: rgba(16,185,129,0.3); }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 24px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+  }
+  .card-header:hover { background: rgba(255,255,255,0.02); }
+
+  .card-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    min-width: 32px;
+  }
+  .card-title {
+    flex: 1;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .card-status {
+    font-size: 18px;
+    transition: transform 0.2s;
+  }
+  .topic-card.open .card-status { transform: rotate(180deg); }
+  .topic-card.completed .card-status-done { display: inline; }
+  .card-status-done {
+    display: none;
+    font-size: 14px;
+    background: rgba(16,185,129,0.15);
+    color: var(--green);
+    padding: 3px 10px;
+    border-radius: 2px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    margin-right: 8px;
+  }
+
+  .card-body {
+    display: none;
+    padding: 0 24px 24px;
+    border-top: 1px solid var(--border);
+    animation: slideDown 0.3s ease;
+  }
+  .topic-card.open .card-body { display: block; }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── CONTENT SECTIONS ── */
+  .section-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    margin-top: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .explanation {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.7;
+    margin-bottom: 16px;
+  }
+
+  /* ── CODE BLOCKS ── */
+  .code-block {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px 20px;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-x: auto;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .code-block .comment { color: #6a737d; }
+  .code-block .keyword { color: var(--accent); }
+  .code-block .string { color: #a8ff78; }
+  .code-block .field { color: var(--accent2); }
+  .code-block .value { color: var(--yellow); }
+
+  .copy-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--border);
+    border: none;
+    color: var(--text-muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .copy-btn:hover { background: var(--accent); color: var(--bg); }
+
+  /* ── KQL INTERACTIVE SIMULATOR ── */
+  .simulator {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .sim-bar {
+    display: flex;
+    align-items: center;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    gap: 8px;
+  }
+  .sim-icon { color: var(--accent); font-size: 14px; }
+  .sim-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    caret-color: var(--accent);
+  }
+  .sim-input::placeholder { color: var(--text-muted); }
+  .sim-run {
+    background: var(--accent);
+    border: none;
+    color: var(--bg);
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    padding: 5px 14px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .sim-run:hover { background: #00b8d9; }
+  .sim-results {
+    padding: 16px;
+    min-height: 80px;
+  }
+  .sim-result-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 8px 12px;
+    border-radius: 3px;
+    margin-bottom: 6px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    animation: fadeIn 0.3s ease;
+  }
+  .sim-result-item.match { background: rgba(16,185,129,0.08); border-left: 2px solid var(--green); color: var(--text-dim); }
+  .sim-result-item.no-match { background: rgba(239,68,68,0.08); border-left: 2px solid var(--red); color: var(--text-muted); }
+  .sim-result-item .doc-id { color: var(--text-muted); min-width: 60px; }
+  .sim-hint { color: var(--text-muted); font-family: 'Space Mono', monospace; font-size: 12px; text-align: center; padding: 20px; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .sim-examples {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0 16px 16px;
+  }
+  .sim-example-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .sim-example-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── QUIZ ── */
+  .quiz-container {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px;
+    margin-top: 8px;
+  }
+  .quiz-question {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .quiz-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .quiz-option:hover:not(.answered) { border-color: rgba(0,212,255,0.4); color: var(--text); }
+  .quiz-option.correct { border-color: var(--green); background: rgba(16,185,129,0.08); color: var(--text); }
+  .quiz-option.wrong { border-color: var(--red); background: rgba(239,68,68,0.08); color: var(--text-muted); }
+  .quiz-option.answered { cursor: default; }
+  .quiz-opt-letter {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    min-width: 20px;
+    color: var(--text-muted);
+    font-weight: 700;
+  }
+  .quiz-option.correct .quiz-opt-letter { color: var(--green); }
+  .quiz-option.wrong .quiz-opt-letter { color: var(--red); }
+  .quiz-feedback {
+    margin-top: 12px;
+    padding: 12px 16px;
+    border-radius: 3px;
+    font-size: 13px;
+    font-family: 'Space Mono', monospace;
+    display: none;
+    line-height: 1.6;
+  }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: rgba(16,185,129,0.1); border-left: 3px solid var(--green); color: var(--text-dim); }
+  .quiz-feedback.wrong { background: rgba(239,68,68,0.1); border-left: 3px solid var(--red); color: var(--text-dim); }
+
+  /* ── TIPS / INFO BOXES ── */
+  .tip-box {
+    display: flex;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .tip-box.info { background: rgba(0,212,255,0.07); border-left: 3px solid var(--accent); color: var(--text-dim); }
+  .tip-box.warn { background: rgba(245,158,11,0.07); border-left: 3px solid var(--yellow); color: var(--text-dim); }
+  .tip-box.exam { background: rgba(255,105,0,0.07); border-left: 3px solid var(--elastic-orange); color: var(--text-dim); }
+  .tip-icon { font-size: 16px; flex-shrink: 0; margin-top: 2px; }
+
+  /* ── REFERENCE TABLE ── */
+  table.ref-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 16px;
+  }
+  table.ref-table th {
+    text-align: left;
+    padding: 8px 12px;
+    background: var(--surface2);
+    color: var(--accent);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+  table.ref-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid rgba(30,45,69,0.6);
+    color: var(--text-dim);
+    vertical-align: top;
+  }
+  table.ref-table td:first-child { color: var(--accent2); }
+  table.ref-table tr:last-child td { border-bottom: none; }
+
+  /* ── MARK COMPLETE ── */
+  .complete-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    background: transparent;
+    border: 1px solid rgba(16,185,129,0.4);
+    color: var(--green);
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 10px 20px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .complete-btn:hover { background: rgba(16,185,129,0.1); }
+  .complete-btn.done { background: rgba(16,185,129,0.15); border-color: var(--green); }
+
+  /* ── CHEATSHEET ── */
+  .cheatsheet-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .cheat-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 16px;
+    transition: border-color 0.2s;
+  }
+  .cheat-item:hover { border-color: rgba(0,212,255,0.2); }
+  .cheat-syntax {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .cheat-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+  .cheat-example {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--yellow);
+    margin-top: 6px;
+    padding: 4px 8px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 2px;
+  }
+
+  /* ── FOOTER ── */
+  .page-footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 24px;
+    margin-top: 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: gap;
+    gap: 16px;
+  }
+  .footer-text {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 10px 20px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+  .nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .nav-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+  .nav-btn.primary:hover { background: #00b8d9; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  /* ── TOPIC NAV ── */
+  .topic-nav {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 36px;
+  }
+  .topic-nav-item {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    padding: 5px 12px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    background: none;
+  }
+  .topic-nav-item:hover, .topic-nav-item.active { border-color: var(--accent); color: var(--accent); }
+  .topic-nav-item.done { border-color: rgba(16,185,129,0.4); color: var(--green); }
+
+  .tag {
+    display: inline-block;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 2px;
+    margin-right: 6px;
+    margin-bottom: 4px;
+  }
+  .tag.kql { background: rgba(0,212,255,0.1); color: var(--accent); }
+  .tag.exam { background: rgba(255,105,0,0.1); color: var(--elastic-orange); }
+  .tag.kibana { background: rgba(124,58,237,0.1); color: #a78bfa; }
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<header>
+  <div class="container">
+    <div class="cert-badge">Elastic Certified Analyst · Exam Prep</div>
+    <h1>
+      <span class="line1">Topic 1:</span>
+      <span class="line2">Searching Data</span>
+    </h1>
+    <p class="subtitle">Master Kibana's search capabilities — index patterns, time filters, KQL syntax, and filters. These skills appear across nearly every exam task.</p>
+
+    <div class="topic-nav">
+      <button class="topic-nav-item active">01 · Searching Data</button>
+      <button class="topic-nav-item" onclick="alert('Coming soon! Generate the next topic page.')">02 · Visualizing Data</button>
+      <button class="topic-nav-item" onclick="alert('Coming soon! Generate the next topic page.')">03 · Analyzing Data</button>
+    </div>
+
+    <div class="progress-bar-container">
+      <span class="progress-label">TOPIC PROGRESS</span>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <span class="progress-count" id="progressCount">0 / 5 objectives</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="container">
+    <div class="topics-grid" id="topicsGrid">
+
+      <!-- ─── OBJECTIVE 1 ─── -->
+      <div class="topic-card" id="obj1">
+        <div class="card-header" onclick="toggleCard('obj1')">
+          <span class="card-num">01</span>
+          <span class="card-title">Define an Index Pattern / Data View</span>
+          <span class="card-status-done">✓ DONE</span>
+          <span class="card-status">▾</span>
+        </div>
+        <div class="card-body">
+          <div class="section-label">Concept</div>
+          <p class="explanation">A <strong style="color:var(--accent)">Data View</strong> (formerly called "Index Pattern") tells Kibana which Elasticsearch indices to work with. It also lets you designate a timestamp field, which enables time-based filtering across all of Kibana. You must create a Data View before you can search or visualize any data.</p>
+
+          <div class="tip-box exam">
+            <span class="tip-icon">🎯</span>
+            <div><strong>Exam relevance:</strong> Almost every task begins with "In the Default space, create a Data View from the <code>filebeat-*</code> index pattern with the <code>@timestamp</code> field set as the time filter field." Know this cold.</div>
+          </div>
+
+          <div class="section-label">Step-by-Step</div>
+          <div class="code-block">
+<span class="comment"># How to create a Data View in Kibana</span>
+<span class="keyword">1.</span> Open Kibana → <span class="field">Stack Management</span> → <span class="field">Data Views</span>
+<span class="keyword">2.</span> Click <span class="string">"Create data view"</span>
+<span class="keyword">3.</span> Enter the index pattern name (e.g. <span class="value">filebeat-*</span>)
+   — Use <span class="value">*</span> as a wildcard to match multiple indices
+<span class="keyword">4.</span> Select a <span class="field">Timestamp field</span> (usually <span class="value">@timestamp</span>)
+   — OR choose <span class="string">"I don't want to use the time filter"</span>
+<span class="keyword">5.</span> Click <span class="string">"Save data view to Kibana"</span>
+          </div>
+
+          <div class="tip-box warn">
+            <span class="tip-icon">⚠️</span>
+            <div>If <strong>no timestamp field</strong> exists in the index, you must select "I don't want to use the time filter." The exam may ask you to do this explicitly — read the task carefully.</div>
+          </div>
+
+          <div class="tip-box info">
+            <span class="tip-icon">💡</span>
+            <div>You can also create Data Views directly from <strong>Discover</strong> by clicking the data view name dropdown and selecting "Create a data view."</div>
+          </div>
+
+          <div class="section-label">Key Concepts</div>
+          <table class="ref-table">
+            <tr><th>Term</th><th>Meaning</th></tr>
+            <tr><td>Index Pattern / Data View</td><td>A saved configuration pointing to one or more Elasticsearch indices. e.g. <code>logs-*</code>, <code>metricbeat-7.*</code></td></tr>
+            <tr><td>Wildcard (*)</td><td>Matches any index. <code>filebeat-*</code> matches filebeat-8.0, filebeat-8.1, etc.</td></tr>
+            <tr><td>Time Filter Field</td><td>The date field used for time-based filtering. Typically <code>@timestamp</code>.</td></tr>
+            <tr><td>Default Space</td><td>The default Kibana Space. Exam tasks often specify "in the Default space."</td></tr>
+          </table>
+
+          <button class="complete-btn" onclick="markComplete('obj1', this)">☐ Mark as Understood</button>
+        </div>
+      </div>
+
+      <!-- ─── OBJECTIVE 2 ─── -->
+      <div class="topic-card" id="obj2">
+        <div class="card-header" onclick="toggleCard('obj2')">
+          <span class="card-num">02</span>
+          <span class="card-title">Set the Time Filter</span>
+          <span class="card-status-done">✓ DONE</span>
+          <span class="card-status">▾</span>
+        </div>
+        <div class="card-body">
+          <div class="section-label">Concept</div>
+          <p class="explanation">The <strong style="color:var(--accent)">Time Filter</strong> (top-right in Kibana) restricts all queries to a date/time range. It only works when the Data View has a timestamp field. You can set it via a quick select, a relative range, or an absolute range.</p>
+
+          <div class="tip-box exam">
+            <span class="tip-icon">🎯</span>
+            <div><strong>Exam tip:</strong> Tasks will say things like "filter to the last 7 days" or "show data from January 1, 2023 to December 31, 2023." Use the <strong>Absolute</strong> tab when given specific dates.</div>
+          </div>
+
+          <div class="section-label">Time Filter Options</div>
+          <table class="ref-table">
+            <tr><th>Mode</th><th>How to use</th><th>Example</th></tr>
+            <tr><td>Quick select</td><td>Pre-built options for common ranges</td><td>Last 15 minutes, Last 7 days, Today</td></tr>
+            <tr><td>Relative</td><td>Relative to now</td><td>now-7d, now-1h/h</td></tr>
+            <tr><td>Absolute</td><td>Exact dates (calendar picker)</td><td>2023-01-01 → 2023-12-31</td></tr>
+            <tr><td>Now</td><td>Continuously refreshes</td><td>last 1 hour, auto-refresh every 30s</td></tr>
+          </table>
+
+          <div class="code-block">
+<span class="comment"># Relative time expressions</span>
+<span class="value">now-1d</span>       <span class="comment"># 1 day ago from now</span>
+<span class="value">now-7d/d</span>     <span class="comment"># 7 days ago, rounded to start of day</span>
+<span class="value">now/M</span>        <span class="comment"># start of current month</span>
+<span class="value">now-1M/M</span>     <span class="comment"># start of last month</span>
+<span class="value">now-1y</span>       <span class="comment"># 1 year ago</span>
+          </div>
+
+          <div class="tip-box info">
+            <span class="tip-icon">💡</span>
+            <div>You can also set the time filter directly in the <strong>search bar</strong> using KQL's date expressions, or by brushing over a time histogram in Discover.</div>
+          </div>
+
+          <button class="complete-btn" onclick="markComplete('obj2', this)">☐ Mark as Understood</button>
+        </div>
+      </div>
+
+      <!-- ─── OBJECTIVE 3 ─── -->
+      <div class="topic-card" id="obj3">
+        <div class="card-header" onclick="toggleCard('obj3')">
+          <span class="card-num">03</span>
+          <span class="card-title">KQL — Kibana Query Language</span>
+          <span class="card-status-done">✓ DONE</span>
+          <span class="card-status">▾</span>
+        </div>
+        <div class="card-body">
+          <div class="section-label">Concept</div>
+          <p class="explanation">KQL (Kibana Query Language) is a simplified query syntax used in Kibana's search bar to filter documents. It's more readable than raw Elasticsearch DSL and the default query language in modern Kibana.</p>
+
+          <div class="section-label">KQL Syntax Reference</div>
+          <div class="cheatsheet-grid">
+            <div class="cheat-item">
+              <div class="cheat-syntax">field : value</div>
+              <div class="cheat-desc">Exact match on a field</div>
+              <div class="cheat-example">status : 200</div>
+            </div>
+            <div class="cheat-item">
+              <div class="cheat-syntax">field : "phrase here"</div>
+              <div class="cheat-desc">Phrase match (preserve word order)</div>
+              <div class="cheat-example">message : "failed login"</div>
+            </div>
+            <div class="cheat-item">
+              <div class="cheat-syntax">field : val*</div>
+              <div class="cheat-desc">Wildcard — * matches any chars</div>
+              <div class="cheat-example">url.path : /api/*</div>
+            </div>
+            <div class="cheat-item">
+              <div class="cheat-syntax">AND / OR / NOT</div>
+              <div class="cheat-desc">Boolean operators (uppercase)</div>
+              <div class="cheat-example">status:200 AND NOT method:GET</div>
+            </div>
+            <div class="cheat-item">
+              <div class="cheat-syntax">field >= value</div>
+              <div class="cheat-desc">Range comparison: >, >=, <, <=</div>
+              <div class="cheat-example">response.bytes >= 10000</div>
+            </div>
+            <div class="cheat-item">
+              <div class="cheat-syntax">field : (a OR b)</div>
+              <div class="cheat-desc">Multiple values for one field</div>
+              <div class="cheat-example">status : (400 OR 500)</div>
+            </div>
+            <div class="cheat-item">
+              <div class="cheat-syntax">field : *</div>
+              <div class="cheat-desc">Field exists (not null)</div>
+              <div class="cheat-example">user.email : *</div>
+            </div>
+            <div class="cheat-item">
+              <div class="cheat-syntax">nested.field : value</div>
+              <div class="cheat-desc">Dot notation for nested fields</div>
+              <div class="cheat-example">system.auth.ssh.event : failed</div>
+            </div>
+          </div>
+
+          <div class="section-label">Interactive KQL Simulator</div>
+          <p class="explanation">Try writing KQL queries below. This simulator shows which sample documents would match.</p>
+
+          <div class="simulator">
+            <div class="sim-bar">
+              <span class="sim-icon">🔍</span>
+              <input class="sim-input" id="kqlInput" placeholder="Try: status : 200  or  method : GET AND status >= 400" />
+              <button class="sim-run" onclick="runKQL()">Search</button>
+            </div>
+            <div class="sim-examples">
+              <button class="sim-example-btn" onclick="setKQL('status : 200')">status : 200</button>
+              <button class="sim-example-btn" onclick="setKQL('method : GET')">method : GET</button>
+              <button class="sim-example-btn" onclick="setKQL('status >= 400')">status >= 400</button>
+              <button class="sim-example-btn" onclick="setKQL('method : GET AND status : 200')">GET + 200</button>
+              <button class="sim-example-btn" onclick="setKQL('status : (400 OR 500)')">400 or 500</button>
+              <button class="sim-example-btn" onclick="setKQL('url.path : /api/*')">path wildcard</button>
+              <button class="sim-example-btn" onclick="setKQL('NOT status : 200')">NOT 200</button>
+            </div>
+            <div class="sim-results" id="simResults">
+              <div class="sim-hint">Enter a KQL query above and click Search to see results →</div>
+            </div>
+          </div>
+
+          <div class="tip-box warn">
+            <span class="tip-icon">⚠️</span>
+            <div>KQL is <strong>case-insensitive for field names</strong> but <strong>case-sensitive for keyword field values</strong>. <code>status.keyword : "failed"</code> ≠ <code>status.keyword : "Failed"</code>. On <code>text</code> fields, matching is case-insensitive by default.</div>
+          </div>
+
+          <div class="tip-box exam">
+            <span class="tip-icon">🎯</span>
+            <div><strong>Exam tip:</strong> When the task says "display only documents where field X has value Y," write a KQL query. Don't forget to <strong>save</strong> the search with the name specified in the task.</div>
+          </div>
+
+          <!-- QUIZ -->
+          <div class="section-label">Practice Quiz</div>
+          <div class="quiz-container" id="quiz3">
+            <div class="quiz-question">Which KQL query finds documents where <code>http.response.status_code</code> is between 400 and 499 (inclusive)?</div>
+            <div class="quiz-options" id="qopts3">
+              <div class="quiz-option" onclick="answerQuiz('quiz3', 0, 2)">
+                <span class="quiz-opt-letter">A</span>
+                <span>http.response.status_code : 4xx</span>
+              </div>
+              <div class="quiz-option" onclick="answerQuiz('quiz3', 1, 2)">
+                <span class="quiz-opt-letter">B</span>
+                <span>http.response.status_code : [400 TO 499]</span>
+              </div>
+              <div class="quiz-option" onclick="answerQuiz('quiz3', 2, 2)">
+                <span class="quiz-opt-letter">C</span>
+                <span>http.response.status_code >= 400 AND http.response.status_code <= 499</span>
+              </div>
+              <div class="quiz-option" onclick="answerQuiz('quiz3', 3, 2)">
+                <span class="quiz-opt-letter">D</span>
+                <span>http.response.status_code > 399 AND < 500</span>
+              </div>
+            </div>
+            <div class="quiz-feedback" id="qfb3"></div>
+          </div>
+
+          <button class="complete-btn" onclick="markComplete('obj3', this)">☐ Mark as Understood</button>
+        </div>
+      </div>
+
+      <!-- ─── OBJECTIVE 4 ─── -->
+      <div class="topic-card" id="obj4">
+        <div class="card-header" onclick="toggleCard('obj4')">
+          <span class="card-num">04</span>
+          <span class="card-title">Create and Pin Filters</span>
+          <span class="card-status-done">✓ DONE</span>
+          <span class="card-status">▾</span>
+        </div>
+        <div class="card-body">
+          <div class="section-label">Concept</div>
+          <p class="explanation">Filters in Kibana are persistent, toggleable query clauses that supplement the search bar. They appear as chips below the search bar and can be added via the UI (clicking on field values in Discover) or manually via the "Add filter" dialog. <strong style="color:var(--accent)">Pinned filters</strong> persist across all apps in Kibana until unpinned.</p>
+
+          <div class="section-label">Ways to Add a Filter</div>
+          <div class="code-block">
+<span class="comment">## Method 1: Click a field value in Discover</span>
+<span class="keyword">→</span> Expand a document → click "+" next to a field value
+<span class="comment">   This adds a filter: field IS value</span>
+
+<span class="comment">## Method 2: Add filter dialog (manual)</span>
+<span class="keyword">→</span> Click <span class="string">"+ Add filter"</span> (below search bar)
+<span class="keyword">→</span> Choose field, operator, value
+<span class="keyword">→</span> Save
+
+<span class="comment">## Method 3: From a visualization</span>
+<span class="keyword">→</span> Click a bar/segment on a chart → <span class="string">"Filter for value"</span>
+          </div>
+
+          <div class="section-label">Filter Actions</div>
+          <table class="ref-table">
+            <tr><th>Action</th><th>How</th></tr>
+            <tr><td>Toggle on/off</td><td>Click the filter chip to enable/disable without removing</td></tr>
+            <tr><td>Invert (negate)</td><td>Click filter menu → "Invert filter" — adds NOT to the condition</td></tr>
+            <tr><td>Pin (persist globally)</td><td>Click filter menu → "Pin across all apps" — stays active when navigating</td></tr>
+            <tr><td>Edit</td><td>Click filter menu → "Edit filter" — modify field/operator/value</td></tr>
+            <tr><td>Remove</td><td>Click ✕ on the filter chip or "Delete" from menu</td></tr>
+          </table>
+
+          <div class="tip-box exam">
+            <span class="tip-icon">🎯</span>
+            <div><strong>Exam tip:</strong> If asked to "create and pin a filter," make sure you both <strong>create</strong> it AND click "Pin across all apps" from the filter's dropdown menu.</div>
+          </div>
+
+          <!-- QUIZ -->
+          <div class="section-label">Practice Quiz</div>
+          <div class="quiz-container" id="quiz4">
+            <div class="quiz-question">You need a filter that persists when you navigate from Discover to Dashboard. What should you do?</div>
+            <div class="quiz-options" id="qopts4">
+              <div class="quiz-option" onclick="answerQuiz('quiz4', 0, 1)">
+                <span class="quiz-opt-letter">A</span>
+                <span>Type the filter in the KQL search bar</span>
+              </div>
+              <div class="quiz-option" onclick="answerQuiz('quiz4', 1, 1)">
+                <span class="quiz-opt-letter">B</span>
+                <span>Add the filter and then "Pin across all apps" from the filter menu</span>
+              </div>
+              <div class="quiz-option" onclick="answerQuiz('quiz4', 2, 1)">
+                <span class="quiz-opt-letter">C</span>
+                <span>Save the Discover search with the filter applied</span>
+              </div>
+              <div class="quiz-option" onclick="answerQuiz('quiz4', 3, 1)">
+                <span class="quiz-opt-letter">D</span>
+                <span>Export the filter as JSON and import it in Dashboard</span>
+              </div>
+            </div>
+            <div class="quiz-feedback" id="qfb4"></div>
+          </div>
+
+          <button class="complete-btn" onclick="markComplete('obj4', this)">☐ Mark as Understood</button>
+        </div>
+      </div>
+
+      <!-- ─── OBJECTIVE 5 ─── -->
+      <div class="topic-card" id="obj5">
+        <div class="card-header" onclick="toggleCard('obj5')">
+          <span class="card-num">05</span>
+          <span class="card-title">Apply Search Criteria to Visualizations & Dashboards</span>
+          <span class="card-status-done">✓ DONE</span>
+          <span class="card-status">▾</span>
+        </div>
+        <div class="card-body">
+          <div class="section-label">Concept</div>
+          <p class="explanation">Search criteria (KQL + filters + time range) from Discover can be saved and applied to visualizations or included in dashboards. This is key to the exam workflow: <em>search → filter → save → use in dashboard.</em></p>
+
+          <div class="section-label">Workflow</div>
+          <div class="code-block">
+<span class="comment"># Full workflow for exam tasks</span>
+
+<span class="keyword">Step 1</span>: Create your KQL search in <span class="field">Discover</span>
+  e.g. <span class="value">system.auth.ssh.event : failed</span>
+
+<span class="keyword">Step 2</span>: Add any needed filters (or pin them)
+
+<span class="keyword">Step 3</span>: Set the correct time range
+
+<span class="keyword">Step 4</span>: Save the search via <span class="string">Save → Saved search</span>
+  (use the exact name from the task!)
+
+<span class="keyword">Step 5</span>: Create a visualization using the same data view
+  — The saved search will auto-apply the index
+  — Add your own KQL/filters in the viz if needed
+
+<span class="keyword">Step 6</span>: Add to dashboard
+  — Click <span class="string">"Add from library"</span> or create inline
+  — Dashboard inherits the time filter from its own time range
+          </div>
+
+          <div class="tip-box info">
+            <span class="tip-icon">💡</span>
+            <div>When you add a <strong>saved search panel</strong> to a dashboard, the search's embedded KQL/filters <em>and</em> the dashboard's global time filter both apply simultaneously — their effects are combined (AND logic).</div>
+          </div>
+
+          <div class="tip-box exam">
+            <span class="tip-icon">🎯</span>
+            <div><strong>Naming matters!</strong> Exam tasks specify exact names for saved searches, visualizations, and dashboards. Points are awarded for correct naming. Copy names character-by-character from the task.</div>
+          </div>
+
+          <!-- QUIZ -->
+          <div class="section-label">Practice Quiz</div>
+          <div class="quiz-container" id="quiz5">
+            <div class="quiz-question">You have a saved search "Failed SSH Authentications" with KQL <code>system.auth.ssh.event : failed</code>. You add it to a dashboard that has a time range of "Last 24 hours". What data will the panel show?</div>
+            <div class="quiz-options" id="qopts5">
+              <div class="quiz-option" onclick="answerQuiz('quiz5', 0, 0)">
+                <span class="quiz-opt-letter">A</span>
+                <span>All failed SSH events from all time (ignores dashboard time filter)</span>
+              </div>
+              <div class="quiz-option" onclick="answerQuiz('quiz5', 1, 0)">
+                <span class="quiz-opt-letter">B</span>
+                <span>Failed SSH events from the last 24 hours</span>
+              </div>
+              <div class="quiz-option" onclick="answerQuiz('quiz5', 2, 0)">
+                <span class="quiz-opt-letter">C</span>
+                <span>All events from the last 24 hours, regardless of type</span>
+              </div>
+              <div class="quiz-option" onclick="answerQuiz('quiz5', 3, 0)">
+                <span class="quiz-opt-letter">D</span>
+                <span>An error — saved searches can't be added to dashboards</span>
+              </div>
+            </div>
+            <div class="quiz-feedback" id="qfb5"></div>
+          </div>
+
+          <button class="complete-btn" onclick="markComplete('obj5', this)">☐ Mark as Understood</button>
+        </div>
+      </div>
+
+    </div><!-- /.topics-grid -->
+
+    <!-- ── FULL TOPIC SUMMARY / CHEATSHEET ── -->
+    <div class="topic-card" style="margin-bottom:60px;">
+      <div class="card-header" onclick="toggleCard('cheatsheet')">
+        <span class="card-num">📋</span>
+        <span class="card-title">Topic 1 Cheatsheet — Quick Reference</span>
+        <span class="card-status">▾</span>
+      </div>
+      <div class="card-body" id="cheatsheet-body" style="display:none">
+        <div class="section-label">KQL Quick Reference</div>
+        <table class="ref-table">
+          <tr><th>Pattern</th><th>Description</th></tr>
+          <tr><td>field : value</td><td>Field equals value (case-insensitive for text)</td></tr>
+          <tr><td>field : "exact phrase"</td><td>Phrase search</td></tr>
+          <tr><td>field : val*</td><td>Wildcard suffix match</td></tr>
+          <tr><td>field : (a OR b OR c)</td><td>Multiple values</td></tr>
+          <tr><td>field >= N AND field <= M</td><td>Range query</td></tr>
+          <tr><td>field : *</td><td>Field exists</td></tr>
+          <tr><td>NOT field : value</td><td>Exclusion</td></tr>
+          <tr><td>A AND B</td><td>Both conditions must match</td></tr>
+          <tr><td>A OR B</td><td>Either condition matches</td></tr>
+          <tr><td>nested.field : value</td><td>Dot notation for nested/object fields</td></tr>
+        </table>
+
+        <div class="section-label">Exam Workflow Checklist</div>
+        <div class="code-block">
+<span class="green">□</span> Create Data View with correct index pattern and timestamp field
+<span class="green">□</span> Set time filter to the specified range (absolute if dates given)
+<span class="green">□</span> Write KQL query matching ALL specified criteria
+<span class="green">□</span> Test the query — check document count makes sense
+<span class="green">□</span> Add any needed column fields in Discover
+<span class="green">□</span> Save with EXACT name from task description
+<span class="green">□</span> Pin filters if task says "pin"
+<span class="green">□</span> Add to dashboard if required
+        </div>
+
+        <div class="tip-box exam">
+          <span class="tip-icon">🚀</span>
+          <div><strong>Exam strategy:</strong> The exam is 10–12 tasks in 2 hours (~10 min/task). Name files correctly (partial credit for naming). Use Elastic documentation if stuck — it's available during the exam. Practice on a local Kibana instance with sample data.</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.container -->
+</main>
+
+<footer class="page-footer">
+  <div class="container" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;width:100%">
+    <div class="footer-text">ELASTIC CERTIFIED ANALYST · TOPIC 1 OF 3 · SEARCHING DATA</div>
+    <div style="display:flex;gap:12px">
+      <a href="#" class="nav-btn" onclick="window.scrollTo(0,0);return false;">↑ Back to top</a>
+      <a href="#" class="nav-btn primary" onclick="alert('Ask Claude to generate Topic 2: Visualizing Data!');return false;">Topic 2: Visualizing Data →</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ── Sample documents for KQL simulator ──
+  const docs = [
+    { id: 'doc_1', status: 200, method: 'GET',  url: {path:'/api/users'},    bytes: 1200 },
+    { id: 'doc_2', status: 200, method: 'POST', url: {path:'/api/login'},    bytes: 340  },
+    { id: 'doc_3', status: 404, method: 'GET',  url: {path:'/api/missing'},  bytes: 250  },
+    { id: 'doc_4', status: 500, method: 'GET',  url: {path:'/api/crash'},    bytes: 890  },
+    { id: 'doc_5', status: 301, method: 'GET',  url: {path:'/old/page'},     bytes: 120  },
+    { id: 'doc_6', status: 200, method: 'DELETE', url: {path:'/api/item/1'}, bytes: 80   },
+    { id: 'doc_7', status: 403, method: 'POST', url: {path:'/admin'},        bytes: 400  },
+    { id: 'doc_8', status: 200, method: 'GET',  url: {path:'/home'},         bytes: 5400 },
+  ];
+
+  function evalKQL(query, doc) {
+    query = query.trim();
+    if (!query) return false;
+
+    // Tokenize AND/OR/NOT — simple parser
+    try {
+      // Normalize
+      query = query.replace(/\s+AND\s+/g, ' &&& ').replace(/\s+OR\s+/g, ' ||| ');
+
+      // Handle OR
+      if (query.includes(' ||| ')) {
+        return query.split(' ||| ').some(part => evalKQL(part.trim(), doc));
+      }
+      // Handle AND
+      if (query.includes(' &&& ')) {
+        return query.split(' &&& ').every(part => evalKQL(part.trim(), doc));
+      }
+
+      // NOT
+      if (query.startsWith('NOT ')) {
+        return !evalKQL(query.slice(4).trim(), doc);
+      }
+
+      // Range: field >= value
+      const rangeMatch = query.match(/^([\w.]+)\s*(>=|<=|>|<)\s*(\S+)$/);
+      if (rangeMatch) {
+        const [_, field, op, val] = rangeMatch;
+        const docVal = getField(doc, field);
+        if (docVal === undefined) return false;
+        const numVal = parseFloat(val);
+        if (op === '>=') return docVal >= numVal;
+        if (op === '<=') return docVal <= numVal;
+        if (op === '>')  return docVal > numVal;
+        if (op === '<')  return docVal < numVal;
+      }
+
+      // field : (a OR b OR c)
+      const multiValMatch = query.match(/^([\w.]+)\s*:\s*\((.+)\)$/);
+      if (multiValMatch) {
+        const field = multiValMatch[1];
+        const vals = multiValMatch[2].split(/\s+OR\s+/).map(v => v.trim().replace(/"/g,''));
+        const docVal = String(getField(doc, field) || '');
+        return vals.some(v => matchValue(docVal, v));
+      }
+
+      // field : value / field : "phrase" / field : val*
+      const basicMatch = query.match(/^([\w.]+)\s*:\s*(.+)$/);
+      if (basicMatch) {
+        const field = basicMatch[1];
+        let val = basicMatch[2].trim().replace(/^"|"$/g, '');
+        const docVal = String(getField(doc, field) || '');
+        return matchValue(docVal, val);
+      }
+
+      return false;
+    } catch(e) {
+      return false;
+    }
+  }
+
+  function getField(doc, path) {
+    const parts = path.split('.');
+    let obj = doc;
+    for (const p of parts) {
+      if (obj === undefined || obj === null) return undefined;
+      obj = obj[p];
+    }
+    return obj;
+  }
+
+  function matchValue(docVal, pattern) {
+    docVal = String(docVal);
+    if (pattern === '*') return docVal !== '' && docVal !== 'undefined';
+    // wildcard
+    if (pattern.includes('*')) {
+      const regexStr = pattern.replace(/\*/g, '.*');
+      return new RegExp('^' + regexStr + '$', 'i').test(docVal);
+    }
+    return docVal.toLowerCase() === pattern.toLowerCase();
+  }
+
+  function setKQL(query) {
+    document.getElementById('kqlInput').value = query;
+    runKQL();
+  }
+
+  function runKQL() {
+    const query = document.getElementById('kqlInput').value;
+    const container = document.getElementById('simResults');
+    if (!query.trim()) {
+      container.innerHTML = '<div class="sim-hint">Enter a KQL query above and click Search →</div>';
+      return;
+    }
+    let html = '';
+    let matchCount = 0;
+    docs.forEach(doc => {
+      const matches = evalKQL(query, doc);
+      if (matches) matchCount++;
+      const cls = matches ? 'match' : 'no-match';
+      const icon = matches ? '✓' : '✗';
+      html += `<div class="sim-result-item ${cls}">
+        <span class="doc-id">${doc.id}</span>
+        <span>${icon} method:${doc.method} status:${doc.status} path:${doc.url.path} bytes:${doc.bytes}</span>
+      </div>`;
+    });
+    html += `<div style="margin-top:12px;font-family:'Space Mono',monospace;font-size:11px;color:var(--text-muted)">
+      ↳ ${matchCount} of ${docs.length} documents match
+    </div>`;
+    container.innerHTML = html;
+  }
+
+  // ── Card toggle ──
+  function toggleCard(id) {
+    const card = document.getElementById(id);
+    const isOpen = card.classList.contains('open');
+    // Find body
+    const body = card.querySelector('.card-body') || document.getElementById(id + '-body');
+    if (id === 'cheatsheet') {
+      const b = document.getElementById('cheatsheet-body');
+      if (b.style.display === 'none') { b.style.display = 'block'; }
+      else { b.style.display = 'none'; }
+      return;
+    }
+    if (isOpen) {
+      card.classList.remove('open');
+    } else {
+      card.classList.add('open');
+    }
+  }
+
+  // ── Mark complete ──
+  let completedCount = 0;
+  const totalObjectives = 5;
+
+  function markComplete(id, btn) {
+    const card = document.getElementById(id);
+    if (card.classList.contains('completed')) return;
+    card.classList.add('completed');
+    btn.classList.add('done');
+    btn.textContent = '✓ Understood';
+    completedCount++;
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const pct = (completedCount / totalObjectives) * 100;
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressCount').textContent = completedCount + ' / ' + totalObjectives + ' objectives';
+  }
+
+  // ── Quiz logic ──
+  const quizAnswers = {
+    quiz3: { correct: 2, feedback: { correct: '✓ Correct! KQL uses >= and <= operators for ranges. You combine them with AND. Option B ([400 TO 499]) is Lucene syntax, not KQL.', wrong: '✗ In KQL, range queries use comparison operators: >= and <=. The correct query is: http.response.status_code >= 400 AND http.response.status_code <= 499' } },
+    quiz4: { correct: 1, feedback: { correct: '✓ Correct! Pinning a filter ("Pin across all apps") makes it persist across Kibana apps — Discover, Visualize, Dashboard, etc.', wrong: '✗ To persist a filter across apps, you need to create it as a filter (not in the search bar), then click "Pin across all apps" from the filter chip menu.' } },
+    quiz5: { correct: 1, feedback: { correct: '✓ Correct! Dashboard time filters AND the saved search\'s embedded KQL both apply. So you see failed SSH events AND only those in the last 24 hours.', wrong: '✗ Dashboard time filters apply to all panels. The saved search\'s KQL (failed SSH) also applies. So you get the intersection: failed SSH events from the last 24 hours.' } },
+  };
+
+  function answerQuiz(quizId, selectedIndex, correctIndex) {
+    const opts = document.getElementById('qopts' + quizId.replace('quiz',''));
+    const fb = document.getElementById('qfb' + quizId.replace('quiz',''));
+    if (opts.querySelector('.answered')) return; // already answered
+
+    const options = opts.querySelectorAll('.quiz-option');
+    options.forEach((opt, i) => {
+      opt.classList.add('answered');
+      if (i === correctIndex) opt.classList.add('correct');
+      else if (i === selectedIndex && selectedIndex !== correctIndex) opt.classList.add('wrong');
+    });
+
+    const isCorrect = selectedIndex === correctIndex;
+    fb.className = 'quiz-feedback show ' + (isCorrect ? 'correct' : 'wrong');
+    fb.textContent = quizAnswers[quizId].feedback[isCorrect ? 'correct' : 'wrong'];
+  }
+
+  // Open first card by default
+  document.getElementById('obj1').classList.add('open');
+
+  // Enter key in simulator
+  document.getElementById('kqlInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') runKQL();
+  });
+</script>
+
+</body>
+</html>
