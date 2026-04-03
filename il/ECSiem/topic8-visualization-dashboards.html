@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topic 8: Visualization & Dashboards</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Overpass+Mono:wght@300;400;600;700&family=Overpass:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:     #08091a;
+    --bg2:    #0c0e24;
+    --s1:     #10132e;
+    --s2:     #151838;
+    --s3:     #1a1f42;
+    --border: #232850;
+    --bord2:  #2e3560;
+    --gold:   #d4a843;
+    --gold2:  #f0c860;
+    --gold3:  #ffe090;
+    --coral:  #e05c40;
+    --coral2: #ff7a60;
+    --teal:   #38c9b8;
+    --teal2:  #5ee0d0;
+    --violet: #9b6ef3;
+    --vio2:   #b890ff;
+    --rose:   #e84880;
+    --text:   #e8e0d0;
+    --dim:    #8878a0;
+    --muted:  #404060;
+    --mono:   'Overpass Mono', monospace;
+    --sans:   'Overpass', sans-serif;
+    --display:'Cormorant Garamond', serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Art deco radial sunburst */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 140vmax; height: 140vmax;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg, rgba(212,168,67,0.012) 1deg, transparent 2deg,
+      transparent 24deg, rgba(212,168,67,0.012) 25deg, transparent 26deg,
+      transparent 48deg, rgba(212,168,67,0.012) 49deg, transparent 50deg,
+      transparent 72deg, rgba(212,168,67,0.012) 73deg, transparent 74deg,
+      transparent 96deg, rgba(212,168,67,0.012) 97deg, transparent 98deg,
+      transparent 120deg, rgba(212,168,67,0.012) 121deg, transparent 122deg,
+      transparent 144deg, rgba(212,168,67,0.012) 145deg, transparent 146deg,
+      transparent 168deg, rgba(212,168,67,0.012) 169deg, transparent 170deg,
+      transparent 192deg, rgba(212,168,67,0.012) 193deg, transparent 194deg,
+      transparent 216deg, rgba(212,168,67,0.012) 217deg, transparent 218deg,
+      transparent 240deg, rgba(212,168,67,0.012) 241deg, transparent 242deg,
+      transparent 264deg, rgba(212,168,67,0.012) 265deg, transparent 266deg,
+      transparent 288deg, rgba(212,168,67,0.012) 289deg, transparent 290deg,
+      transparent 312deg, rgba(212,168,67,0.012) 313deg, transparent 314deg,
+      transparent 336deg, rgba(212,168,67,0.012) 337deg, transparent 338deg
+    );
+    pointer-events: none; z-index: 0;
+  }
+
+  /* Radial glow */
+  body::after {
+    content: '';
+    position: fixed; top: -20%; left: -10%;
+    width: 70vw; height: 70vw;
+    background: radial-gradient(ellipse, rgba(212,168,67,0.04) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 32px; position: relative; z-index: 1; }
+
+  /* ── HEADER ── */
+  header { padding: 44px 0 0; margin-bottom: 48px; }
+
+  .masthead-ornament {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 24px;
+  }
+  .ornament-line {
+    flex: 1; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+  .ornament-diamond {
+    width: 10px; height: 10px;
+    background: var(--gold); transform: rotate(45deg); flex-shrink: 0;
+  }
+  .ornament-text {
+    font-family: var(--mono); font-size: 10px; color: var(--gold);
+    letter-spacing: 4px; text-transform: uppercase; white-space: nowrap;
+  }
+
+  .hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 28px; }
+
+  h1 {
+    font-family: var(--display);
+    font-size: clamp(3rem, 7vw, 6rem);
+    font-weight: 700; line-height: 0.9;
+    letter-spacing: 1px; color: var(--text);
+  }
+  h1 em { font-style: italic; color: var(--gold); }
+  h1 .sub-line { display: block; font-size: 0.42em; font-weight: 400; font-style: italic; color: var(--dim); letter-spacing: 2px; margin-top: 6px; }
+
+  .hero-stats { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+  .hs-row { display: flex; align-items: center; gap: 12px; }
+  .hs-num { font-family: var(--display); font-size: 2.4rem; font-weight: 600; color: var(--gold); line-height: 1; }
+  .hs-lbl { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; }
+
+  /* Topic nav */
+  .topic-nav {
+    display: flex; gap: 4px; flex-wrap: wrap;
+    padding: 16px 0;
+    border-top: 1px solid var(--bord2); border-bottom: 1px solid var(--bord2);
+  }
+  .topic-nav a {
+    font-family: var(--mono); font-size: 9px; padding: 5px 12px;
+    text-decoration: none; transition: all 0.15s; border: 1px solid var(--border);
+    color: var(--muted); letter-spacing: 2px; text-transform: uppercase;
+  }
+  .topic-nav a.done { color: var(--teal); border-color: rgba(56,201,184,0.3); background: rgba(56,201,184,0.04); }
+  .topic-nav a.done::before { content: '✓ '; }
+  .topic-nav a.active { background: var(--gold); color: var(--bg); border-color: var(--gold); font-weight: 700; }
+  .topic-nav a:hover:not(.active):not(.done) { border-color: var(--gold); color: var(--gold2); }
+
+  /* Progress */
+  .prog-row { display: flex; align-items: center; gap: 14px; margin: 20px 0 52px; }
+  .prog-track { flex: 1; height: 2px; background: var(--bord2); overflow: hidden; }
+  .prog-fill  { height: 100%; background: linear-gradient(90deg, var(--coral), var(--gold), var(--teal)); width: 0%; transition: width 0.5s ease; }
+  .prog-txt   { font-family: var(--mono); font-size: 10px; color: var(--muted); white-space: nowrap; letter-spacing: 1px; }
+
+  /* ── SECTIONS ── */
+  .section { margin-bottom: 56px; animation: riseGold 0.4s ease both; }
+  @keyframes riseGold { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+  .section:nth-child(1){animation-delay:.05s}.section:nth-child(2){animation-delay:.10s}
+  .section:nth-child(3){animation-delay:.15s}.section:nth-child(4){animation-delay:.20s}
+  .section:nth-child(5){animation-delay:.25s}.section:nth-child(6){animation-delay:.30s}
+
+  .sec-hd { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+  .sec-tag {
+    font-family: var(--mono); font-size: 10px; color: var(--gold);
+    border: 1px solid rgba(212,168,67,0.4); background: rgba(212,168,67,0.06);
+    padding: 3px 14px; letter-spacing: 3px;
+  }
+  .sec-title {
+    font-family: var(--display); font-size: 1.6rem; font-weight: 700;
+    color: var(--text); letter-spacing: 0.5px;
+  }
+
+  /* Card */
+  .card {
+    background: rgba(12,14,36,0.8); border: 1px solid var(--bord2);
+    padding: 28px 32px; position: relative; overflow: hidden;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+  .card p { font-size: 0.975rem; line-height: 1.85; color: var(--dim); margin-bottom: 14px; font-weight: 300; }
+  .card p:last-child { margin-bottom: 0; }
+  strong { color: var(--text); font-weight: 600; }
+
+  /* ── VIZ TYPE GALLERY ── */
+  .viz-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px,1fr)); gap: 14px; margin: 22px 0; }
+
+  .viz-card {
+    background: var(--s1); border: 1px solid var(--bord2);
+    padding: 0; overflow: hidden; cursor: pointer; transition: all 0.2s; position: relative;
+  }
+  .viz-card:hover { border-color: var(--gold); transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,0.4); }
+  .viz-card.selected { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 8px 28px rgba(212,168,67,0.15); }
+
+  /* SVG mini chart previews */
+  .viz-preview { width: 100%; height: 90px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); }
+  .viz-preview svg { width: 100%; height: 100%; }
+
+  .viz-info { padding: 14px 16px; }
+  .vi-name { font-family: var(--display); font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+  .vi-type { font-family: var(--mono); font-size: 9px; color: var(--gold); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px; }
+  .vi-desc { font-family: var(--mono); font-size: 10px; color: var(--dim); line-height: 1.5; }
+
+  .viz-detail {
+    background: rgba(0,0,0,0.5); border: 1px solid var(--gold);
+    border-top: none; padding: 16px 20px; display: none;
+    animation: detailPop 0.2s ease;
+    grid-column: 1 / -1;
+    margin-top: -14px;
+  }
+  @keyframes detailPop { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+  .viz-detail.show { display: block; }
+  .vd-title { font-family: var(--display); font-size: 1.1rem; font-weight: 600; color: var(--gold); margin-bottom: 10px; }
+  .vd-body { font-family: var(--mono); font-size: 11px; line-height: 1.85; color: var(--dim); white-space: pre-wrap; }
+
+  /* ── LENS BUILDER ── */
+  .lens-demo { background: var(--s1); border: 1px solid var(--bord2); overflow: hidden; margin: 20px 0; }
+
+  .ld-header {
+    background: var(--s2); border-bottom: 1px solid var(--bord2);
+    padding: 12px 20px; display: flex; align-items: center; gap: 14px;
+    flex-wrap: wrap;
+  }
+  .ld-title { font-family: var(--mono); font-size: 11px; color: var(--gold); letter-spacing: 2px; text-transform: uppercase; }
+  .ld-selector {
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .ld-tab {
+    font-family: var(--mono); font-size: 10px; padding: 5px 14px;
+    background: var(--s1); border: 1px solid var(--border); color: var(--muted);
+    cursor: pointer; transition: all 0.15s; letter-spacing: 1px;
+  }
+  .ld-tab.active { background: var(--gold); color: var(--bg); border-color: var(--gold); font-weight: 700; }
+  .ld-tab:hover:not(.active) { border-color: var(--gold); color: var(--gold2); }
+
+  .ld-body { display: grid; grid-template-columns: 260px 1fr; gap: 0; }
+  @media(max-width:650px){ .ld-body { grid-template-columns: 1fr; } }
+
+  .ld-config { border-right: 1px solid var(--bord2); padding: 18px 16px; }
+  .ldc-section { margin-bottom: 18px; }
+  .ldc-label { font-family: var(--mono); font-size: 10px; color: var(--gold); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; display: block; }
+  .ldc-select {
+    width: 100%; background: var(--s2); border: 1px solid var(--bord2); color: var(--text);
+    font-family: var(--mono); font-size: 11px; padding: 8px 12px; outline: none;
+    transition: border-color 0.15s;
+  }
+  .ldc-select:focus { border-color: var(--gold); }
+  .ldc-select option { background: var(--s2); }
+
+  .ld-preview { padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 220px; }
+
+  /* Animated bar chart */
+  .chart-bars { display: flex; align-items: flex-end; gap: 8px; height: 160px; width: 100%; }
+  .bar {
+    flex: 1; min-width: 20px; border-radius: 2px 2px 0 0;
+    transition: height 0.6s cubic-bezier(0.34,1.56,0.64,1);
+    position: relative;
+  }
+  .bar::after {
+    content: attr(data-val);
+    position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+    font-family: var(--mono); font-size: 9px; color: var(--dim); white-space: nowrap;
+  }
+  .bar-label {
+    font-family: var(--mono); font-size: 9px; color: var(--muted);
+    margin-top: 6px; text-align: center; letter-spacing: 0.5px;
+    display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  .chart-line-wrap {
+    width: 100%; height: 160px; position: relative;
+  }
+  .chart-line-wrap svg { width: 100%; height: 100%; }
+
+  .chart-donut-wrap { width: 160px; height: 160px; position: relative; flex-shrink: 0; }
+  .donut-label {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center;
+  }
+  .donut-val { font-family: var(--display); font-size: 2rem; font-weight: 700; color: var(--gold); line-height: 1; }
+  .donut-sub { font-family: var(--mono); font-size: 9px; color: var(--dim); letter-spacing: 1px; margin-top: 2px; }
+
+  .chart-heatmap { width: 100%; }
+  .hm-row { display: flex; gap: 3px; margin-bottom: 3px; }
+  .hm-cell { flex: 1; height: 22px; border-radius: 2px; transition: all 0.3s; cursor: default; }
+  .hm-cell:hover { transform: scale(1.1); z-index: 1; }
+
+  .chart-table { width: 100%; }
+  .ct-header, .ct-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 8px; padding: 6px 10px; font-family: var(--mono); font-size: 11px; }
+  .ct-header { background: var(--s2); color: var(--gold); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; }
+  .ct-row { color: var(--dim); border-bottom: 1px solid rgba(46,53,96,0.4); }
+  .ct-row:hover { background: rgba(212,168,67,0.04); color: var(--text); }
+
+  /* Note */
+  .note {
+    border-left: 3px solid var(--gold); background: rgba(212,168,67,0.04);
+    padding: 13px 18px; margin: 14px 0; font-family: var(--mono);
+    font-size: 12px; line-height: 1.7; color: var(--dim);
+  }
+  .note.coral  { border-left-color: var(--coral);  background: rgba(224,92,64,0.04); }
+  .note.teal   { border-left-color: var(--teal);   background: rgba(56,201,184,0.04); }
+  .note.violet { border-left-color: var(--violet); background: rgba(155,110,243,0.04); }
+  .note strong { color: var(--gold2); }
+  .note.coral  strong { color: var(--coral2); }
+  .note.teal   strong { color: var(--teal2); }
+  .note.violet strong { color: var(--vio2); }
+
+  /* Code */
+  .code {
+    background: #040611; border: 1px solid var(--border);
+    border-left: 3px solid var(--gold);
+    font-family: var(--mono); font-size: 12px; line-height: 1.9;
+    padding: 18px 22px; overflow-x: auto; margin: 16px 0; white-space: pre;
+  }
+  .ck { color: var(--gold2); } .cv { color: var(--teal2); }
+  .cs { color: #aaccff; } .cc { color: #2a3050; }
+  .cn { color: var(--coral2); } .ci { color: var(--vio2); }
+
+  /* Two-col */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+  @media(max-width:600px){ .two-col { grid-template-columns: 1fr; } }
+  .mini { background: var(--s2); border: 1px solid var(--bord2); padding: 18px 20px; }
+  .ml { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+  .mv { font-family: var(--mono); font-size: 11px; color: var(--text); line-height: 1.8; }
+  .mv .g { color: var(--gold2); } .mv .t { color: var(--teal2); } .mv .c { color: var(--coral2); } .mv .v { color: var(--vio2); }
+
+  /* ── DASHBOARD SCENARIOS ── */
+  .scenarios { display: flex; flex-direction: column; gap: 8px; margin: 20px 0; }
+  .sc-item {
+    background: var(--s2); border: 1px solid var(--bord2); padding: 16px 20px;
+    cursor: pointer; transition: all 0.2s; display: flex; gap: 16px; align-items: flex-start;
+  }
+  .sc-item:hover { border-color: var(--gold); background: var(--s3); transform: translateX(4px); }
+  .sc-item.expanded { border-color: var(--gold); background: var(--s3); }
+  .sc-num { font-family: var(--display); font-size: 1.8rem; font-weight: 700; color: var(--bord2); min-width: 44px; transition: color 0.2s; padding-top: 2px; }
+  .sc-item:hover .sc-num, .sc-item.expanded .sc-num { color: var(--gold); }
+  .sc-body { flex: 1; }
+  .sc-title { font-family: var(--display); font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .sc-meta  { font-family: var(--mono); font-size: 10px; color: var(--gold); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+  .sc-desc  { font-family: var(--mono); font-size: 11px; color: var(--dim); line-height: 1.6; }
+  .sc-detail { display: none; margin-top: 14px; font-family: var(--mono); font-size: 11px; line-height: 1.85; color: var(--dim); padding-top: 12px; border-top: 1px solid var(--border); white-space: pre-wrap; }
+  .sc-detail.show { display: block; }
+
+  /* Completion banner */
+  .completion {
+    background: linear-gradient(135deg, rgba(212,168,67,0.1), rgba(56,201,184,0.08));
+    border: 1px solid var(--gold); padding: 32px; margin: 40px 0; text-align: center;
+    position: relative; overflow: hidden;
+  }
+  .completion::before {
+    content: ''; position: absolute; inset: 0;
+    background: repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(212,168,67,0.03) 10px, rgba(212,168,67,0.03) 11px);
+  }
+  .comp-title { font-family: var(--display); font-size: 2.8rem; font-weight: 700; color: var(--gold); position: relative; margin-bottom: 8px; }
+  .comp-sub { font-family: var(--mono); font-size: 11px; color: var(--dim); letter-spacing: 3px; text-transform: uppercase; position: relative; margin-bottom: 20px; }
+  .comp-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; position: relative; margin-bottom: 20px; }
+  .comp-chip {
+    font-family: var(--mono); font-size: 10px; padding: 5px 14px;
+    background: rgba(212,168,67,0.1); border: 1px solid rgba(212,168,67,0.3);
+    color: var(--gold2); letter-spacing: 1px;
+  }
+  .comp-chip.done { background: rgba(56,201,184,0.08); border-color: rgba(56,201,184,0.3); color: var(--teal2); }
+  .comp-chip.done::before { content: '✓ '; }
+  .comp-msg { font-family: var(--sans); font-size: 0.95rem; font-weight: 300; color: var(--dim); position: relative; max-width: 500px; margin: 0 auto; line-height: 1.7; }
+
+  /* ── QUIZ ── */
+  .quiz {
+    background: rgba(8,9,26,0.95); border: 1px solid var(--bord2);
+    padding: 40px 32px; margin-top: 52px; position: relative; overflow: hidden;
+  }
+  .quiz::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--coral), var(--gold), var(--teal), var(--violet));
+  }
+  .quiz-ornament {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 24px;
+  }
+  .quiz-ornament .ornament-line { flex: 1; height: 1px; background: linear-gradient(90deg, var(--gold), transparent); }
+  .quiz-title {
+    font-family: var(--display); font-size: 2.2rem; font-style: italic;
+    font-weight: 600; color: var(--gold); letter-spacing: 1px;
+  }
+
+  .qb { margin-bottom: 36px; padding-bottom: 36px; border-bottom: 1px solid var(--border); }
+  .qb:last-of-type { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .q-n { font-family: var(--mono); font-size: 10px; color: var(--gold); letter-spacing: 2px; margin-bottom: 8px; }
+  .q-t { font-family: var(--display); font-size: 1.15rem; font-weight: 600; color: var(--text); margin-bottom: 16px; line-height: 1.5; }
+
+  .opts { display: flex; flex-direction: column; gap: 8px; }
+  .opt {
+    display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px;
+    border: 1px solid var(--border); background: var(--s1); color: var(--dim);
+    font-family: var(--mono); font-size: 12px; cursor: pointer; transition: all 0.15s;
+    text-align: left; width: 100%; line-height: 1.55;
+  }
+  .opt:hover:not(.locked) { border-color: var(--gold); color: var(--text); background: rgba(212,168,67,0.06); }
+  .opt .ol { color: var(--gold); font-weight: 700; min-width: 16px; }
+  .opt.correct { border-color: var(--teal);  background: rgba(56,201,184,0.08); color: var(--teal2); }
+  .opt.wrong   { border-color: var(--coral); background: rgba(224,92,64,0.08);  color: var(--coral2); }
+  .opt.revealc { border-color: var(--teal);  background: rgba(56,201,184,0.04); color: var(--teal); opacity: 0.6; }
+
+  .exp {
+    display: none; margin-top: 11px; padding: 13px 16px;
+    background: rgba(212,168,67,0.04); border: 1px solid rgba(212,168,67,0.15);
+    font-family: var(--mono); font-size: 11px; color: var(--dim); line-height: 1.8;
+  }
+  .exp.show { display: block; }
+  .exp strong { color: var(--gold2); }
+
+  .scorebox { display: none; margin-top: 28px; padding: 32px; background: var(--s1); border: 1px solid var(--gold); text-align: center; position: relative; overflow: hidden; }
+  .scorebox::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(-45deg, transparent, transparent 12px, rgba(212,168,67,0.03) 12px, rgba(212,168,67,0.03) 13px); }
+  .scorebox.show { display: block; }
+  .score-big { font-family: var(--display); font-size: 5.5rem; font-weight: 700; font-style: italic; color: var(--gold); letter-spacing: 2px; position: relative; text-shadow: 0 0 40px rgba(212,168,67,0.3); }
+  .score-sub { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 3px; margin: 4px 0 12px; text-transform: uppercase; position: relative; }
+  .score-msg { font-family: var(--sans); font-size: 1rem; font-weight: 300; color: var(--dim); position: relative; }
+  .btn-reset {
+    margin-top: 18px; background: none; border: 1px solid var(--gold); color: var(--gold);
+    font-family: var(--mono); font-size: 11px; padding: 10px 28px; cursor: pointer;
+    letter-spacing: 3px; text-transform: uppercase; transition: all 0.2s; position: relative;
+  }
+  .btn-reset:hover { background: var(--gold); color: var(--bg); }
+
+  footer {
+    margin-top: 80px; padding: 32px 0;
+    border-top: 1px solid var(--bord2);
+    display: flex; flex-direction: column; align-items: center; gap: 20px;
+  }
+  .footer-ornament { display: flex; align-items: center; gap: 14px; width: 100%; }
+  .footer-ornament .ornament-line { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+  .footer-ornament .ornament-diamond { width: 8px; height: 8px; background: var(--gold); transform: rotate(45deg); }
+
+  .ft { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 2px; text-align: center; }
+  .nav-btns { display: flex; gap: 10px; }
+  .nbtn {
+    font-family: var(--mono); font-size: 11px; padding: 11px 22px;
+    border: 1px solid var(--bord2); color: var(--muted); background: none;
+    cursor: pointer; letter-spacing: 2px; text-decoration: none;
+    transition: all 0.2s; text-transform: uppercase;
+  }
+  .nbtn:hover { border-color: var(--gold); color: var(--gold2); }
+  .nbtn.primary { background: var(--gold); color: var(--bg); border-color: var(--gold); font-weight: 700; }
+  .nbtn.primary:hover { background: var(--gold2); border-color: var(--gold2); }
+
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bord2); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── HEADER ── -->
+  <header>
+    <div class="masthead-ornament">
+      <div class="ornament-diamond"></div>
+      <div class="ornament-line"></div>
+      <div class="ornament-text">Elastic Certified SIEM Analyst · Final Chapter</div>
+      <div class="ornament-line"></div>
+      <div class="ornament-diamond"></div>
+    </div>
+
+    <div class="hero">
+      <h1>Visualization<br><em>&amp; Dashboards</em><span class="sub-line">Lens · Canvas · Maps · Discover · ESQL Panels</span></h1>
+      <div class="hero-stats">
+        <div class="hs-row"><div class="hs-num">8</div><div class="hs-lbl">Viz Types</div></div>
+        <div class="hs-row"><div class="hs-num">5</div><div class="hs-lbl">Scenarios</div></div>
+        <div class="hs-row"><div class="hs-num">7</div><div class="hs-lbl">Final Quiz</div></div>
+      </div>
+    </div>
+
+    <nav class="topic-nav">
+      <a href="#" class="done">01 · Fundamentals</a>
+      <a href="#" class="done">02 · Data Ingestion</a>
+      <a href="#" class="done">03 · Detection Engine</a>
+      <a href="#" class="done">04 · Alert Triage</a>
+      <a href="#" class="done">05 · Threat Hunting</a>
+      <a href="#" class="done">06 · Cases</a>
+      <a href="#" class="done">07 · RBAC & Admin</a>
+      <a href="#" class="active">08 · Visualization</a>
+    </nav>
+  </header>
+
+  <div class="prog-row">
+    <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+    <span class="prog-txt" id="progTxt">0 / 7 answered</span>
+  </div>
+
+  <!-- ═══════════════════════════════
+       SECTION 1 — OVERVIEW
+  ════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">08.01</span><h2 class="sec-title">Visualization in Elastic Security</h2></div>
+    <div class="card">
+      <p>Kibana's visualization layer transforms raw security event data into actionable dashboards, charts, and reports. For the ECSA exam, you need to know <strong>which visualization tool to use</strong>, when to use Discover vs Lens vs Canvas vs Maps, and how to build effective security dashboards using the right panel types.</p>
+      <p>Elastic Security ships with <strong>pre-built dashboards</strong> for key integrations (Endpoint, Network, AWS, etc.), but analysts must understand how to <strong>create and customize</strong> dashboards for their environment, and how to filter, drill-down, and link visualizations to investigations.</p>
+
+      <div class="two-col">
+        <div class="mini">
+          <div class="ml">Core Visualization Tools</div>
+          <div class="mv">
+            <span class="g">Lens</span> — drag-drop viz builder (primary)<br>
+            <span class="g">Discover</span> — raw event exploration + charts<br>
+            <span class="g">Maps</span> — geospatial IP/threat visualization<br>
+            <span class="g">Canvas</span> — pixel-perfect presentation reports<br>
+            <span class="g">TSVB</span> — time-series metric panels<br>
+            <span class="g">Vega</span> — custom D3-based visuals (advanced)
+          </div>
+        </div>
+        <div class="mini">
+          <div class="ml">Pre-Built Security Dashboards</div>
+          <div class="mv">
+            Found in <span class="g">Security → Dashboards</span>:<br>
+            <span class="t">• Overview</span> — alert summary by severity<br>
+            <span class="t">• Network</span> — traffic flows, DNS, geo<br>
+            <span class="t">• Host</span> — process, file, registry events<br>
+            <span class="t">• User</span> — authentication, activity<br>
+            <span class="t">• Cloud</span> — cloud provider activity<br>
+            <span class="t">• Entity Analytics</span> — risk scores
+          </div>
+        </div>
+      </div>
+
+      <div class="note">
+        <p><strong>Exam tip — Discover vs Dashboards:</strong> Discover is for <em>ad-hoc, interactive investigation</em> of raw events. Dashboards built with Lens are for <em>persistent monitoring</em> and team-wide situational awareness. Security analysts use both: Discover when hunting/investigating a specific alert, pre-built dashboards for ongoing SOC monitoring.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       SECTION 2 — VIZ TYPES GALLERY
+  ════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">08.02</span><h2 class="sec-title">Visualization Types — When to Use Each</h2></div>
+    <div class="card">
+      <p>Choosing the right chart type for the right data is a key exam skill. Click any visualization type to see its use cases, configuration, and exam scenarios.</p>
+
+      <div class="viz-gallery" id="vizGallery">
+
+        <!-- Bar Chart -->
+        <div class="viz-card" onclick="selectViz(this,'vd-bar')">
+          <div class="viz-preview">
+            <svg viewBox="0 0 120 70" preserveAspectRatio="none">
+              <rect x="8"  y="40" width="14" height="28" fill="rgba(212,168,67,0.6)" rx="1"/>
+              <rect x="28" y="20" width="14" height="48" fill="rgba(212,168,67,0.8)" rx="1"/>
+              <rect x="48" y="30" width="14" height="38" fill="rgba(212,168,67,0.6)" rx="1"/>
+              <rect x="68" y="10" width="14" height="58" fill="var(--gold)" rx="1"/>
+              <rect x="88" y="45" width="14" height="23" fill="rgba(212,168,67,0.5)" rx="1"/>
+              <line x1="4" y1="68" x2="116" y2="68" stroke="rgba(212,168,67,0.2)" stroke-width="1"/>
+            </svg>
+          </div>
+          <div class="viz-info">
+            <div class="vi-type">Bar / Column</div>
+            <div class="vi-name">Alert Volume by Category</div>
+            <div class="vi-desc">Compare counts across categories or time buckets</div>
+          </div>
+        </div>
+
+        <!-- Line Chart -->
+        <div class="viz-card" onclick="selectViz(this,'vd-line')">
+          <div class="viz-preview">
+            <svg viewBox="0 0 120 70" preserveAspectRatio="none">
+              <polyline points="8,55 25,40 42,48 59,20 76,35 93,15 110,30" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linejoin="round"/>
+              <circle cx="59" cy="20" r="3" fill="var(--teal)"/>
+              <circle cx="93" cy="15" r="3" fill="var(--teal2)"/>
+              <polyline points="8,55 25,40 42,48 59,20 76,35 93,15 110,30" fill="rgba(56,201,184,0.08)"/>
+            </svg>
+          </div>
+          <div class="viz-info">
+            <div class="vi-type">Line / Area</div>
+            <div class="vi-name">Alert Trend Over Time</div>
+            <div class="vi-desc">Track metric changes over time, spot spikes</div>
+          </div>
+        </div>
+
+        <!-- Donut Chart -->
+        <div class="viz-card" onclick="selectViz(this,'vd-donut')">
+          <div class="viz-preview" style="padding:10px">
+            <svg viewBox="0 0 70 70">
+              <circle cx="35" cy="35" r="28" fill="none" stroke="var(--coral)" stroke-width="10" stroke-dasharray="62 114" stroke-dashoffset="0" transform="rotate(-90 35 35)"/>
+              <circle cx="35" cy="35" r="28" fill="none" stroke="var(--gold)" stroke-width="10" stroke-dasharray="44 132" stroke-dashoffset="-62" transform="rotate(-90 35 35)"/>
+              <circle cx="35" cy="35" r="28" fill="none" stroke="var(--teal)" stroke-width="10" stroke-dasharray="30 146" stroke-dashoffset="-106" transform="rotate(-90 35 35)"/>
+              <circle cx="35" cy="35" r="16" fill="var(--bg2)"/>
+              <text x="35" y="38" text-anchor="middle" fill="var(--gold)" font-family="Cormorant Garamond" font-size="10" font-weight="700">35%</text>
+            </svg>
+          </div>
+          <div class="viz-info">
+            <div class="vi-type">Donut / Pie</div>
+            <div class="vi-name">Severity Distribution</div>
+            <div class="vi-desc">Show proportional breakdown of categories</div>
+          </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="viz-card" onclick="selectViz(this,'vd-table')">
+          <div class="viz-preview" style="padding:6px">
+            <div class="ct-header" style="font-size:8px">Host<span>Alerts</span><span>Risk</span><span>Sev</span></div>
+            <div class="ct-row" style="font-size:9px">WIN-DC-01<span style="color:var(--coral)">47</span><span style="color:var(--coral)">99</span><span>CRIT</span></div>
+            <div class="ct-row" style="font-size:9px">WS-42<span style="color:var(--gold)">12</span><span style="color:var(--gold)">73</span><span>HIGH</span></div>
+            <div class="ct-row" style="font-size:9px">SRV-01<span>5</span><span>47</span><span>MED</span></div>
+          </div>
+          <div class="viz-info">
+            <div class="vi-type">Data Table</div>
+            <div class="vi-name">Top Hosts by Alert Count</div>
+            <div class="vi-desc">Ranked list with multiple metrics per row</div>
+          </div>
+        </div>
+
+        <!-- Metric -->
+        <div class="viz-card" onclick="selectViz(this,'vd-metric')">
+          <div class="viz-preview" style="flex-direction:column;gap:6px">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:2.8rem;font-weight:700;color:var(--coral);line-height:1">247</div>
+            <div style="font-family:'Overpass Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px">OPEN ALERTS</div>
+          </div>
+          <div class="viz-info">
+            <div class="vi-type">Metric / KPI</div>
+            <div class="vi-name">Single Value Summary</div>
+            <div class="vi-desc">Display a single count or aggregate prominently</div>
+          </div>
+        </div>
+
+        <!-- Heat Map -->
+        <div class="viz-card" onclick="selectViz(this,'vd-heat')">
+          <div class="viz-preview" style="padding:8px;flex-direction:column;gap:3px">
+            <div class="hm-row">
+              <div class="hm-cell" style="background:rgba(224,92,64,0.9)"></div>
+              <div class="hm-cell" style="background:rgba(224,92,64,0.4)"></div>
+              <div class="hm-cell" style="background:rgba(212,168,67,0.7)"></div>
+              <div class="hm-cell" style="background:rgba(212,168,67,0.3)"></div>
+              <div class="hm-cell" style="background:rgba(56,201,184,0.5)"></div>
+            </div>
+            <div class="hm-row">
+              <div class="hm-cell" style="background:rgba(212,168,67,0.5)"></div>
+              <div class="hm-cell" style="background:rgba(224,92,64,0.7)"></div>
+              <div class="hm-cell" style="background:rgba(56,201,184,0.3)"></div>
+              <div class="hm-cell" style="background:rgba(224,92,64,0.9)"></div>
+              <div class="hm-cell" style="background:rgba(212,168,67,0.6)"></div>
+            </div>
+            <div class="hm-row">
+              <div class="hm-cell" style="background:rgba(56,201,184,0.4)"></div>
+              <div class="hm-cell" style="background:rgba(212,168,67,0.3)"></div>
+              <div class="hm-cell" style="background:rgba(224,92,64,0.5)"></div>
+              <div class="hm-cell" style="background:rgba(56,201,184,0.8)"></div>
+              <div class="hm-cell" style="background:rgba(212,168,67,0.2)"></div>
+            </div>
+          </div>
+          <div class="viz-info">
+            <div class="vi-type">Heat Map</div>
+            <div class="vi-name">Activity by Hour × Day</div>
+            <div class="vi-desc">2D density — spot temporal attack patterns</div>
+          </div>
+        </div>
+
+        <!-- Maps -->
+        <div class="viz-card" onclick="selectViz(this,'vd-map')">
+          <div class="viz-preview">
+            <svg viewBox="0 0 120 70">
+              <ellipse cx="60" cy="38" rx="52" ry="28" fill="none" stroke="rgba(212,168,67,0.2)" stroke-width="0.5"/>
+              <circle cx="35" cy="32" r="6" fill="rgba(224,92,64,0.5)"/>
+              <circle cx="35" cy="32" r="3" fill="var(--coral)"/>
+              <circle cx="72" cy="28" r="4" fill="rgba(212,168,67,0.5)"/>
+              <circle cx="72" cy="28" r="2" fill="var(--gold)"/>
+              <circle cx="90" cy="42" r="5" fill="rgba(56,201,184,0.4)"/>
+              <circle cx="90" cy="42" r="2.5" fill="var(--teal)"/>
+              <circle cx="48" cy="44" r="3" fill="rgba(155,110,243,0.5)"/>
+              <circle cx="48" cy="44" r="1.5" fill="var(--violet)"/>
+              <line x1="35" y1="32" x2="72" y2="28" stroke="rgba(224,92,64,0.3)" stroke-width="0.8" stroke-dasharray="3,2"/>
+              <line x1="35" y1="32" x2="90" y2="42" stroke="rgba(224,92,64,0.2)" stroke-width="0.8" stroke-dasharray="3,2"/>
+            </svg>
+          </div>
+          <div class="viz-info">
+            <div class="vi-type">Maps (Kibana Maps)</div>
+            <div class="vi-name">Threat Source Geo Map</div>
+            <div class="vi-desc">Geolocate source IPs, visualize attack origins</div>
+          </div>
+        </div>
+
+        <!-- ESQL Table -->
+        <div class="viz-card" onclick="selectViz(this,'vd-esql')">
+          <div class="viz-preview" style="padding:8px">
+            <div style="font-family:'Overpass Mono',monospace;font-size:9px;line-height:1.7;color:var(--teal2)">FROM logs-endpoint*<br>| STATS count=COUNT(*)<br>| BY process.name<br>| SORT count DESC</div>
+          </div>
+          <div class="viz-info">
+            <div class="vi-type">ES|QL Table Panel</div>
+            <div class="vi-name">Aggregated Analytics</div>
+            <div class="vi-desc">Pipe-based query results embedded in dashboards</div>
+          </div>
+        </div>
+
+        <!-- Hidden detail panel (spans full width) -->
+        <div class="viz-detail" id="vd-bar">
+          <div class="vd-title">Bar / Column Chart</div>
+          <div class="vd-body">WHEN TO USE: Compare discrete categories (rule names, host names, process names) or time-bucketed counts.
+
+SECURITY USE CASES:
+  • Alert count by rule name — identify your noisiest rules
+  • Events by host.name — spot compromised or busy hosts
+  • Authentication failures by user.name — brute force visibility
+  • Process execution counts by process.name — baseline deviation
+
+LENS CONFIGURATION (Vertical Bar):
+  X-axis  → Date Histogram (@timestamp) or Terms (host.name)
+  Y-axis  → Count or Sum(numeric_field)
+  Break down by → severity (for stacked bar by severity level)
+
+EXAM TIP: For "which hosts triggered the most alerts in the past 24 hours?"
+→ Vertical bar chart, X = host.name (Terms, Top 10), Y = Count</div>
+        </div>
+        <div class="viz-detail" id="vd-line">
+          <div class="vd-title">Line / Area Chart</div>
+          <div class="vd-body">WHEN TO USE: Show trends over time. Spot spikes, anomalies, drops in detection coverage.
+
+SECURITY USE CASES:
+  • Alert volume trend — is our attack surface growing?
+  • Detection rate over time — are rules catching more over time?
+  • Failed login attempts over 7 days — identify brute force windows
+  • Network bytes per hour — detect exfiltration spikes
+
+LENS CONFIGURATION:
+  X-axis  → Date Histogram (@timestamp), interval = auto/1h/1d
+  Y-axis  → Count, Avg(risk_score), Sum(network.bytes)
+  Line series → one per severity level (for multi-line trend)
+
+EXAM TIP: Date Histogram is always the X-axis for time-series line charts.
+"Show alert trend over the last 30 days" = line chart + date histogram.</div>
+        </div>
+        <div class="viz-detail" id="vd-donut">
+          <div class="vd-title">Donut / Pie Chart</div>
+          <div class="vd-body">WHEN TO USE: Show proportional composition when you have a small number of categories (≤8).
+Avoid for many categories — use a bar chart or table instead.
+
+SECURITY USE CASES:
+  • Alert severity distribution — what % are Critical vs High vs Medium?
+  • Event category breakdown — process vs network vs authentication
+  • MITRE tactic distribution — which tactics are most active?
+  • Alert status breakdown — Open vs Acknowledged vs Closed
+
+LENS CONFIGURATION:
+  Slice by → Terms (kibana.alert.severity, event.category)
+  Metric   → Count
+  Max slices → 5–8 recommended
+
+EXAM TIP: Donut/Pie is for PROPORTIONS of a finite set.
+If someone asks "what percentage of alerts are Critical?" → Donut chart.</div>
+        </div>
+        <div class="viz-detail" id="vd-table">
+          <div class="vd-title">Data Table</div>
+          <div class="vd-body">WHEN TO USE: Show ranked lists with multiple metrics per entity.
+Tables are essential when you need multiple columns of data per row.
+
+SECURITY USE CASES:
+  • Top 10 hosts by alert count + risk score + last seen
+  • Top processes by execution count + unique hosts + unique users
+  • Failed auth attempts per user + source IP + target host
+  • Rule performance: name + fires/day + FP rate + severity
+
+LENS CONFIGURATION:
+  Row  → Terms aggregation (host.name, user.name, process.name)
+  Cols → Count, Sum, Avg, Top Values (additional metrics)
+  Sort → Descending by count
+
+EXAM TIP: "Show the top 10 hosts ranked by most alerts with their risk scores"
+→ Data Table, not a bar chart. Tables = multiple metrics per row.</div>
+        </div>
+        <div class="viz-detail" id="vd-metric">
+          <div class="vd-title">Metric / KPI Panel</div>
+          <div class="vd-body">WHEN TO USE: Display a single prominent number as a KPI — overview dashboards and executive reports.
+
+SECURITY USE CASES:
+  • Total open alerts (count)
+  • Critical alert count today
+  • Mean Time to Detect (MTTD) in minutes
+  • Mean Time to Respond (MTTR) in hours
+  • Active hosts with endpoint coverage
+  • Rules currently enabled
+
+LENS CONFIGURATION:
+  Primary metric → Count (with filter: status = "open")
+  Secondary metric → optional trend/comparison value
+
+EXAM TIP: Metric panels are for at-a-glance KPIs.
+"Display the total count of open critical alerts as a single number" → Metric panel.
+Can use color thresholds: green < 10, amber 10–50, red > 50.</div>
+        </div>
+        <div class="viz-detail" id="vd-heat">
+          <div class="vd-title">Heat Map</div>
+          <div class="vd-body">WHEN TO USE: Visualize density across two dimensions — time-of-day patterns, host × rule density.
+
+SECURITY USE CASES:
+  • Alerts by hour-of-day × day-of-week — spot attack time patterns
+  • Authentication failures by user × host — lateral movement patterns
+  • Process launches by host × process.name — which hosts run what?
+  • Alert density by MITRE tactic × time period
+
+LENS CONFIGURATION:
+  X-axis → Hour of day (scripted field or date format: HH)
+  Y-axis → Day of week
+  Cell value → Count
+  Color → gradient (low = blue, high = red)
+
+EXAM TIP: Heat maps reveal TEMPORAL PATTERNS that line charts obscure.
+"Show which hours of the day have the most authentication failures" → Heat map (hour × day).</div>
+        </div>
+        <div class="viz-detail" id="vd-map">
+          <div class="vd-title">Kibana Maps</div>
+          <div class="vd-body">WHEN TO USE: Geospatial analysis of IP addresses, threat origins, network flows.
+
+SECURITY USE CASES:
+  • Source IP geolocation of authentication failures
+  • Destination countries for outbound C2 connections
+  • Threat intelligence indicator geographic distribution
+  • VPN connection source visualization
+  • Attack origin heatmap (clustered point layer)
+
+CONFIGURATION:
+  Layer type → Documents (for individual events) or Grid aggregation (for density)
+  Geo field  → source.geo.location or destination.geo.location
+  Filter     → event.category: "authentication" AND event.outcome: "failure"
+
+EXAM TIP: Kibana Maps uses ECS geo.location fields (geo_point type).
+Requires source.geo.* or destination.geo.* to be populated (via geoip processor).
+"Show a map of where failed logins are coming from" → Kibana Maps.</div>
+        </div>
+        <div class="viz-detail" id="vd-esql">
+          <div class="vd-title">ES|QL Table / Visualization Panel</div>
+          <div class="vd-body">WHEN TO USE: When you need aggregated analytics or computed metrics that Lens cannot express
+(e.g., COUNT_DISTINCT, computed ratios, complex multi-step aggregations).
+
+SECURITY USE CASES:
+  • Top 10 rarest processes (COUNT_DISTINCT hosts per executable)
+  • Users with most unique source IPs (potential account sharing)
+  • Alert rate per rule per hour (computed in ES|QL, displayed as table)
+  • DNS query volume ratio (total/unique — beacon detection)
+
+CONFIGURATION:
+  In Lens: Switch to "ES|QL" query mode
+  Write the full ES|QL query (FROM … | WHERE … | STATS … | SORT …)
+  Output renders as table or chart depending on query structure
+
+EXAM TIP: ES|QL panels are displayed within Dashboards just like Lens panels.
+They are ideal when STATS aggregations like COUNT_DISTINCT or EVAL-computed
+fields are needed — operations impossible in standard Lens drag-drop mode.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       SECTION 3 — LENS BUILDER
+  ════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">08.03</span><h2 class="sec-title">Lens — Interactive Preview</h2></div>
+    <div class="card">
+      <p><strong>Kibana Lens</strong> is the primary visualization builder. It uses a drag-and-drop interface to build charts from aggregated field data. Understanding Lens concepts — data views, aggregations, buckets, and chart switching — is essential exam knowledge.</p>
+
+      <div class="lens-demo">
+        <div class="ld-header">
+          <span class="ld-title">// Lens Builder Simulator</span>
+          <div class="ld-selector">
+            <button class="ld-tab active" onclick="switchChart('bar', this)">Bar Chart</button>
+            <button class="ld-tab" onclick="switchChart('line', this)">Line Chart</button>
+            <button class="ld-tab" onclick="switchChart('donut', this)">Donut</button>
+            <button class="ld-tab" onclick="switchChart('table', this)">Table</button>
+            <button class="ld-tab" onclick="switchChart('metric', this)">Metric</button>
+          </div>
+        </div>
+        <div class="ld-body">
+          <div class="ld-config">
+            <div class="ldc-section">
+              <span class="ldc-label">Data Source</span>
+              <select class="ldc-select" id="ld-index" onchange="updateChart()">
+                <option value="alerts">Security Alerts</option>
+                <option value="endpoint">Endpoint Events</option>
+                <option value="auth">Authentication Logs</option>
+                <option value="network">Network Logs</option>
+              </select>
+            </div>
+            <div class="ldc-section">
+              <span class="ldc-label">Field (X / Slice)</span>
+              <select class="ldc-select" id="ld-field" onchange="updateChart()">
+                <option value="severity">kibana.alert.severity</option>
+                <option value="host">host.name</option>
+                <option value="user">user.name</option>
+                <option value="rule">rule.name</option>
+                <option value="tactic">threat.tactic.name</option>
+                <option value="process">process.name</option>
+              </select>
+            </div>
+            <div class="ldc-section">
+              <span class="ldc-label">Metric (Y)</span>
+              <select class="ldc-select" id="ld-metric" onchange="updateChart()">
+                <option value="count">Count</option>
+                <option value="risk">Avg(risk_score)</option>
+                <option value="bytes">Sum(network.bytes)</option>
+                <option value="uniq">Count Distinct(host.name)</option>
+              </select>
+            </div>
+            <div class="ldc-section">
+              <span class="ldc-label">Time Range</span>
+              <select class="ldc-select" id="ld-time" onchange="updateChart()">
+                <option value="1h">Last 1 hour</option>
+                <option value="24h" selected>Last 24 hours</option>
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+              </select>
+            </div>
+          </div>
+          <div class="ld-preview" id="ld-preview">
+            <!-- Chart rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <div class="note teal">
+        <p><strong>Key Lens concepts:</strong> A <strong>Data View</strong> (formerly "Index Pattern") maps to one or more index patterns (e.g., <code style="color:var(--teal2)">.alerts-security.alerts-*</code>). The <strong>Date Histogram</strong> bucket splits data by time and is used for time-series charts. <strong>Top Values</strong> bucket groups by a field's top N terms. All aggregations run against Elasticsearch — Lens is a GUI over ES aggregation queries.</p>
+      </div>
+
+      <div class="code"><span class="cc">// Behind every Lens panel is an Elasticsearch aggregation request</span>
+<span class="cc">// This is what Lens generates for "Alert count by severity (Top 5)":</span>
+
+{
+  <span class="ck">"aggs"</span>: {
+    <span class="ci">"2"</span>: {
+      <span class="ck">"terms"</span>: {
+        <span class="cs">"field"</span>: <span class="cv">"kibana.alert.severity"</span>,
+        <span class="cs">"size"</span>:  <span class="cn">5</span>,
+        <span class="cs">"order"</span>: { <span class="cs">"_count"</span>: <span class="cv">"desc"</span> }
+      },
+      <span class="ck">"aggs"</span>: {
+        <span class="ci">"1"</span>: { <span class="ck">"count"</span>: {} }
+      }
+    }
+  },
+  <span class="ck">"query"</span>: {
+    <span class="ck">"bool"</span>: {
+      <span class="cs">"filter"</span>: [{ <span class="ck">"range"</span>: { <span class="cv">"@timestamp"</span>: { <span class="cs">"gte"</span>: <span class="cv">"now-24h"</span> } } }]
+    }
+  }
+}</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       SECTION 4 — DASHBOARD SCENARIOS
+  ════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">08.04</span><h2 class="sec-title">Dashboard Design Scenarios</h2></div>
+    <div class="card">
+      <p>The ECSA exam presents dashboard design scenarios: given a requirement, which visualization type and configuration is correct? Click each scenario to see the recommended approach.</p>
+
+      <div class="scenarios">
+        <div class="sc-item" onclick="toggleScenario(this,'sc1')">
+          <div class="sc-num">01</div>
+          <div class="sc-body">
+            <div class="sc-meta">SOC Manager · Situational Awareness</div>
+            <div class="sc-title">"I need to see total open alerts, how many are Critical, and the trend over the last 7 days — all at a glance."</div>
+            <div class="sc-desc">Executive overview dashboard design</div>
+            <div class="sc-detail" id="sc1">RECOMMENDED APPROACH:
+Panel 1 (top-left):  Metric panel → COUNT where status="open"
+Panel 2 (top-centre): Metric panel → COUNT where severity="critical"
+Panel 3 (top-right):  Metric panel → COUNT where severity="high"
+Panel 4 (bottom):     Line chart → Date Histogram (7 days), Y = Count, Break down by: severity
+
+COLOR THRESHOLDS on Metric panels:
+  Total open: green &lt;50, amber 50-200, red &gt;200
+  Critical:   green = 0, amber 1-5, red &gt;5
+
+EXAM TIP: Multiple Metric panels + one time-series line chart is the standard
+SOC overview layout. Metric panels give instant KPI status; line chart shows trends.</div>
+          </div>
+        </div>
+
+        <div class="sc-item" onclick="toggleScenario(this,'sc2')">
+          <div class="sc-num">02</div>
+          <div class="sc-body">
+            <div class="sc-meta">Threat Intelligence · Geo Analysis</div>
+            <div class="sc-title">"Show me where failed authentication attempts are geographically originating from in the last 24 hours."</div>
+            <div class="sc-desc">Geographic threat visualization</div>
+            <div class="sc-detail" id="sc2">RECOMMENDED APPROACH:
+Tool:     Kibana Maps (not Lens)
+Layer:    Documents layer OR Grid aggregation layer
+Index:    logs-* (auth events)
+Filter:   event.category: "authentication" AND event.outcome: "failure"
+Geo field: source.geo.location (geo_point type)
+
+PREREQUISITES:
+  → source.geo.* fields must be populated (via geoip ingest processor)
+  → The index mapping must have source.geo.location as geo_point type
+
+LAYER TYPES:
+  Documents → individual event pins (good for &lt;10k events)
+  Grid aggregation → density heatmap by region (good for high volume)
+  Point-to-point → show connections between source and destination IPs
+
+EXAM TIP: Any question about geographic visualization of IPs = Kibana Maps.
+Lens cannot render maps. The geoip processor must be in the ingest pipeline.</div>
+          </div>
+        </div>
+
+        <div class="sc-item" onclick="toggleScenario(this,'sc3')">
+          <div class="sc-num">03</div>
+          <div class="sc-body">
+            <div class="sc-meta">Detection Engineering · Rule Performance</div>
+            <div class="sc-title">"Which detection rules are firing the most alerts, and what's the average risk score per rule?"</div>
+            <div class="sc-desc">Rule performance analysis dashboard</div>
+            <div class="sc-detail" id="sc3">RECOMMENDED APPROACH:
+Tool:   Lens → Data Table
+Index:  .alerts-security.alerts-*
+Rows:   Terms aggregation on kibana.alert.rule.name (Top 20)
+Column 1: Count (total alerts)
+Column 2: Average of kibana.alert.risk_score
+Column 3: Max of kibana.alert.severity (for worst severity seen)
+Sort:   Descending by Count
+
+ALTERNATIVE (ES|QL for more control):
+FROM .alerts-security.alerts-*
+| WHERE @timestamp &gt; NOW() - 7 days
+| STATS alert_count = COUNT(*), avg_risk = AVG(kibana.alert.risk_score)
+  BY kibana.alert.rule.name
+| SORT alert_count DESC | LIMIT 20
+
+EXAM TIP: Data Tables with multiple metrics per row are best for rule performance.
+"Top N rules ranked by X with metrics Y and Z" = Data Table, not bar chart.</div>
+          </div>
+        </div>
+
+        <div class="sc-item" onclick="toggleScenario(this,'sc4')">
+          <div class="sc-num">04</div>
+          <div class="sc-body">
+            <div class="sc-meta">Behavioral Analysis · Temporal Patterns</div>
+            <div class="sc-title">"Show whether attackers are working specific hours — when are most alerts firing during the week?"</div>
+            <div class="sc-desc">Temporal attack pattern visualization</div>
+            <div class="sc-detail" id="sc4">RECOMMENDED APPROACH:
+Tool:   Lens → Heat Map
+Index:  .alerts-security.alerts-*
+X-axis: Hour of day (computed: hour_of_day from @timestamp)
+Y-axis: Day of week (computed: day_of_week from @timestamp)
+Value:  Count
+Color:  Gradient low=blue, high=red
+
+HOW TO CREATE HOUR/DAY FIELDS:
+Use a scripted field in the data view:
+  hour_of_day → doc['@timestamp'].value.hourOfDay
+  day_of_week → doc['@timestamp'].value.dayOfWeekEnum.toString()
+
+OR use ES|QL with DATE_EXTRACT():
+FROM .alerts-security.alerts-*
+| EVAL hour = DATE_EXTRACT("HOUR_OF_DAY", @timestamp)
+| EVAL dow  = DATE_EXTRACT("DAY_OF_WEEK", @timestamp)
+| STATS count = COUNT(*) BY hour, dow
+| SORT count DESC
+
+EXAM TIP: Heat map = 2D density analysis. The hour-of-day × day-of-week heat map
+is the classic "working hours vs off-hours attacker" visualization.</div>
+          </div>
+        </div>
+
+        <div class="sc-item" onclick="toggleScenario(this,'sc5')">
+          <div class="sc-num">05</div>
+          <div class="sc-body">
+            <div class="sc-meta">Dashboard Filters · Drill-Down</div>
+            <div class="sc-title">"When I click a bar in the host chart, I want all other panels to filter to just that host automatically."</div>
+            <div class="sc-desc">Dashboard interactivity and cross-filtering</div>
+            <div class="sc-detail" id="sc5">RECOMMENDED APPROACH:
+Feature: Dashboard controls + Cross-panel filtering (built-in to Kibana Dashboards)
+
+How it works:
+  1. All panels on the same dashboard share the same time range and global filters
+  2. Clicking a value in most Lens panels automatically creates a KQL filter
+     that applies to ALL panels on the dashboard
+  3. The filter appears in the KQL bar at the top: host.name: "WIN-DC-01"
+
+ADDITIONAL CONTROLS:
+  • Option Lists → dropdown selector for host.name, severity, etc.
+  • Range Sliders → numeric range filter (e.g., risk_score slider)
+  • Time Slider → scrub through time ranges
+  → All controls filter ALL panels on the dashboard simultaneously
+
+DRILL-DOWN:
+  Right-click a chart element → "Drill down" or configure URL-based drilldowns
+  to navigate from dashboard → Discover with filters pre-applied
+
+EXAM TIP: Cross-panel filtering is AUTOMATIC in Kibana dashboards — clicking
+a value in one panel filters all others. No special configuration needed.
+Controls are optional additions for pre-built filter selectors.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="note violet">
+        <p><strong>Dashboard best practices for the exam:</strong> Pre-built Elastic Security dashboards (Security → Dashboards) cannot be edited — they must be <strong>cloned first</strong> before customization. To save a custom dashboard, you must be in <strong>edit mode</strong>. Dashboards are Space-scoped saved objects — they do not automatically appear in other Spaces.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       SECTION 5 — REPORTING
+  ════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">08.05</span><h2 class="sec-title">Reporting & Sharing</h2></div>
+    <div class="card">
+      <p>Kibana supports several mechanisms for <strong>sharing dashboards and generating reports</strong> for stakeholders who don't have Kibana access.</p>
+
+      <div class="two-col">
+        <div class="mini">
+          <div class="ml">Report Types</div>
+          <div class="mv">
+            <span class="g">PDF Report</span> — snapshot of dashboard<br>
+            &nbsp;&nbsp;as a printable PDF<br>
+            <span class="g">PNG Report</span> — image snapshot<br>
+            <span class="g">CSV Export</span> — Discover search data<br>
+            &nbsp;&nbsp;as downloadable CSV<br>
+            <span class="t">Scheduled Reports</span> — generate<br>
+            &nbsp;&nbsp;automatically on a cron schedule<br>
+            <span class="t">Shared Links</span> — URL with snapshot<br>
+            &nbsp;&nbsp;or live (auto-refresh) view
+          </div>
+        </div>
+        <div class="mini">
+          <div class="ml">Canvas</div>
+          <div class="mv">
+            Canvas is Kibana's <span class="g">presentation layer</span>.<br>
+            Pixel-perfect, free-form layout.<br><br>
+            Use Canvas for:<br>
+            <span class="c">• Executive briefing slides</span><br>
+            <span class="c">• NOC/SOC wall displays</span><br>
+            <span class="c">• Security posture reports</span><br><br>
+            Uses <span class="g">expressions</span> (Kibana Canvas<br>
+            query language) or Elasticsearch.
+          </div>
+        </div>
+      </div>
+
+      <div class="code"><span class="cc">// Key dashboard filter syntax — used in KQL bar at top of dashboards</span>
+
+<span class="cc">// Filter all panels to critical open alerts</span>
+<span class="ck">kibana.alert.severity</span>: <span class="cv">"critical"</span> <span class="ck">AND</span> <span class="ck">kibana.alert.workflow_status</span>: <span class="cv">"open"</span>
+
+<span class="cc">// Pin a time range override</span>
+<span class="ck">@timestamp</span>: [<span class="cv">"2024-03-15T00:00:00"</span> <span class="ck">TO</span> <span class="cv">"2024-03-15T23:59:59"</span>]
+
+<span class="cc">// Pre-built dashboard locations</span>
+<span class="ck">Security → Dashboards</span>      <span class="cc">→ Pre-built security dashboards (read-only until cloned)</span>
+<span class="ck">Kibana → Analytics → Dashboards</span> <span class="cc">→ All custom dashboards (editable)</span>
+<span class="ck">Stack Management → Reporting</span>   <span class="cc">→ Manage scheduled and on-demand reports</span>
+      </div>
+
+      <div class="note coral">
+        <p><strong>Important exam distinction:</strong> <strong>Security → Dashboards</strong> contains the <em>pre-built</em> Elastic Security dashboards that come with integrations. They are <strong>read-only</strong> and cannot be directly modified — you must clone them to make changes. <strong>Analytics → Dashboards</strong> contains all custom dashboards (editable). Both live within the current Kibana Space.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       COMPLETION BANNER
+  ════════════════════════════════ -->
+  <div class="completion">
+    <div class="comp-title">All 8 Topics Complete</div>
+    <div class="comp-sub">Elastic Certified SIEM Analyst · Study Guide</div>
+    <div class="comp-grid">
+      <span class="comp-chip done">01 · Fundamentals</span>
+      <span class="comp-chip done">02 · Data Ingestion</span>
+      <span class="comp-chip done">03 · Detection Engine</span>
+      <span class="comp-chip done">04 · Alert Triage</span>
+      <span class="comp-chip done">05 · Threat Hunting</span>
+      <span class="comp-chip done">06 · Cases</span>
+      <span class="comp-chip done">07 · RBAC & Admin</span>
+      <span class="comp-chip done">08 · Visualization</span>
+    </div>
+    <div class="comp-msg">You have studied all eight topics of the ECSA exam syllabus. Review any weak areas, practice KQL/EQL/ES|QL queries in a live environment, and you are ready for the exam. Good luck.</div>
+  </div>
+
+  <!-- ═══════════ FINAL QUIZ ═══════════ -->
+  <div class="quiz">
+    <div class="quiz-ornament">
+      <div class="ornament-diamond"></div>
+      <div class="ornament-line"></div>
+    </div>
+    <div class="quiz-title">Final Visualization Quiz</div>
+
+    <!-- Q1 -->
+    <div class="qb" id="q1">
+      <div class="q-n">QUESTION 01</div>
+      <div class="q-t">A SOC manager wants a dashboard that shows the total count of open critical alerts as a large, prominent number that changes colour to red when it exceeds 10. Which visualization type should be used?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q1','A','B')"><span class="ol">A</span>Line chart with date histogram showing alert count trend</button>
+        <button class="opt" onclick="ans(this,'q1','B','B')"><span class="ol">B</span>Metric panel with a count aggregation and colour thresholds configured</button>
+        <button class="opt" onclick="ans(this,'q1','C','B')"><span class="ol">C</span>Data table showing all open critical alerts with their details</button>
+        <button class="opt" onclick="ans(this,'q1','D','B')"><span class="ol">D</span>Donut chart showing the proportion of critical alerts vs all alerts</button>
+      </div>
+      <div class="exp" id="e-q1"><strong>Correct: Metric panel with colour thresholds.</strong> Metric panels are purpose-built for single prominent KPI values. They support colour thresholds: configure green when &lt;10, red when ≥10. The filter would be <code style="color:var(--gold2)">kibana.alert.severity: "critical" AND kibana.alert.workflow_status: "open"</code>. A line chart shows trends (not a current count). A table shows rows of data. A donut shows proportions, not a single highlighted number.</div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="qb" id="q2">
+      <div class="q-n">QUESTION 02</div>
+      <div class="q-t">An analyst clicks on a bar labelled "WIN-DC-01" in a host alert-count bar chart on a dashboard. What happens to the other panels on the same dashboard?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q2','A','C')"><span class="ol">A</span>Nothing — panels are independent and do not share filters</button>
+        <button class="opt" onclick="ans(this,'q2','B','C')"><span class="ol">B</span>A new browser tab opens with Discover filtered to that host</button>
+        <button class="opt" onclick="ans(this,'q2','C','C')"><span class="ol">C</span>All other panels on the dashboard automatically filter to show only WIN-DC-01 data</button>
+        <button class="opt" onclick="ans(this,'q2','D','C')"><span class="ol">D</span>A pop-up alert flyout appears showing the host's most recent alert</button>
+      </div>
+      <div class="exp" id="e-q2"><strong>Correct: All other panels filter to WIN-DC-01.</strong> Kibana Dashboard cross-panel filtering is automatic — clicking a value in any Lens panel creates a KQL filter that applies to the entire dashboard. All panels sharing the same data view will update to show only events from WIN-DC-01. The filter appears in the KQL bar at the top of the dashboard and can be removed or pinned.</div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="qb" id="q3">
+      <div class="q-n">QUESTION 03</div>
+      <div class="q-t">Which visualization is BEST suited to answer: "At what hours of the day and days of the week do authentication failures peak in our environment?"</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q3','A','D')"><span class="ol">A</span>Line chart with @timestamp on X-axis (24-hour view)</button>
+        <button class="opt" onclick="ans(this,'q3','B','D')"><span class="ol">B</span>Bar chart with hour-of-day on X-axis</button>
+        <button class="opt" onclick="ans(this,'q3','C','D')"><span class="ol">C</span>Data table showing alert count per hour</button>
+        <button class="opt" onclick="ans(this,'q3','D','D')"><span class="ol">D</span>Heat map with hour-of-day on X-axis and day-of-week on Y-axis</button>
+      </div>
+      <div class="exp" id="e-q3"><strong>Correct: Heat map with hour × day.</strong> A heat map visualizes density across two dimensions simultaneously. With hour-of-day (0–23) on X and day-of-week on Y, the colour intensity of each cell shows peak activity times — revealing patterns like "most attacks happen Monday-Friday, 02:00-05:00 UTC." A line chart shows one dimension over time. A bar chart shows one dimension. Only a heat map combines two categorical dimensions with density colour coding.</div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="qb" id="q4">
+      <div class="q-n">QUESTION 04</div>
+      <div class="q-t">An analyst wants to display where failed login source IPs are geographically located on a world map. Which Kibana feature must they use, and what is required for it to work?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q4','A','C')"><span class="ol">A</span>Lens with a geo_point field — Lens has a built-in map chart type</button>
+        <button class="opt" onclick="ans(this,'q4','B','C')"><span class="ol">B</span>Canvas with an embedded map element configured via Elasticsearch SQL</button>
+        <button class="opt" onclick="ans(this,'q4','C','C')"><span class="ol">C</span>Kibana Maps — requires source.geo.location (geo_point) fields, populated by the geoip ingest processor</button>
+        <button class="opt" onclick="ans(this,'q4','D','C')"><span class="ol">D</span>Kibana Discover with a map view toggled on in the sidebar</button>
+      </div>
+      <div class="exp" id="e-q4"><strong>Correct: Kibana Maps, requiring geo_point fields from the geoip processor.</strong> Kibana Maps is the dedicated geospatial visualization tool. It requires the events to have <code style="color:var(--gold2)">source.geo.location</code> (type: geo_point) populated. These fields are typically added by the geoip ingest pipeline processor which translates IP addresses to coordinates. Lens does not have a map chart type. Discover has no map view.</div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="qb" id="q5">
+      <div class="q-n">QUESTION 05</div>
+      <div class="q-t">A security analyst wants to modify one of the pre-built Elastic Security dashboards (under Security → Dashboards) to add a custom panel. What must they do first?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q5','A','C')"><span class="ol">A</span>Assign themselves the Tier 3 Analyst role — which unlocks dashboard editing</button>
+        <button class="opt" onclick="ans(this,'q5','B','C')"><span class="ol">B</span>Export the dashboard as JSON, edit the JSON, and re-import it</button>
+        <button class="opt" onclick="ans(this,'q5','C','C')"><span class="ol">C</span>Clone the dashboard — pre-built security dashboards are read-only and cannot be directly edited</button>
+        <button class="opt" onclick="ans(this,'q5','D','C')"><span class="ol">D</span>Switch to the Default Kibana Space where all dashboards are editable</button>
+      </div>
+      <div class="exp" id="e-q5"><strong>Correct: Clone the dashboard first.</strong> Pre-built Elastic Security dashboards (Security → Dashboards) are read-only — they cannot be directly edited to prevent overwriting official content during upgrades. To customize them, the analyst must use the "Clone" option, which creates an editable copy in Analytics → Dashboards within the same Space. Roles don't unlock read-only status. Space-switching does not change the read-only nature of pre-built content.</div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="qb" id="q6">
+      <div class="q-n">QUESTION 06</div>
+      <div class="q-t">An analyst needs a dashboard panel that shows: the top 20 process executables, how many unique hosts ran each one, and how many total executions occurred. Which visualization type is most appropriate?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q6','A','C')"><span class="ol">A</span>Donut chart — showing each process as a slice with two metrics</button>
+        <button class="opt" onclick="ans(this,'q6','B','C')"><span class="ol">B</span>Bar chart — with process.executable on X-axis and Count on Y-axis</button>
+        <button class="opt" onclick="ans(this,'q6','C','C')"><span class="ol">C</span>Data table — with process.executable rows and multiple metric columns</button>
+        <button class="opt" onclick="ans(this,'q6','D','C')"><span class="ol">D</span>Line chart — showing each process over time with stacked series</button>
+      </div>
+      <div class="exp" id="e-q6"><strong>Correct: Data table.</strong> When you need multiple metrics per entity (unique hosts AND total count per process), a Data Table is the right choice. Configure: Rows = Terms(process.executable, Top 20), Column 1 = Count, Column 2 = Count Distinct(host.name), sorted by Count descending. A bar chart can only show one metric per bar. A donut shows proportions of a single metric. A line chart shows time trends.</div>
+    </div>
+
+    <!-- Q7 -->
+    <div class="qb" id="q7">
+      <div class="q-n">QUESTION 07</div>
+      <div class="q-t">What is the correct location in Kibana to find dashboards that came pre-installed with the Elastic Security integration (like the "Overview" and "Network" dashboards)?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q7','A','B')"><span class="ol">A</span>Analytics → Dashboards (main Kibana dashboard library)</button>
+        <button class="opt" onclick="ans(this,'q7','B','B')"><span class="ol">B</span>Security → Dashboards (Elastic Security dedicated section)</button>
+        <button class="opt" onclick="ans(this,'q7','C','B')"><span class="ol">C</span>Stack Management → Saved Objects (all saved objects browser)</span></button>
+        <button class="opt" onclick="ans(this,'q7','D','B')"><span class="ol">D</span>Fleet → Integrations (alongside the integration that installed them)</button>
+      </div>
+      <div class="exp" id="e-q7"><strong>Correct: Security → Dashboards.</strong> The pre-built security dashboards (Overview, Network, Host, User, Cloud, Entity Analytics) are accessed through the dedicated Security → Dashboards section in Elastic Security. While they are technically also visible in Analytics → Dashboards (as tagged read-only objects), the primary designed access point and exam-expected answer is Security → Dashboards. This section also filters to show only security-relevant dashboards, not all Kibana dashboards.</div>
+    </div>
+
+    <div class="scorebox" id="scorebox">
+      <div class="score-big" id="score-num">0/7</div>
+      <div class="score-sub">Final Quiz · Visualization Mastered</div>
+      <div class="score-msg" id="score-msg"></div>
+      <button class="btn-reset" onclick="resetQuiz()">↺ Retry</button>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-ornament">
+      <div class="ornament-line"></div>
+      <div class="ornament-diamond"></div>
+      <div class="ornament-line"></div>
+    </div>
+    <div class="ft">ECSA · ELASTIC CERTIFIED SIEM ANALYST · ALL 8 TOPICS COMPLETE · GOOD LUCK ON YOUR EXAM</div>
+    <div class="nav-btns">
+      <a href="#" class="nbtn">← Topic 7</a>
+      <button class="nbtn primary" onclick="alert('🎉 You\'ve completed the full ECSA study guide!\n\nAll 8 topics covered:\n01 Fundamentals · 02 Data Ingestion · 03 Detection Engine\n04 Alert Triage · 05 Threat Hunting · 06 Cases\n07 RBAC & Admin · 08 Visualization\n\nGood luck on your exam!')">✦ Complete Series</button>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+// ── Viz gallery selector ──
+let activeViz = null;
+let openDetail = null;
+
+function selectViz(card, detailId) {
+  const detail = document.getElementById(detailId);
+  if (activeViz === card) {
+    card.classList.remove('selected');
+    detail.classList.remove('show');
+    activeViz = null; openDetail = null;
+    return;
+  }
+  document.querySelectorAll('.viz-card').forEach(c => c.classList.remove('selected'));
+  if (openDetail) openDetail.classList.remove('show');
+  card.classList.add('selected');
+  detail.classList.add('show');
+  activeViz = card; openDetail = detail;
+}
+
+// ── Scenarios toggle ──
+function toggleScenario(el, id) {
+  const det = document.getElementById(id);
+  const open = det.classList.contains('show');
+  document.querySelectorAll('.sc-detail').forEach(d => d.classList.remove('show'));
+  document.querySelectorAll('.sc-item').forEach(s => s.classList.remove('expanded'));
+  if (!open) { det.classList.add('show'); el.classList.add('expanded'); }
+}
+
+// ── Lens simulator ──
+let currentChart = 'bar';
+
+const fieldLabels = {
+  severity: ['Critical','High','Medium','Low','Info'],
+  host:     ['WIN-DC-01','WS-42','SRV-01','FINANCE-PC','LDAP-01'],
+  user:     ['jdoe','mlee','svc-backup','admin','jsmith'],
+  rule:     ['Cred Dump','PS Encoded','New Country','Brute Force','USB Device'],
+  tactic:   ['Execution','Cred Access','Persist.','Lateral Mv.','C&C'],
+  process:  ['powershell','cmd.exe','wscript','certutil','mimikatz']
+};
+
+const metricLabels = { count:'alerts', risk:'avg risk', bytes:'MB out', uniq:'unique hosts' };
+
+const baseData = {
+  severity: [47,38,24,12,5],
+  host:     [47,28,15,10,6],
+  user:     [34,22,18,12,7],
+  rule:     [52,31,28,12,8],
+  tactic:   [40,35,20,15,9],
+  process:  [44,38,25,14,6]
+};
+
+const colors = ['var(--coral)','var(--gold)','var(--teal)','var(--violet)','var(--dim)'];
+
+function switchChart(type, btn) {
+  currentChart = type;
+  document.querySelectorAll('.ld-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  updateChart();
+}
+
+function updateChart() {
+  const field    = document.getElementById('ld-field').value;
+  const metric   = document.getElementById('ld-metric').value;
+  const time     = document.getElementById('ld-time').value;
+  const labels   = fieldLabels[field];
+  const data     = baseData[field];
+  const mLabel   = metricLabels[metric];
+  const container = document.getElementById('ld-preview');
+
+  // time multiplier for variety
+  const tMult = {['1h']:0.3,['24h']:1,['7d']:5,['30d']:20}[time];
+  const vals  = data.map(v => Math.round(v * tMult + Math.random()*3));
+  const maxV  = Math.max(...vals);
+
+  if (currentChart === 'bar') {
+    container.innerHTML = `
+      <div style="width:100%;padding-bottom:24px">
+        <div class="chart-bars">
+          ${vals.map((v,i)=>`
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center">
+              <div class="bar" data-val="${v}"
+                style="width:100%;height:${Math.round(v/maxV*140)}px;background:${colors[i]};opacity:0.85"></div>
+              <span class="bar-label">${labels[i]}</span>
+            </div>`).join('')}
+        </div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);text-align:center;margin-top:8px;letter-spacing:1px">${mLabel} by ${field}</div>
+      </div>`;
+
+  } else if (currentChart === 'line') {
+    const w=280,h=140;
+    const pts = vals.map((v,i)=>`${Math.round(i*(w-20)/(vals.length-1)+10)},${Math.round(h-v/maxV*(h-16)-8)}`).join(' ');
+    container.innerHTML = `
+      <div style="width:100%">
+        <div class="chart-line-wrap">
+          <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+            <defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="var(--gold)" stop-opacity="0.3"/>
+              <stop offset="100%" stop-color="var(--gold)" stop-opacity="0"/>
+            </linearGradient></defs>
+            <polygon points="${pts} ${w-10},${h} 10,${h}" fill="url(#lg)"/>
+            <polyline points="${pts}" fill="none" stroke="var(--gold)" stroke-width="2.5" stroke-linejoin="round"/>
+            ${vals.map((v,i)=>`<circle cx="${Math.round(i*(w-20)/(vals.length-1)+10)}" cy="${Math.round(h-v/maxV*(h-16)-8)}" r="3" fill="var(--gold)"/>`).join('')}
+          </svg>
+        </div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);text-align:center;margin-top:6px;letter-spacing:1px">${mLabel} trend · ${time} window</div>
+      </div>`;
+
+  } else if (currentChart === 'donut') {
+    const total = vals.reduce((a,b)=>a+b,0);
+    let offset = 0;
+    const r = 48, cx = 70, cy = 60, circ = 2*Math.PI*r;
+    const segs = vals.map((v,i)=>{
+      const pct = v/total, dash = pct*circ, off = -offset*circ + circ*0.25;
+      const seg = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${colors[i]}" stroke-width="14"
+        stroke-dasharray="${dash} ${circ-dash}" stroke-dashoffset="${off}" transform="rotate(-90 ${cx} ${cy})"/>`;
+      offset += pct; return seg;
+    }).join('');
+    container.innerHTML = `
+      <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;justify-content:center">
+        <div class="chart-donut-wrap">
+          <svg viewBox="0 0 140 120">
+            ${segs}
+            <circle cx="${cx}" cy="${cy}" r="34" fill="var(--bg2)"/>
+          </svg>
+          <div class="donut-label" style="top:0">
+            <div class="donut-val">${total}</div>
+            <div class="donut-sub">${mLabel}</div>
+          </div>
+        </div>
+        <div style="font-family:var(--mono);font-size:10px;line-height:2">
+          ${labels.map((l,i)=>`<div><span style="color:${colors[i]}">■</span> ${l}: ${vals[i]}</div>`).join('')}
+        </div>
+      </div>`;
+
+  } else if (currentChart === 'table') {
+    container.innerHTML = `
+      <div class="chart-table" style="width:100%">
+        <div class="ct-header">${field}<span>${mLabel}</span><span>%</span><span>rank</span></div>
+        ${vals.map((v,i)=>`
+          <div class="ct-row">
+            <span style="color:${colors[i]}">${labels[i]}</span>
+            <span>${v}</span>
+            <span>${Math.round(v/vals.reduce((a,b)=>a+b,0)*100)}%</span>
+            <span style="color:var(--muted)">#${i+1}</span>
+          </div>`).join('')}
+      </div>`;
+
+  } else if (currentChart === 'metric') {
+    const total = vals.reduce((a,b)=>a+b,0);
+    const color = total > 80 ? 'var(--coral)' : total > 30 ? 'var(--gold)' : 'var(--teal)';
+    container.innerHTML = `
+      <div style="text-align:center">
+        <div style="font-family:var(--display);font-size:5rem;font-weight:700;color:${color};line-height:1;text-shadow:0 0 30px ${color}33">${total}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-top:8px">total ${mLabel}</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px">last ${time}</div>
+      </div>`;
+  }
+}
+
+updateChart();
+
+// ── Quiz ──
+const correct = { q1:'B', q2:'C', q3:'D', q4:'C', q5:'C', q6:'C', q7:'B' };
+const answered = {};
+let score = 0;
+
+function ans(btn, qId, chosen) {
+  if (answered[qId]) return;
+  answered[qId] = true;
+  const isRight = chosen === correct[qId];
+  if (isRight) score++;
+  const opts = document.getElementById(qId).querySelectorAll('.opt');
+  const letters = ['A','B','C','D'];
+  opts.forEach((o, i) => {
+    o.classList.add('locked'); o.style.cursor = 'default';
+    if (letters[i] === correct[qId]) o.classList.add(isRight && o===btn ? 'correct' : 'revealc');
+  });
+  if (!isRight) { btn.classList.remove('revealc'); btn.classList.add('wrong'); }
+  else { btn.classList.remove('revealc'); btn.classList.add('correct'); }
+  document.getElementById('e-' + qId).classList.add('show');
+  updateProgress();
+  if (Object.keys(answered).length === 7) setTimeout(showScore, 600);
+}
+
+function updateProgress() {
+  const n = Object.keys(answered).length;
+  document.getElementById('progFill').style.width = (n / 7 * 100) + '%';
+  document.getElementById('progTxt').textContent = n + ' / 7 answered';
+}
+
+function showScore() {
+  document.getElementById('score-num').textContent = score + '/7';
+  const p = score / 7 * 100;
+  document.getElementById('score-msg').textContent =
+    p === 100 ? '✦ Perfect. You have mastered all eight topics. The exam awaits.' :
+    p >= 85   ? 'Excellent work. Review the pre-built dashboard locations before your exam.' :
+    p >= 57   ? 'Good progress. Revisit Kibana Maps requirements and the heat map use case.' :
+                'Keep studying. Focus on which chart type answers which question type.';
+  document.getElementById('scorebox').classList.add('show');
+  document.getElementById('scorebox').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function resetQuiz() {
+  Object.keys(answered).forEach(k => delete answered[k]);
+  score = 0;
+  document.getElementById('scorebox').classList.remove('show');
+  document.querySelectorAll('.opt').forEach(o => { o.classList.remove('correct','wrong','revealc','locked'); o.style.cursor = ''; });
+  document.querySelectorAll('.exp').forEach(e => e.classList.remove('show'));
+  document.getElementById('progFill').style.width = '0%';
+  document.getElementById('progTxt').textContent = '0 / 7 answered';
+}
+</script>
+</body>
+</html>

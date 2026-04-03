@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topic 7: RBAC, Spaces & Security Administration</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:     #ffffff;
+    --bg2:    #f5f5f5;
+    --s1:     #efefef;
+    --s2:     #e8e8e8;
+    --s3:     #e0e0e0;
+    --border: #cccccc;
+    --ink:    #111111;
+    --ink2:   #333333;
+    --indigo: #4433ff;
+    --ind2:   #6655ff;
+    --ind3:   #9988ff;
+    --ind4:   #ccbbff;
+    --red:    #dd1122;
+    --green:  #007744;
+    --amber:  #cc7700;
+    --dim:    #666666;
+    --muted:  #999999;
+    --mono:   'IBM Plex Mono', monospace;
+    --sans:   'IBM Plex Sans', sans-serif;
+    --display:'Bebas Neue', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Geometric background grid */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(var(--s1) 1px, transparent 1px),
+      linear-gradient(90deg, var(--s1) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none; z-index: 0; opacity: 0.5;
+  }
+
+  /* Bold corner accent */
+  body::after {
+    content: '';
+    position: fixed; top: 0; right: 0;
+    width: 280px; height: 280px;
+    background: var(--indigo);
+    clip-path: polygon(100% 0, 0 0, 100% 100%);
+    pointer-events: none; z-index: 0; opacity: 0.07;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 32px; position: relative; z-index: 1; }
+
+  /* ── HEADER ── */
+  header { padding: 44px 0 0; margin-bottom: 44px; border-bottom: 6px solid var(--ink); }
+
+  .top-bar {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 24px; flex-wrap: wrap; gap: 16px;
+  }
+
+  .crumb {
+    font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 1px;
+  }
+  .crumb .cur { color: var(--indigo); font-weight: 600; }
+
+  .header-stats { display: flex; gap: 0; }
+  .hs-box {
+    padding: 12px 20px; border: 1px solid var(--ink); border-right: none;
+    text-align: center; background: var(--bg);
+  }
+  .hs-box:last-child { border-right: 1px solid var(--ink); }
+  .hs-box.accent { background: var(--indigo); }
+  .hs-val { font-family: var(--display); font-size: 2rem; line-height: 1; color: var(--ink); }
+  .hs-box.accent .hs-val { color: #fff; }
+  .hs-lbl { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+  .hs-box.accent .hs-lbl { color: rgba(255,255,255,0.7); }
+
+  h1 {
+    font-family: var(--display);
+    font-size: clamp(4rem, 10vw, 8rem);
+    line-height: 0.88;
+    letter-spacing: 2px;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  h1 .accent { color: var(--indigo); display: block; }
+
+  .h1-sub {
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    letter-spacing: 3px; margin-bottom: 24px; text-transform: uppercase;
+  }
+
+  /* Topic nav */
+  .topic-nav {
+    display: flex; gap: 0; flex-wrap: wrap; margin: 20px 0 0;
+    border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink);
+  }
+  .topic-nav a {
+    font-family: var(--mono); font-size: 9px; padding: 8px 14px;
+    text-decoration: none; transition: all 0.1s; color: var(--muted);
+    letter-spacing: 1px; border-right: 1px solid var(--border);
+    text-transform: uppercase; background: var(--bg);
+  }
+  .topic-nav a:last-child { border-right: none; }
+  .topic-nav a.done { color: var(--green); background: rgba(0,119,68,0.04); }
+  .topic-nav a.done::before { content: '✓ '; }
+  .topic-nav a.active { background: var(--indigo); color: #fff; font-weight: 600; }
+  .topic-nav a:hover:not(.active):not(.done) { background: var(--ink); color: #fff; }
+
+  /* Progress */
+  .prog-row { display: flex; align-items: center; gap: 12px; margin: 20px 0 48px; }
+  .prog-track { flex: 1; height: 4px; background: var(--s3); }
+  .prog-fill { height: 100%; background: linear-gradient(90deg, var(--indigo), var(--ind3)); width: 0%; transition: width 0.5s ease; }
+  .prog-txt { font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+  /* ── SECTIONS ── */
+  .section { margin-bottom: 56px; animation: slideIn 0.35s ease both; }
+  @keyframes slideIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  .section:nth-child(1){animation-delay:.05s}.section:nth-child(2){animation-delay:.10s}
+  .section:nth-child(3){animation-delay:.15s}.section:nth-child(4){animation-delay:.20s}
+  .section:nth-child(5){animation-delay:.25s}.section:nth-child(6){animation-delay:.30s}
+
+  .sec-hd { display: flex; align-items: stretch; gap: 0; margin-bottom: 20px; }
+  .sec-tag {
+    font-family: var(--display); font-size: 1.2rem; letter-spacing: 2px;
+    color: #fff; background: var(--indigo); padding: 4px 16px;
+    display: flex; align-items: center;
+  }
+  .sec-title {
+    font-family: var(--display); font-size: 1.6rem; letter-spacing: 2px;
+    color: var(--ink); padding: 4px 16px; background: var(--ink); color: #fff;
+    display: flex; align-items: center;
+  }
+
+  /* Card */
+  .card {
+    background: var(--bg); border: 2px solid var(--ink);
+    padding: 28px 32px; position: relative;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 4px; left: 4px;
+    right: -4px; bottom: -4px;
+    background: var(--indigo); z-index: -1; opacity: 0.12;
+  }
+  .card p { font-size: 0.975rem; line-height: 1.82; color: var(--dim); margin-bottom: 14px; font-weight: 300; }
+  .card p:last-child { margin-bottom: 0; }
+  strong { color: var(--ink); font-weight: 600; }
+
+  /* Code */
+  .code {
+    background: var(--ink); color: #d4f0d4;
+    font-family: var(--mono); font-size: 12px; line-height: 1.9;
+    padding: 20px 24px; overflow-x: auto; margin: 16px 0;
+    border-left: 4px solid var(--indigo);
+    white-space: pre;
+  }
+  .ck { color: #aaddff; } .cv { color: #aaffaa; } .cs { color: #ffddaa; }
+  .cc { color: #446644; } .cn { color: #ffccaa; } .co { color: #888; }
+  .ci { color: #ccaaff; }
+
+  /* ── RBAC MATRIX ── */
+  .rbac-wrap { overflow-x: auto; margin: 20px 0; }
+  table.rbac {
+    width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11px;
+    min-width: 700px;
+  }
+  .rbac th {
+    background: var(--ink); color: #fff; padding: 10px 14px;
+    text-align: left; letter-spacing: 1px; font-size: 10px; text-transform: uppercase;
+    border: 1px solid var(--ink);
+  }
+  .rbac th.role-col { background: var(--indigo); width: 180px; }
+  .rbac td {
+    padding: 10px 14px; border: 1px solid var(--border); color: var(--dim);
+    vertical-align: middle; font-size: 11px; line-height: 1.5;
+  }
+  .rbac tr:hover td { background: rgba(68,51,255,0.04); }
+  .rbac td.role-name { font-weight: 600; color: var(--ink); background: var(--bg2); }
+  .perm { display: inline-block; font-size: 9px; padding: 2px 7px; margin: 1px; border: 1px solid; }
+  .perm.y { background: rgba(0,119,68,0.08);  color: var(--green); border-color: rgba(0,119,68,0.25); }
+  .perm.n { background: rgba(221,17,34,0.07);  color: var(--red);   border-color: rgba(221,17,34,0.2); }
+  .perm.p { background: rgba(204,119,0,0.08);  color: var(--amber); border-color: rgba(204,119,0,0.25); }
+
+  /* Spaces diagram */
+  .spaces-demo {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr));
+    gap: 14px; margin: 20px 0;
+  }
+  .space-box {
+    border: 2px solid var(--ink); background: var(--bg);
+    position: relative; overflow: hidden; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .space-box:hover { transform: translate(-3px,-3px); box-shadow: 5px 5px 0 var(--indigo); }
+  .space-box.selected { transform: translate(-3px,-3px); box-shadow: 5px 5px 0 var(--indigo); border-color: var(--indigo); }
+  .sb-color { height: 5px; }
+  .sb-body { padding: 14px 16px; }
+  .sb-name { font-family: var(--display); font-size: 1.1rem; letter-spacing: 1px; color: var(--ink); margin-bottom: 4px; }
+  .sb-desc { font-family: var(--mono); font-size: 10px; color: var(--muted); line-height: 1.5; margin-bottom: 8px; }
+  .sb-items { display: flex; flex-wrap: wrap; gap: 4px; }
+  .sb-item { font-family: var(--mono); font-size: 9px; padding: 2px 7px; background: var(--s1); border: 1px solid var(--border); color: var(--dim); letter-spacing: 1px; }
+
+  .space-detail {
+    background: var(--bg2); border: 2px solid var(--indigo);
+    padding: 16px 20px; font-family: var(--mono); font-size: 12px;
+    line-height: 1.8; color: var(--dim); display: none; margin-top: 8px;
+    animation: popUp 0.2s ease;
+  }
+  @keyframes popUp { from{opacity:0;transform:scaleY(0.95)} to{opacity:1;transform:scaleY(1)} }
+  .space-detail.show { display: block; }
+  .sd-title { font-weight: 700; color: var(--indigo); font-size: 13px; margin-bottom: 8px; }
+
+  /* Role builder */
+  .role-builder {
+    background: var(--bg2); border: 2px solid var(--ink); padding: 24px; margin: 20px 0;
+  }
+  .rb-title { font-family: var(--display); font-size: 1.1rem; letter-spacing: 2px; color: var(--ink); margin-bottom: 18px; }
+  .rb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+  @media(max-width:600px){ .rb-grid { grid-template-columns: 1fr; } }
+  .rb-field label { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 1px; display: block; margin-bottom: 6px; text-transform: uppercase; }
+  .rb-field select {
+    width: 100%; background: var(--bg); border: 1px solid var(--ink); color: var(--ink);
+    font-family: var(--mono); font-size: 12px; padding: 9px 12px; outline: none;
+    transition: border-color 0.15s; cursor: pointer;
+  }
+  .rb-field select:focus { border-color: var(--indigo); }
+  .rb-output {
+    background: var(--ink); color: #aaddff;
+    font-family: var(--mono); font-size: 12px; padding: 18px 22px;
+    line-height: 1.9; min-height: 140px; overflow-x: auto; white-space: pre;
+  }
+
+  /* Privilege levels */
+  .priv-levels { display: flex; flex-direction: column; gap: 6px; margin: 20px 0; }
+  .pl-row {
+    display: flex; align-items: center; gap: 0; cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .pl-row:hover { transform: translateX(4px); }
+  .pl-level {
+    font-family: var(--display); font-size: 1rem; letter-spacing: 2px;
+    width: 160px; padding: 10px 14px; text-align: center; flex-shrink: 0;
+    border: 1px solid; transition: all 0.15s;
+  }
+  .pl-bar {
+    flex: 1; height: 44px; display: flex; align-items: center;
+    padding: 0 16px; border: 1px solid var(--border); border-left: none;
+    font-family: var(--mono); font-size: 11px; color: var(--dim);
+    transition: all 0.15s; background: var(--bg);
+  }
+  .pl-row:hover .pl-bar { background: var(--bg2); color: var(--ink); }
+  .pl-row.expanded .pl-bar { background: var(--bg2); }
+
+  .pl-detail {
+    display: none; background: var(--bg2); border: 1px solid var(--border);
+    border-top: none; padding: 14px 16px; font-family: var(--mono);
+    font-size: 11px; line-height: 1.8; color: var(--dim); margin-bottom: 6px;
+    margin-left: 160px;
+  }
+  .pl-detail.show { display: block; }
+
+  /* Two-col */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+  @media(max-width:600px){ .two-col { grid-template-columns: 1fr; } }
+  .mini { background: var(--bg2); border: 1px solid var(--border); padding: 18px 20px; }
+  .ml { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+  .mv { font-family: var(--mono); font-size: 12px; color: var(--ink); line-height: 1.8; }
+  .mv .b { color: var(--indigo); } .mv .g { color: var(--green); } .mv .a { color: var(--amber); } .mv .r { color: var(--red); }
+
+  /* Note */
+  .note {
+    border-left: 4px solid var(--indigo); background: rgba(68,51,255,0.04);
+    padding: 13px 18px; margin: 14px 0; font-family: var(--mono);
+    font-size: 12px; line-height: 1.7; color: var(--dim);
+  }
+  .note.red   { border-left-color: var(--red);   background: rgba(221,17,34,0.04); }
+  .note.green { border-left-color: var(--green);  background: rgba(0,119,68,0.04); }
+  .note.amber { border-left-color: var(--amber); background: rgba(204,119,0,0.04); }
+  .note strong { color: var(--indigo); }
+  .note.red   strong { color: var(--red); }
+  .note.green strong { color: var(--green); }
+  .note.amber strong { color: var(--amber); }
+
+  /* ── QUIZ ── */
+  .quiz {
+    background: var(--ink); padding: 40px 32px; margin-top: 52px; position: relative;
+  }
+  .quiz::before {
+    content: 'KNOWLEDGE CHECK';
+    position: absolute; top: -1px; left: 0;
+    background: var(--indigo); color: #fff;
+    font-family: var(--display); font-size: 1rem; letter-spacing: 3px;
+    padding: 6px 24px;
+  }
+
+  .quiz-title {
+    font-family: var(--display); font-size: 2.5rem; letter-spacing: 3px;
+    color: #fff; margin-bottom: 36px; padding-top: 24px;
+  }
+
+  .qb { margin-bottom: 36px; padding-bottom: 36px; border-bottom: 1px solid #333; }
+  .qb:last-of-type { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .q-n { font-family: var(--mono); font-size: 10px; color: var(--indigo); letter-spacing: 2px; margin-bottom: 8px; }
+  .q-t { font-family: var(--sans); font-size: 1rem; font-weight: 500; color: #fff; margin-bottom: 16px; line-height: 1.55; }
+
+  .opts { display: flex; flex-direction: column; gap: 8px; }
+  .opt {
+    display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px;
+    border: 1px solid #333; background: #1a1a1a; color: #888;
+    font-family: var(--mono); font-size: 12px; cursor: pointer; transition: all 0.15s;
+    text-align: left; width: 100%; line-height: 1.55;
+  }
+  .opt:hover:not(.locked) { border-color: var(--indigo); color: #fff; background: rgba(68,51,255,0.1); }
+  .opt .ol { color: var(--indigo); font-weight: 600; min-width: 16px; }
+  .opt.correct { border-color: var(--green);  background: rgba(0,119,68,0.15);  color: #aaffcc; }
+  .opt.wrong   { border-color: var(--red);    background: rgba(221,17,34,0.12); color: #ffaaaa; }
+  .opt.revealc { border-color: var(--green);  background: rgba(0,119,68,0.06);  color: var(--green); opacity: 0.6; }
+
+  .exp {
+    display: none; margin-top: 10px; padding: 12px 16px;
+    background: rgba(68,51,255,0.08); border: 1px solid rgba(68,51,255,0.3);
+    font-family: var(--mono); font-size: 11px; color: #aaa; line-height: 1.8;
+  }
+  .exp.show { display: block; }
+  .exp strong { color: var(--ind3); }
+
+  .scorebox { display: none; margin-top: 28px; padding: 28px; background: #1a1a1a; border: 1px solid #333; text-align: center; }
+  .scorebox.show { display: block; }
+  .score-big { font-family: var(--display); font-size: 5rem; color: var(--indigo); letter-spacing: 4px; }
+  .score-sub { font-family: var(--mono); font-size: 10px; color: #555; letter-spacing: 3px; margin: 4px 0 12px; text-transform: uppercase; }
+  .score-msg { font-family: var(--sans); font-size: 1rem; font-weight: 300; color: #888; }
+  .btn-reset {
+    margin-top: 18px; background: none; border: 1px solid var(--indigo); color: var(--indigo);
+    font-family: var(--mono); font-size: 11px; padding: 10px 28px; cursor: pointer;
+    letter-spacing: 3px; text-transform: uppercase; transition: all 0.2s;
+  }
+  .btn-reset:hover { background: var(--indigo); color: #fff; }
+
+  footer {
+    margin-top: 80px; padding: 32px 0;
+    border-top: 4px solid var(--ink);
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;
+  }
+  .ft { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+  .nav-btns { display: flex; gap: 0; }
+  .nbtn {
+    font-family: var(--mono); font-size: 11px; padding: 11px 22px;
+    border: 1px solid var(--ink); border-right: none; color: var(--ink);
+    background: var(--bg); cursor: pointer; letter-spacing: 2px;
+    text-decoration: none; transition: all 0.15s; text-transform: uppercase;
+  }
+  .nbtn:last-child { border-right: 1px solid var(--ink); }
+  .nbtn:hover { background: var(--ink); color: #fff; }
+  .nbtn.primary { background: var(--indigo); color: #fff; border-color: var(--indigo); font-weight: 600; }
+  .nbtn.primary:hover { background: var(--ind2); border-color: var(--ind2); }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--s1); }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── HEADER ── -->
+  <header>
+    <div class="top-bar">
+      <div class="crumb">ECSA › Study Guide › <span class="cur">TOPIC 07</span></div>
+      <div class="header-stats">
+        <div class="hs-box"><div class="hs-val">4</div><div class="hs-lbl">Role Types</div></div>
+        <div class="hs-box"><div class="hs-val">3</div><div class="hs-lbl">Priv Levels</div></div>
+        <div class="hs-box accent"><div class="hs-val">7</div><div class="hs-lbl">Quiz Qs</div></div>
+      </div>
+    </div>
+
+    <h1>RBAC<span class="accent">& SPACES</span></h1>
+    <p class="h1-sub">// Roles · Privileges · Spaces · API Keys · Security Admin</p>
+
+    <nav class="topic-nav">
+      <a href="#" class="done">01 · Fundamentals</a>
+      <a href="#" class="done">02 · Data Ingestion</a>
+      <a href="#" class="done">03 · Detection Engine</a>
+      <a href="#" class="done">04 · Alert Triage</a>
+      <a href="#" class="done">05 · Threat Hunting</a>
+      <a href="#" class="done">06 · Cases</a>
+      <a href="#" class="active">07 · RBAC & Admin</a>
+      <a href="#">08 · Visualization</a>
+    </nav>
+  </header>
+
+  <div class="prog-row">
+    <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+    <span class="prog-txt" id="progTxt">0 / 7 answered</span>
+  </div>
+
+  <!-- ═══════════════════════════════
+       SECTION 1 — RBAC OVERVIEW
+  ════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">07.01</span><span class="sec-title">RBAC OVERVIEW</span></div>
+    <div class="card">
+      <p>Elastic Security uses <strong>Role-Based Access Control (RBAC)</strong> to govern what users can see and do. Access is controlled at two layers: <strong>Kibana privileges</strong> (which features a user can access) and <strong>Elasticsearch index privileges</strong> (which data they can read or write). Both layers must be configured correctly.</p>
+      <p>Roles are assigned to users or user groups. A user can have multiple roles whose privileges are additive — Elastic does not support privilege denial (there is no "deny" — only grant or no-grant).</p>
+
+      <div class="two-col">
+        <div class="mini">
+          <div class="ml">Two Privilege Layers</div>
+          <div class="mv">
+            <span class="b">Kibana privileges</span><br>
+            → Control feature access in the UI<br>
+            → Examples: can view Alerts? Create rules? Manage cases?<br><br>
+            <span class="b">Elasticsearch index privileges</span><br>
+            → Control which indices/data streams<br>
+            → Examples: read, write, manage, view_index_metadata
+          </div>
+        </div>
+        <div class="mini">
+          <div class="ml">Privilege Model</div>
+          <div class="mv">
+            Privileges are <span class="g">additive only</span>.<br>
+            Multiple roles = union of all permissions.<br>
+            There is <span class="r">no DENY</span> keyword.<br><br>
+            To restrict access: simply<br>
+            do not grant the privilege.<br><br>
+            <span class="a">Least privilege</span> principle: grant<br>
+            only what is needed for the role.
+          </div>
+        </div>
+      </div>
+
+      <div class="note">
+        <p><strong>Key exam concept:</strong> If a user needs to be prevented from seeing certain data, the correct approach is to <em>not include</em> that index pattern in their role's index privileges — not to add a deny rule. Elastic RBAC has no deny mechanism. Field-level security (FLS) and document-level security (DLS) can further restrict what within an index a user can see.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       SECTION 2 — BUILT-IN ROLES
+  ════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">07.02</span><span class="sec-title">BUILT-IN SECURITY ROLES</span></div>
+    <div class="card">
+      <p>Elastic Security ships with <strong>four built-in roles</strong> designed for security use cases. These are the most exam-tested roles — know their names, what they can and cannot do.</p>
+
+      <div class="rbac-wrap">
+        <table class="rbac">
+          <thead>
+            <tr>
+              <th class="role-col">Role</th>
+              <th>View Alerts</th>
+              <th>Manage Rules</th>
+              <th>Create Cases</th>
+              <th>Manage Cases</th>
+              <th>Edit Rule Actions</th>
+              <th>Manage Endpoints</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="role-name">Viewer</td>
+              <td><span class="perm y">READ</span></td>
+              <td><span class="perm n">NO</span></td>
+              <td><span class="perm n">NO</span></td>
+              <td><span class="perm n">NO</span></td>
+              <td><span class="perm n">NO</span></td>
+              <td><span class="perm n">NO</span></td>
+            </tr>
+            <tr>
+              <td class="role-name">Tier 1 Analyst</td>
+              <td><span class="perm y">READ</span></td>
+              <td><span class="perm n">NO</span></td>
+              <td><span class="perm y">CREATE</span></td>
+              <td><span class="perm p">LIMITED</span></td>
+              <td><span class="perm n">NO</span></td>
+              <td><span class="perm n">NO</span></td>
+            </tr>
+            <tr>
+              <td class="role-name">Tier 2 Analyst</td>
+              <td><span class="perm y">READ+ACK</span></td>
+              <td><span class="perm p">READ-ONLY</span></td>
+              <td><span class="perm y">FULL</span></td>
+              <td><span class="perm y">FULL</span></td>
+              <td><span class="perm n">NO</span></td>
+              <td><span class="perm p">VIEW</span></td>
+            </tr>
+            <tr>
+              <td class="role-name">Tier 3 Analyst</td>
+              <td><span class="perm y">FULL</span></td>
+              <td><span class="perm y">FULL</span></td>
+              <td><span class="perm y">FULL</span></td>
+              <td><span class="perm y">FULL</span></td>
+              <td><span class="perm y">FULL</span></td>
+              <td><span class="perm y">FULL</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p style="margin-top:16px">Click a privilege level below to understand what it means in practice:</p>
+
+      <div class="priv-levels" id="privLevels">
+        <div class="pl-row" onclick="togglePriv(this,'pv1')">
+          <div class="pl-level" style="background:#1a1a1a;color:#fff;border-color:#1a1a1a">VIEWER</div>
+          <div class="pl-bar">Read-only access to Elastic Security features — dashboards, alerts, cases, rules</div>
+        </div>
+        <div class="pl-detail" id="pv1">
+          <strong style="color:var(--indigo)">Viewer role details:</strong><br>
+          • Can view alerts but cannot change their status (Open/Closed/Acknowledged)<br>
+          • Can read cases but cannot add comments or change status<br>
+          • Can view detection rules but cannot enable, disable, or modify them<br>
+          • Cannot access Fleet, Endpoint management, or any write operations<br>
+          • Typical user: executive dashboards, compliance auditors, read-only SOC oversight
+        </div>
+
+        <div class="pl-row" onclick="togglePriv(this,'pv2')">
+          <div class="pl-level" style="background:var(--ind3);color:var(--ink);border-color:var(--ind3)">TIER 1</div>
+          <div class="pl-bar">Alert triage analyst — can work alerts and create/manage cases with limited scope</div>
+        </div>
+        <div class="pl-detail" id="pv2">
+          <strong style="color:var(--indigo)">Tier 1 Analyst details:</strong><br>
+          • Can view AND update alert status (Open → Acknowledged → In Progress → Closed)<br>
+          • Can create new Cases and add comments to own cases<br>
+          • Cannot create or modify detection rules<br>
+          • Cannot manage endpoints (no isolation, no response actions)<br>
+          • Typical user: junior SOC analysts performing first-level alert triage
+        </div>
+
+        <div class="pl-row" onclick="togglePriv(this,'pv3')">
+          <div class="pl-level" style="background:var(--indigo);color:#fff;border-color:var(--indigo)">TIER 2</div>
+          <div class="pl-bar">Senior analyst — full case management, read rules, limited endpoint visibility</div>
+        </div>
+        <div class="pl-detail" id="pv3">
+          <strong style="color:var(--indigo)">Tier 2 Analyst details:</strong><br>
+          • Full alert triage plus bulk operations<br>
+          • Full Cases management: create, assign, close, tag, attach timelines<br>
+          • Can read (but NOT modify) detection rules — good for review without change risk<br>
+          • Can view endpoint details but cannot perform response actions<br>
+          • Typical user: senior SOC analysts, incident responders without admin access
+        </div>
+
+        <div class="pl-row" onclick="togglePriv(this,'pv4')">
+          <div class="pl-level" style="background:var(--ink);color:#fff;border-color:var(--ink)">TIER 3</div>
+          <div class="pl-bar">Power analyst — full access including rule management and endpoint response</div>
+        </div>
+        <div class="pl-detail" id="pv4">
+          <strong style="color:var(--indigo)">Tier 3 Analyst details:</strong><br>
+          • All Tier 2 privileges PLUS:<br>
+          • Can create, edit, enable/disable detection rules<br>
+          • Can configure rule actions (Slack, email, webhooks)<br>
+          • Can perform endpoint response actions (isolate, kill process, run commands)<br>
+          • Can manage exception lists and shared exception lists<br>
+          • Typical user: senior detection engineers, IR team leads, SOC managers
+        </div>
+      </div>
+
+      <div class="note amber">
+        <p><strong>Exam tip — Tier 2 read-only rules:</strong> The distinction between Tier 2 (read rules only) and Tier 3 (write rules) is frequently tested. A scenario might describe an analyst who needs to "review detection logic but not change it" — that's Tier 2. An analyst who "needs to create new detection rules" needs Tier 3.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       SECTION 3 — KIBANA SPACES
+  ════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">07.03</span><span class="sec-title">KIBANA SPACES</span></div>
+    <div class="card">
+      <p><strong>Kibana Spaces</strong> are isolated environments within a single Kibana instance. Each Space has its own saved objects — dashboards, detection rules, cases, timelines, exception lists, and connectors are all Space-specific by default. Click a Space below to explore what's isolated within it.</p>
+
+      <div class="spaces-demo">
+        <div class="space-box" onclick="showSpace(this,'sp-soc')">
+          <div class="sb-color" style="background:var(--indigo)"></div>
+          <div class="sb-body">
+            <div class="sb-name">SOC TEAM</div>
+            <div class="sb-desc">Primary security operations space</div>
+            <div class="sb-items">
+              <span class="sb-item">ALERTS</span>
+              <span class="sb-item">RULES</span>
+              <span class="sb-item">CASES</span>
+              <span class="sb-item">TIMELINES</span>
+            </div>
+          </div>
+        </div>
+        <div class="space-box" onclick="showSpace(this,'sp-hunt')">
+          <div class="sb-color" style="background:#007744"></div>
+          <div class="sb-body">
+            <div class="sb-name">HUNT TEAM</div>
+            <div class="sb-desc">Threat hunting & research space</div>
+            <div class="sb-items">
+              <span class="sb-item">TIMELINES</span>
+              <span class="sb-item">DISCOVER</span>
+              <span class="sb-item">DASHBOARDS</span>
+            </div>
+          </div>
+        </div>
+        <div class="space-box" onclick="showSpace(this,'sp-exec')">
+          <div class="sb-color" style="background:var(--amber)"></div>
+          <div class="sb-body">
+            <div class="sb-name">EXECUTIVE</div>
+            <div class="sb-desc">Read-only leadership dashboards</div>
+            <div class="sb-items">
+              <span class="sb-item">DASHBOARDS</span>
+              <span class="sb-item">REPORTS</span>
+            </div>
+          </div>
+        </div>
+        <div class="space-box" onclick="showSpace(this,'sp-cloud')">
+          <div class="sb-color" style="background:var(--ind2)"></div>
+          <div class="sb-body">
+            <div class="sb-name">CLOUD SEC</div>
+            <div class="sb-desc">Cloud infrastructure monitoring</div>
+            <div class="sb-items">
+              <span class="sb-item">AWS RULES</span>
+              <span class="sb-item">AZURE RULES</span>
+              <span class="sb-item">GCP RULES</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-detail" id="space-detail">
+        <div class="sd-title">← Click a Space above to see what's isolated within it</div>
+      </div>
+
+      <div class="code"><span class="cc">// Spaces — Key isolation concepts</span>
+
+<span class="ck">What IS isolated per Space:</span>
+  <span class="cv">Saved objects:</span>
+    <span class="cs">• Detection rules          </span><span class="cc">→ Rules in Space A don't appear in Space B</span>
+    <span class="cs">• Cases & comments         </span><span class="cc">→ Completely separate per Space</span>
+    <span class="cs">• Timelines                </span><span class="cc">→ Saved timelines don't cross Spaces</span>
+    <span class="cs">• Dashboards & visualizations</span>
+    <span class="cs">• Index patterns / data views</span>
+    <span class="cs">• Saved searches           </span>
+    <span class="cs">• Connectors (Slack/JIRA)  </span>
+    <span class="cs">• Exception lists          </span>
+
+<span class="ck">What is NOT isolated (shared across Spaces):</span>
+  <span class="co">• Raw data in Elasticsearch indices</span>
+  <span class="co">• Users and roles</span>
+  <span class="co">• Fleet agents and integrations</span>
+  <span class="co">• Machine learning jobs</span>
+  <span class="co">• Elasticsearch-level ILM policies</span>
+</div>
+
+      <div class="note">
+        <p><strong>Exam trap:</strong> The underlying Elasticsearch <em>data</em> is NOT isolated by Spaces. Spaces only isolate Kibana saved objects (rules, cases, dashboards, etc.). If two Spaces both have index privileges to <code style="color:var(--indigo)">logs-endpoint*</code>, analysts in both Spaces can query the same raw events. Space isolation is a Kibana UI concern, not an Elasticsearch data concern.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       SECTION 4 — INDEX PRIVILEGES
+  ════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">07.04</span><span class="sec-title">INDEX PRIVILEGES</span></div>
+    <div class="card">
+      <p>Elasticsearch index privileges control what users can do with specific indices or data streams. For Elastic Security, analysts typically need <strong>read</strong> and <strong>view_index_metadata</strong> on event indices, and specific privileges on the alerts index.</p>
+
+      <div class="code"><span class="cc">// Common Elasticsearch Index Privileges for Elastic Security</span>
+
+<span class="ck">read</span>                 <span class="cc">→ Search and read documents in the index</span>
+<span class="ck">view_index_metadata</span>  <span class="cc">→ View index settings/mappings (needed for Discover filters)</span>
+<span class="ck">write</span>                <span class="cc">→ Index new documents (needed for alert status updates)</span>
+<span class="ck">manage</span>               <span class="cc">→ Manage index settings (admin only)</span>
+<span class="ck">monitor</span>              <span class="cc">→ View index stats and health</span>
+<span class="ck">create_index</span>         <span class="cc">→ Create new indices (admin only)</span>
+<span class="ck">delete</span>               <span class="cc">→ Delete documents (highly restricted)</span>
+<span class="ck">maintenance</span>          <span class="cc">→ Refresh, flush, force merge (ops/admin)</span>
+
+<span class="cc">// Minimum privileges for a read-only SOC analyst:</span>
+{
+  <span class="cs">"index"</span>: [
+    {
+      <span class="ci">"names"</span>:      [<span class="cs">"logs-*"</span>, <span class="cs">".alerts-security.alerts-*"</span>],
+      <span class="ci">"privileges"</span>: [<span class="ck">"read"</span>, <span class="ck">"view_index_metadata"</span>]
+    }
+  ]
+}
+
+<span class="cc">// Analyst who can update alert status also needs write on alerts index:</span>
+{
+  <span class="ci">"names"</span>:      [<span class="cs">".alerts-security.alerts-*"</span>],
+  <span class="ci">"privileges"</span>: [<span class="ck">"read"</span>, <span class="ck">"view_index_metadata"</span>, <span class="ck">"write"</span>]
+}</div>
+
+      <div class="two-col">
+        <div class="mini">
+          <div class="ml">Field-Level Security (FLS)</div>
+          <div class="mv">
+            Restricts which <span class="b">fields</span> within an<br>
+            index a user can see.<br><br>
+            Example: hide <code style="font-size:10px">user.password</code><br>
+            or <code style="font-size:10px">payment.card_number</code> from<br>
+            certain analyst roles.<br><br>
+            Uses <span class="b">grant</span> (include) or<br>
+            <span class="b">except</span> (exclude) field lists.
+          </div>
+        </div>
+        <div class="mini">
+          <div class="ml">Document-Level Security (DLS)</div>
+          <div class="mv">
+            Restricts which <span class="b">documents</span><br>
+            (rows) a user can see using<br>
+            a query filter.<br><br>
+            Example: analysts can only<br>
+            see events from hosts in<br>
+            their assigned region:<br>
+            <code style="font-size:10px;color:var(--indigo)">{"term":{"host.region":"eu-west"}}</code>
+          </div>
+        </div>
+      </div>
+
+      <div class="note green">
+        <p><strong>FLS + DLS exam scenarios:</strong> A scenario says "Analysts should only see events from their own team's endpoints" → use <strong>Document-Level Security</strong> with a term query on a host group field. "Analysts should not see the raw process command line arguments" → use <strong>Field-Level Security</strong> to exclude <code>process.command_line</code>. Knowing which restriction type applies to which scenario is key.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       SECTION 5 — ROLE BUILDER
+  ════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">07.05</span><span class="sec-title">INTERACTIVE ROLE BUILDER</span></div>
+    <div class="card">
+      <p>Build a custom role configuration by selecting parameters. This mirrors what you'd configure in Kibana → Stack Management → Roles.</p>
+
+      <div class="role-builder">
+        <div class="rb-title">// ROLE CONFIGURATION BUILDER</div>
+        <div class="rb-grid">
+          <div class="rb-field">
+            <label>User Type</label>
+            <select id="rb-user" onchange="buildRole()">
+              <option value="analyst-t1">Tier 1 SOC Analyst</option>
+              <option value="analyst-t2">Tier 2 Senior Analyst</option>
+              <option value="analyst-t3">Tier 3 / Detection Engineer</option>
+              <option value="hunter">Threat Hunter</option>
+              <option value="exec">Executive / Read-Only</option>
+              <option value="fleet">Fleet Admin</option>
+            </select>
+          </div>
+          <div class="rb-field">
+            <label>Space</label>
+            <select id="rb-space" onchange="buildRole()">
+              <option value="soc-default">SOC (default)</option>
+              <option value="hunt-space">Threat Hunt Space</option>
+              <option value="exec-space">Executive Space</option>
+              <option value="all-spaces">All Spaces</option>
+            </select>
+          </div>
+          <div class="rb-field">
+            <label>Data Scope</label>
+            <select id="rb-data" onchange="buildRole()">
+              <option value="all-logs">All Security Logs</option>
+              <option value="endpoint-only">Endpoint Only</option>
+              <option value="network-only">Network Only</option>
+              <option value="alerts-only">Alerts Index Only</option>
+            </select>
+          </div>
+          <div class="rb-field">
+            <label>Restriction</label>
+            <select id="rb-restrict" onchange="buildRole()">
+              <option value="none">None</option>
+              <option value="fls">Field-Level Security</option>
+              <option value="dls">Document-Level Security</option>
+              <option value="both">Both FLS + DLS</option>
+            </select>
+          </div>
+        </div>
+        <div class="rb-output" id="rb-output"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       SECTION 6 — API KEYS & ADMIN
+  ════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">07.06</span><span class="sec-title">API KEYS & SECURITY ADMIN</span></div>
+    <div class="card">
+      <p>Beyond user roles, Elastic Security administrators manage <strong>API keys</strong>, <strong>Fleet policies</strong>, and <strong>Elasticsearch security settings</strong>. These administrative concepts appear on the ECSA exam.</p>
+
+      <div class="two-col">
+        <div class="mini">
+          <div class="ml">API Keys</div>
+          <div class="mv">
+            Used for programmatic access to<br>
+            Elasticsearch without user credentials.<br><br>
+            Types:<br>
+            <span class="b">REST API keys</span> — direct ES access<br>
+            <span class="b">Fleet enrollment keys</span> — agent auth<br>
+            <span class="b">Cross-cluster keys</span> — CCR/CCS<br><br>
+            Managed in:<br>
+            Stack Mgmt → <span class="b">API Keys</span><br>
+            Can be scoped with role restrictions.
+          </div>
+        </div>
+        <div class="mini">
+          <div class="ml">Fleet Policy Security</div>
+          <div class="mv">
+            Fleet agent policies control:<br>
+            <span class="b">• Which integrations</span> are deployed<br>
+            <span class="b">• Endpoint protection level</span><br>
+            &nbsp;&nbsp;(Detect / Prevent / Prevent+Alert)<br>
+            <span class="b">• Trusted applications</span><br>
+            <span class="b">• Endpoint exceptions</span><br><br>
+            Access to Fleet requires the<br>
+            <span class="a">Fleet Admin</span> role in Kibana.
+          </div>
+        </div>
+      </div>
+
+      <div class="code"><span class="cc">// Key Admin Locations in Kibana UI</span>
+
+<span class="ck">Stack Management → Security → Roles</span>
+  <span class="co">→ Create/edit roles, set Kibana + index privileges</span>
+  <span class="co">→ Configure FLS and DLS per role</span>
+
+<span class="ck">Stack Management → Security → Users</span>
+  <span class="co">→ Assign roles to users, set passwords, enable/disable</span>
+
+<span class="ck">Stack Management → Security → API Keys</span>
+  <span class="co">→ Create, view, invalidate API keys</span>
+
+<span class="ck">Stack Management → Kibana → Spaces</span>
+  <span class="co">→ Create/manage Spaces, assign roles to spaces</span>
+  <span class="co">→ Control which features are visible per space</span>
+
+<span class="ck">Fleet → Agent Policies</span>
+  <span class="co">→ Manage integrations, Elastic Defend config</span>
+  <span class="co">→ Enrollment tokens, agent assignments</span>
+
+<span class="ck">Security → Administration → Endpoints</span>
+  <span class="co">→ View enrolled endpoints, health, version</span>
+  <span class="co">→ Isolate/un-isolate hosts (requires Tier 3 role)</span>
+  <span class="co">→ Manage trusted apps, event filters, blocklists</span>
+</div>
+
+      <div class="two-col">
+        <div class="mini">
+          <div class="ml">Elastic Defend Modes</div>
+          <div class="mv">
+            <span class="b">Detect</span> — log events, no blocking<br>
+            <span class="b">Prevent</span> — block malicious activity<br>
+            <span class="b">Prevent + Alert</span> — block AND alert<br><br>
+            Set per-policy in Fleet.<br>
+            Different policies can have<br>
+            different modes for dev vs prod.
+          </div>
+        </div>
+        <div class="mini">
+          <div class="ml">Trusted Applications</div>
+          <div class="mv">
+            Allow-list specific processes<br>
+            from Elastic Defend monitoring.<br><br>
+            Different from <span class="a">exceptions</span>:<br>
+            Trusted apps = always trusted<br>
+            (signed, known-good software).<br>
+            Exceptions = case-by-case<br>
+            suppression for specific alerts.
+          </div>
+        </div>
+      </div>
+
+      <div class="note red">
+        <p><strong>Critical exam distinction — Exceptions vs Trusted Applications:</strong><br>
+        <strong>Exception lists</strong> suppress specific <em>alerts</em> for specific conditions. They still allow the event to be ingested and indexed.<br>
+        <strong>Trusted Applications</strong> tell Elastic Defend to completely ignore a specific application — no events are generated at all from that process.<br>
+        <strong>Endpoint exceptions</strong> are the middle ground: pushed to the agent, prevent event generation for specific rule conditions.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ QUIZ ═══════════ -->
+  <div class="quiz">
+    <div class="quiz-title">ACCESS CONTROL QUIZ</div>
+
+    <!-- Q1 -->
+    <div class="qb" id="q1">
+      <div class="q-n">QUESTION 01</div>
+      <div class="q-t">A Tier 1 analyst needs to update alert statuses from Open to Acknowledged but cannot create or modify detection rules. Which built-in role satisfies BOTH requirements using least privilege?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q1','A','A')"><span class="ol">A</span>Tier 1 Analyst — can update alert status, cannot modify rules</button>
+        <button class="opt" onclick="ans(this,'q1','B','A')"><span class="ol">B</span>Viewer — read-only access to all features</button>
+        <button class="opt" onclick="ans(this,'q1','C','A')"><span class="ol">C</span>Tier 2 Analyst — full alert triage plus limited rule access</button>
+        <button class="opt" onclick="ans(this,'q1','D','A')"><span class="ol">D</span>Tier 3 Analyst — full access including rule management</button>
+      </div>
+      <div class="exp" id="e-q1"><strong>Correct: Tier 1 Analyst.</strong> Tier 1 analysts can update alert status (Open → Acknowledged → Closed) and create Cases. They cannot create or modify detection rules, satisfying least privilege. The Viewer role cannot update status at all. Tier 2 could read rules (unnecessary here). Tier 3 grants full rule management — too much privilege for this use case.</div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="qb" id="q2">
+      <div class="q-t">An analyst in the SOC Space creates a set of custom detection rules. A colleague in the Cloud Security Space needs to use those same rules. What must the administrator do?</div>
+      <div class="q-n">QUESTION 02</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q2','A','C')"><span class="ol">A</span>Grant the colleague the Tier 3 role — this allows cross-space rule access</button>
+        <button class="opt" onclick="ans(this,'q2','B','C')"><span class="ol">B</span>Nothing — detection rules are automatically shared across all Spaces</button>
+        <button class="opt" onclick="ans(this,'q2','C','C')"><span class="ol">C</span>Export the rules from the SOC Space and import them into the Cloud Security Space</button>
+        <button class="opt" onclick="ans(this,'q2','D','C')"><span class="ol">D</span>Move both users into the Default space to share objects</button>
+      </div>
+      <div class="exp" id="e-q2"><strong>Correct: Export from SOC Space and import into Cloud Security Space.</strong> Detection rules are saved objects scoped to their Space. They are NOT automatically shared. The correct workflow is to export rules as an NDJSON file from the source Space (Security → Rules → Export) and import them into the target Space. Roles do not grant cross-space access to saved objects.</div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="qb" id="q3">
+      <div class="q-n">QUESTION 03</div>
+      <div class="q-t">A company requires that SOC analysts can only see events from endpoints in their geographic region (e.g., region: "eu-west"). What Elasticsearch privilege feature enables this?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q3','A','C')"><span class="ol">A</span>Field-Level Security — hide the region field from unauthorized analysts</button>
+        <button class="opt" onclick="ans(this,'q3','B','C')"><span class="ol">B</span>Kibana Space isolation — put each region's data in a separate Space</button>
+        <button class="opt" onclick="ans(this,'q3','C','C')"><span class="ol">C</span>Document-Level Security — apply a query filter limiting docs to region: "eu-west"</button>
+        <button class="opt" onclick="ans(this,'q3','D','C')"><span class="ol">D</span>Index alias filtering — create a filtered alias per region</button>
+      </div>
+      <div class="exp" id="e-q3"><strong>Correct: Document-Level Security (DLS).</strong> DLS restricts which <em>documents</em> (rows) a user can see within an index using a query filter. A DLS filter of <code style="color:var(--ind3)">{"term":{"host.region":"eu-west"}}</code> on the analyst's role means they can only retrieve documents matching that filter. FLS restricts fields, not documents. Spaces isolate saved objects, not raw event data.</div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="qb" id="q4">
+      <div class="q-n">QUESTION 04</div>
+      <div class="q-t">An analyst notices that when they try to change an alert's status from Open to Closed, they receive a permission error. They have the Viewer role. What is the minimum role change needed to fix this?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q4','A','B')"><span class="ol">A</span>Add the read privilege to the .alerts-security.alerts-* index</button>
+        <button class="opt" onclick="ans(this,'q4','B','B')"><span class="ol">B</span>Upgrade the analyst's role to Tier 1 Analyst</button>
+        <button class="opt" onclick="ans(this,'q4','C','B')"><span class="ol">C</span>Grant the analyst superuser role to override all restrictions</button>
+        <button class="opt" onclick="ans(this,'q4','D','B')"><span class="ol">D</span>Add manage privilege to the alerts index</button>
+      </div>
+      <div class="exp" id="e-q4"><strong>Correct: Upgrade to Tier 1 Analyst.</strong> The Viewer role is strictly read-only — it cannot update alert status. Tier 1 Analyst is the minimum role that includes alert status update capability. Adding raw index privileges alone (A/D) won't work because Kibana privilege checks happen at the application layer before index privileges. The Tier 1 Analyst role bundles both the Kibana feature privilege and the necessary index privilege. Superuser (C) violates least privilege.</div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="qb" id="q5">
+      <div class="q-n">QUESTION 05</div>
+      <div class="q-t">What is the key difference between a "Trusted Application" and an "Endpoint Exception" in Elastic Defend?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q5','A','B')"><span class="ol">A</span>Trusted Applications require Tier 3 role; Endpoint Exceptions require only Tier 2</button>
+        <button class="opt" onclick="ans(this,'q5','B','B')"><span class="ol">B</span>Trusted Applications prevent Elastic Defend from monitoring a process entirely; Endpoint Exceptions suppress alerts for specific rule conditions</button>
+        <button class="opt" onclick="ans(this,'q5','C','B')"><span class="ol">C</span>Trusted Applications apply to all rules; Endpoint Exceptions apply only to custom rules</button>
+        <button class="opt" onclick="ans(this,'q5','D','B')"><span class="ol">D</span>They are functionally identical — both prevent alert generation</button>
+      </div>
+      <div class="exp" id="e-q5"><strong>Correct: Trusted Applications suppress all monitoring of a process; Endpoint Exceptions suppress specific rule conditions.</strong> A Trusted Application tells Elastic Defend: "never generate telemetry events for this signed/known process." An Endpoint Exception says: "when THIS specific rule condition is met AND these field values match, don't generate an alert." Trusted Apps are broader, Endpoint Exceptions are scoped. Neither makes them functionally identical.</div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="qb" id="q6">
+      <div class="q-n">QUESTION 06</div>
+      <div class="q-t">A security administrator needs to ensure that analysts cannot see the raw process.command_line field in event data (it contains sensitive credentials passed via CLI). Which feature should be configured?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q6','A','B')"><span class="ol">A</span>Document-Level Security — filter out events that have process.command_line populated</button>
+        <button class="opt" onclick="ans(this,'q6','B','B')"><span class="ol">B</span>Field-Level Security — exclude the process.command_line field from the analyst's role</button>
+        <button class="opt" onclick="ans(this,'q6','C','B')"><span class="ol">C</span>Create a separate Kibana Space that doesn't show process details</button>
+        <button class="opt" onclick="ans(this,'q6','D','B')"><span class="ol">D</span>Use an ingest pipeline to remove the field before indexing</button>
+      </div>
+      <div class="exp" id="e-q6"><strong>Correct: Field-Level Security (FLS).</strong> FLS restricts which fields within documents a user can see. Configuring FLS on the analyst's role to exclude <code style="color:var(--ind3)">process.command_line</code> means they can still see the document (and all other fields) but that specific field is redacted/invisible. DLS (A) would hide the entire event document — much too broad. Spaces (C) don't restrict data. Ingest pipeline removal (D) would delete the data permanently for everyone, not just analysts.</div>
+    </div>
+
+    <!-- Q7 -->
+    <div class="qb" id="q7">
+      <div class="q-n">QUESTION 07</div>
+      <div class="q-t">In Elastic Security's RBAC model, if User A has Role 1 (which grants read on logs-endpoint*) and Role 2 (which grants write on .alerts-security.alerts-*), what are their effective privileges?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q7','A','C')"><span class="ol">A</span>Only Role 1 applies — the last assigned role takes precedence</button>
+        <button class="opt" onclick="ans(this,'q7','B','C')"><span class="ol">B</span>Only the more restrictive role applies to prevent privilege escalation</button>
+        <button class="opt" onclick="ans(this,'q7','C','C')"><span class="ol">C</span>Both roles are combined — the user has read on logs-endpoint* AND write on alerts</button>
+        <button class="opt" onclick="ans(this,'q7','D','C')"><span class="ol">D</span>Roles conflict and neither applies until an administrator resolves the overlap</button>
+      </div>
+      <div class="exp" id="e-q7"><strong>Correct: Privileges are additive — the user gets the union of all role permissions.</strong> Elastic RBAC uses a strictly additive model. Multiple roles are merged: all granted privileges from all assigned roles are combined. There is no role conflict, no precedence, and no deny mechanism. The user in this scenario has both read on endpoint logs AND write on the alerts index. This is why least privilege matters — once a privilege is granted via any role, it cannot be "taken back" by another role.</div>
+    </div>
+
+    <div class="scorebox" id="scorebox">
+      <div class="score-big" id="score-num">0/7</div>
+      <div class="score-sub">ACCESS CONTROLS MASTERED</div>
+      <div class="score-msg" id="score-msg"></div>
+      <button class="btn-reset" onclick="resetQuiz()">↺ RETRY</button>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="ft">ECSA · TOPIC 07 · RBAC · SPACES · SECURITY ADMINISTRATION</div>
+    <div class="nav-btns">
+      <a href="#" class="nbtn">← Topic 6</a>
+      <button class="nbtn primary" onclick="alert('Topic 8: Visualization & Dashboards — the final topic!')">Topic 8: Dashboards →</button>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+// ── Priv level toggles ──
+function togglePriv(row, id) {
+  const det = document.getElementById(id);
+  const open = det.classList.contains('show');
+  document.querySelectorAll('.pl-detail').forEach(d => d.classList.remove('show'));
+  document.querySelectorAll('.pl-row').forEach(r => r.classList.remove('expanded'));
+  if (!open) { det.classList.add('show'); row.classList.add('expanded'); }
+}
+
+// ── Space details ──
+const spaceInfo = {
+  'sp-soc': {
+    title: 'SOC Team Space',
+    body: `Isolated objects: Detection rules scoped to SOC workflows, Triage cases with severity SLA tracking,
+Timelines from active incident investigations, Connectors linked to PagerDuty/Slack channels.
+
+Roles assigned: Tier 1, Tier 2, Tier 3 analysts (depending on seniority).
+Index privileges: read on logs-*, .alerts-security.alerts-*, write on .alerts-security.alerts-* (for Tier 1+).
+
+Key exam point: Rules created in this Space do NOT automatically appear in other Spaces.`
+  },
+  'sp-hunt': {
+    title: 'Threat Hunt Team Space',
+    body: `Isolated objects: Research timelines from proactive hunts, Custom hunt dashboards,
+Saved Discover searches for recurring hunt queries, Experimental detection rules (tested before promoting to SOC Space).
+
+Roles assigned: Tier 3 analysts, detection engineers with full rule management rights.
+This Space has broader index access (including longer time ranges) for deep historical hunting.
+
+Key exam point: Timelines saved here are not accessible to the SOC Space analysts.`
+  },
+  'sp-exec': {
+    title: 'Executive Space',
+    body: `Isolated objects: High-level security posture dashboards, Weekly/monthly reports,
+KPI metrics (MTTD, MTTR, alert volume trends).
+
+Roles assigned: Viewer role only — no alert triage, no rule access, read-only dashboards.
+This Space deliberately limits visible features to dashboards and reports only.
+
+Key exam point: Kibana Spaces let you disable features per-space. The Executive Space
+can have Detection Rules, Cases, and Timelines features hidden entirely from the menu.`
+  },
+  'sp-cloud': {
+    title: 'Cloud Security Space',
+    body: `Isolated objects: Cloud-specific detection rules (AWS CloudTrail, Azure Activity, GCP Audit),
+Cloud misconfiguration dashboards, Cloud-scoped Cases.
+
+Index privileges scoped to: logs-aws*, logs-azure*, logs-gcp*, logs-cloud* only.
+Analysts in this Space cannot see endpoint or network logs — only cloud platform logs.
+
+Key exam point: Index privilege scoping in the role assigned to this Space's analysts
+limits their data access to cloud indices only — this is index-level data isolation.`
+  }
+};
+
+let selectedSpace = null;
+function showSpace(el, key) {
+  if (selectedSpace === el) {
+    el.classList.remove('selected');
+    document.getElementById('space-detail').classList.remove('show');
+    selectedSpace = null;
+    return;
+  }
+  document.querySelectorAll('.space-box').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedSpace = el;
+  const info = spaceInfo[key];
+  const detail = document.getElementById('space-detail');
+  detail.innerHTML = `<div class="sd-title">${info.title}</div><pre style="font-family:var(--mono);font-size:11px;white-space:pre-wrap;line-height:1.8;color:var(--dim)">${info.body}</pre>`;
+  detail.classList.add('show');
+}
+
+// ── Role Builder ──
+function buildRole() {
+  const user     = document.getElementById('rb-user').value;
+  const space    = document.getElementById('rb-space').value;
+  const data     = document.getElementById('rb-data').value;
+  const restrict = document.getElementById('rb-restrict').value;
+
+  const roleNames = {
+    'analyst-t1': 'soc_analyst_tier1',
+    'analyst-t2': 'soc_analyst_tier2',
+    'analyst-t3': 'soc_analyst_tier3',
+    'hunter':     'threat_hunter',
+    'exec':       'executive_viewer',
+    'fleet':      'fleet_admin'
+  };
+
+  const kibanaPrivs = {
+    'analyst-t1': '["Security:all", "Cases:all"]',
+    'analyst-t2': '["Security:all", "Cases:all", "Discover:all"]',
+    'analyst-t3': '["Security:all", "Cases:all", "Discover:all", "Fleet:all"]',
+    'hunter':     '["Security:read", "Discover:all", "Dashboard:all"]',
+    'exec':       '["Security:read", "Dashboard:read"]',
+    'fleet':      '["Fleet:all", "Integrations:all"]'
+  };
+
+  const indexMap = {
+    'all-logs':     'logs-*, .alerts-security.alerts-*',
+    'endpoint-only':'logs-endpoint.*, .alerts-security.alerts-*',
+    'network-only': 'logs-network.*, logs-zeek.*, .alerts-security.alerts-*',
+    'alerts-only':  '.alerts-security.alerts-*'
+  };
+
+  const privMap = {
+    'analyst-t1': '["read", "view_index_metadata", "write"]',
+    'analyst-t2': '["read", "view_index_metadata", "write"]',
+    'analyst-t3': '["read", "view_index_metadata", "write", "manage"]',
+    'hunter':     '["read", "view_index_metadata"]',
+    'exec':       '["read"]',
+    'fleet':      '["read", "write", "manage"]'
+  };
+
+  const spaceStr = {
+    'soc-default': '"default"',
+    'hunt-space':  '"threat-hunt"',
+    'exec-space':  '"executive"',
+    'all-spaces':  '"*"'
+  };
+
+  const flsPart = restrict === 'fls' || restrict === 'both'
+    ? `,\n      "field_security": { "except": ["process.command_line", "user.password"] }` : '';
+  const dlsPart = restrict === 'dls' || restrict === 'both'
+    ? `,\n      "query": "{\\"term\\":{\\"host.region\\":\\"eu-west\\"}}"` : '';
+
+  const out = `{
+  "name": "${roleNames[user]}",
+  "kibana": [{
+    "spaces": [${spaceStr[space]}],
+    "feature": { ${kibanaPrivs[user]} }
+  }],
+  "elasticsearch": {
+    "indices": [{
+      "names": ["${indexMap[data]}"],
+      "privileges": ${privMap[user]}${flsPart}${dlsPart}
+    }]
+  }
+}`;
+
+  document.getElementById('rb-output').textContent = out;
+}
+
+buildRole();
+
+// ── Quiz ──
+const correct = { q1:'A', q2:'C', q3:'C', q4:'B', q5:'B', q6:'B', q7:'C' };
+const answered = {};
+let score = 0;
+
+function ans(btn, qId, chosen) {
+  if (answered[qId]) return;
+  answered[qId] = true;
+  const isRight = chosen === correct[qId];
+  if (isRight) score++;
+  const opts = document.getElementById(qId).querySelectorAll('.opt');
+  const letters = ['A','B','C','D'];
+  opts.forEach((o, i) => {
+    o.classList.add('locked'); o.style.cursor = 'default';
+    if (letters[i] === correct[qId]) o.classList.add(isRight && o===btn ? 'correct' : 'revealc');
+  });
+  if (!isRight) { btn.classList.remove('revealc'); btn.classList.add('wrong'); }
+  else { btn.classList.remove('revealc'); btn.classList.add('correct'); }
+  document.getElementById('e-' + qId).classList.add('show');
+  updateProgress();
+  if (Object.keys(answered).length === 7) setTimeout(showScore, 500);
+}
+
+function updateProgress() {
+  const n = Object.keys(answered).length;
+  document.getElementById('progFill').style.width = (n / 7 * 100) + '%';
+  document.getElementById('progTxt').textContent = n + ' / 7 answered';
+}
+
+function showScore() {
+  document.getElementById('score-num').textContent = score + '/7';
+  const p = score / 7 * 100;
+  document.getElementById('score-msg').textContent =
+    p === 100 ? '✦ Perfect. You have full access control over this topic.' :
+    p >= 85   ? 'Strong grasp of RBAC. Review Spaces isolation before the exam.' :
+    p >= 57   ? 'Good progress. Focus on FLS vs DLS and Space object isolation.' :
+                'Keep studying. Prioritise built-in roles and additive privilege model.';
+  document.getElementById('scorebox').classList.add('show');
+}
+
+function resetQuiz() {
+  Object.keys(answered).forEach(k => delete answered[k]);
+  score = 0;
+  document.getElementById('scorebox').classList.remove('show');
+  document.querySelectorAll('.opt').forEach(o => { o.classList.remove('correct','wrong','revealc','locked'); o.style.cursor = ''; });
+  document.querySelectorAll('.exp').forEach(e => e.classList.remove('show'));
+  document.getElementById('progFill').style.width = '0%';
+  document.getElementById('progTxt').textContent = '0 / 7 answered';
+}
+</script>
+</body>
+</html>

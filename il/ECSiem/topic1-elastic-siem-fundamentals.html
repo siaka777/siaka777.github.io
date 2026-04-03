@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topic 1: Elastic Security & SIEM Fundamentals</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2236;
+    --border: #1e3a5f;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #7c3aed;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --text: #e2e8f0;
+    --text-muted: #64748b;
+    --text-dim: #94a3b8;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    padding: 40px 0 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+    position: relative;
+  }
+
+  .exam-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,212,255,0.08);
+    border: 1px solid rgba(0,212,255,0.3);
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .exam-badge::before {
+    content: '●';
+    animation: blink 1.5s infinite;
+    color: var(--success);
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, #fff 40%, var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 1rem;
+    margin-bottom: 32px;
+    font-weight: 400;
+  }
+
+  /* Progress nav */
+  .topic-nav {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 20px 0;
+  }
+
+  .topic-nav a {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 6px 14px;
+    border-radius: 3px;
+    text-decoration: none;
+    transition: all 0.2s;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+
+  .topic-nav a.active {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+    font-weight: 700;
+  }
+
+  .topic-nav a:hover:not(.active) {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    height: 3px;
+    background: var(--surface2);
+    border-radius: 2px;
+    margin-bottom: 48px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.5s ease;
+  }
+
+  /* Section cards */
+  .section {
+    margin-bottom: 40px;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity:0; transform: translateY(20px); }
+    to { opacity:1; transform: translateY(0); }
+  }
+
+  .section:nth-child(1) { animation-delay: 0.1s; }
+  .section:nth-child(2) { animation-delay: 0.2s; }
+  .section:nth-child(3) { animation-delay: 0.3s; }
+  .section:nth-child(4) { animation-delay: 0.4s; }
+  .section:nth-child(5) { animation-delay: 0.5s; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .section-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    background: rgba(0,212,255,0.1);
+    border: 1px solid rgba(0,212,255,0.2);
+    padding: 4px 10px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+
+  .section-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+  }
+
+  .card p {
+    color: var(--text-dim);
+    line-height: 1.75;
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+  }
+
+  .card p:last-child { margin-bottom: 0; }
+
+  /* Architecture diagram */
+  .arch-diagram {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin: 24px 0;
+  }
+
+  .arch-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .arch-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 20px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    position: relative;
+    cursor: default;
+    transition: all 0.25s;
+    min-width: 120px;
+  }
+
+  .arch-box:hover {
+    border-color: var(--accent);
+    background: rgba(0,212,255,0.06);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,212,255,0.1);
+  }
+
+  .arch-box .label {
+    display: block;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .arch-box .desc {
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  .arch-arrow {
+    text-align: center;
+    color: var(--accent);
+    font-size: 1.2rem;
+    opacity: 0.5;
+  }
+
+  /* Info grid */
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+  }
+
+  .info-tile {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 18px;
+    cursor: default;
+    transition: all 0.2s;
+  }
+
+  .info-tile:hover {
+    border-color: var(--accent2);
+    transform: translateY(-2px);
+  }
+
+  .info-tile .icon {
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .info-tile h4 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--accent2);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: var(--mono);
+  }
+
+  .info-tile p {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* Code block */
+  .code-block {
+    background: #050a14;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    padding: 20px;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-x: auto;
+    margin: 16px 0;
+  }
+
+  .code-block .comment { color: #4a6741; }
+  .code-block .key { color: var(--accent); }
+  .code-block .val { color: #f0c060; }
+  .code-block .str { color: #7ec8a0; }
+  .code-block .op { color: var(--accent2); }
+
+  /* Quiz section */
+  .quiz-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px;
+    margin-top: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .quiz-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent2), var(--accent3));
+  }
+
+  .quiz-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .quiz-badge {
+    background: rgba(255,107,53,0.1);
+    border: 1px solid rgba(255,107,53,0.3);
+    color: var(--accent2);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 3px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .quiz-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+
+  .question-block {
+    margin-bottom: 32px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .question-block:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .question-text {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+
+  .question-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .option {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 18px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    background: var(--surface2);
+    text-align: left;
+    width: 100%;
+  }
+
+  .option:hover:not(.answered) {
+    border-color: var(--accent);
+    color: var(--text);
+    background: rgba(0,212,255,0.05);
+  }
+
+  .option .opt-letter {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 20px;
+    margin-top: 1px;
+  }
+
+  .option.correct {
+    border-color: var(--success);
+    background: rgba(16,185,129,0.08);
+    color: var(--success);
+  }
+
+  .option.incorrect {
+    border-color: var(--danger);
+    background: rgba(239,68,68,0.08);
+    color: var(--danger);
+  }
+
+  .option.revealed-correct {
+    border-color: var(--success);
+    background: rgba(16,185,129,0.05);
+    color: var(--success);
+    opacity: 0.7;
+  }
+
+  .explanation {
+    display: none;
+    margin-top: 14px;
+    padding: 14px 18px;
+    background: rgba(0,212,255,0.05);
+    border: 1px solid rgba(0,212,255,0.15);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: var(--text-dim);
+    line-height: 1.7;
+  }
+
+  .explanation.show { display: block; }
+  .explanation strong { color: var(--accent); }
+
+  /* Score display */
+  .score-display {
+    display: none;
+    margin-top: 24px;
+    padding: 20px;
+    background: var(--surface2);
+    border-radius: 6px;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+
+  .score-display.show { display: block; }
+
+  .score-num {
+    font-size: 3rem;
+    font-weight: 800;
+    font-family: var(--mono);
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .score-label {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-top: 4px;
+  }
+
+  .score-msg {
+    margin-top: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .btn-retry {
+    margin-top: 16px;
+    background: none;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 10px 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+  }
+
+  .btn-retry:hover {
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  /* Highlight boxes */
+  .highlight-box {
+    background: rgba(124,58,237,0.08);
+    border: 1px solid rgba(124,58,237,0.25);
+    border-left: 3px solid var(--accent3);
+    border-radius: 6px;
+    padding: 18px 20px;
+    margin: 16px 0;
+  }
+
+  .highlight-box.warning {
+    background: rgba(245,158,11,0.08);
+    border-color: rgba(245,158,11,0.25);
+    border-left-color: var(--warning);
+  }
+
+  .highlight-box.success {
+    background: rgba(16,185,129,0.08);
+    border-color: rgba(16,185,129,0.25);
+    border-left-color: var(--success);
+  }
+
+  .highlight-box p {
+    color: var(--text-dim) !important;
+    margin: 0 !important;
+    font-size: 0.9rem;
+  }
+
+  .highlight-box strong {
+    color: var(--accent3);
+  }
+
+  .highlight-box.warning strong { color: var(--warning); }
+  .highlight-box.success strong { color: var(--success); }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0;
+    flex-wrap: wrap;
+  }
+
+  .tab {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 18px;
+    border-radius: 4px 4px 0 0;
+    border: 1px solid transparent;
+    border-bottom: none;
+    cursor: pointer;
+    background: none;
+    color: var(--text-muted);
+    transition: all 0.2s;
+    position: relative;
+    bottom: -1px;
+  }
+
+  .tab.active {
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--accent);
+    border-bottom-color: var(--surface);
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Flashcard */
+  .flashcard-container {
+    perspective: 1000px;
+    height: 220px;
+    cursor: pointer;
+    margin: 20px 0;
+  }
+
+  .flashcard {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .flashcard.flipped { transform: rotateY(180deg); }
+
+  .card-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 28px;
+    text-align: center;
+  }
+
+  .card-face.back { transform: rotateY(180deg); }
+
+  .card-face .face-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+  }
+
+  .card-face .face-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #fff;
+    line-height: 1.5;
+  }
+
+  .card-face.back .face-text {
+    font-size: 0.95rem;
+    color: var(--text-dim);
+    font-weight: 400;
+  }
+
+  .flashcard-nav {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 12px;
+  }
+
+  .fc-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .fc-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .fc-counter {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 80px;
+    padding: 32px 0;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: gap;
+  }
+
+  .footer-text {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .next-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, var(--accent), #0099cc);
+    color: var(--bg);
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 12px 24px;
+    border-radius: 4px;
+    text-decoration: none;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+  }
+
+  .next-btn:hover {
+    transform: translateX(3px);
+    box-shadow: 0 8px 24px rgba(0,212,255,0.3);
+  }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .arch-row { flex-direction: column; align-items: center; }
+    .footer { flex-direction: column; gap: 16px; text-align: center; }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="exam-badge">Elastic Certified SIEM Analyst &nbsp;·&nbsp; ECSA</div>
+    <h1>Elastic Security &<br>SIEM Fundamentals</h1>
+    <p class="subtitle">Topic 1 of 8 &nbsp;·&nbsp; Core Concepts, Architecture & the Elastic Stack</p>
+    <nav class="topic-nav">
+      <a href="#" class="active">01 · Fundamentals</a>
+      <a href="#">02 · Data Ingestion</a>
+      <a href="#">03 · Detection Engine</a>
+      <a href="#">04 · Alert Triage</a>
+      <a href="#">05 · Threat Hunting</a>
+      <a href="#">06 · Cases & Investigations</a>
+      <a href="#">07 · RBAC & Admin</a>
+      <a href="#">08 · Visualization</a>
+    </nav>
+  </header>
+
+  <div class="progress-bar">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+
+  <!-- Section 1: What is SIEM? -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">01.01</span>
+      <h2 class="section-title">What is SIEM?</h2>
+    </div>
+    <div class="card">
+      <p><strong style="color:#fff">Security Information and Event Management (SIEM)</strong> is a platform that aggregates, correlates, and analyzes security event data from across an organization's IT environment. It provides real-time threat detection, alerting, and compliance reporting from a single pane of glass.</p>
+      <p>SIEM combines two older disciplines: <span style="color:var(--accent)">SIM</span> (Security Information Management — long-term log storage and reporting) and <span style="color:var(--accent)">SEM</span> (Security Event Management — real-time monitoring and correlation).</p>
+      <div class="info-grid">
+        <div class="info-tile">
+          <span class="icon">🔍</span>
+          <h4>Collect</h4>
+          <p>Aggregate logs from endpoints, network devices, cloud, applications, and identity systems.</p>
+        </div>
+        <div class="info-tile">
+          <span class="icon">🔗</span>
+          <h4>Correlate</h4>
+          <p>Connect related events across sources using rules, ML, and behavioral analytics.</p>
+        </div>
+        <div class="info-tile">
+          <span class="icon">🚨</span>
+          <h4>Alert</h4>
+          <p>Generate actionable alerts when suspicious patterns match defined detection rules.</p>
+        </div>
+        <div class="info-tile">
+          <span class="icon">📊</span>
+          <h4>Report</h4>
+          <p>Produce compliance reports, dashboards, and investigation timelines for SOC teams.</p>
+        </div>
+        <div class="info-tile">
+          <span class="icon">🏃</span>
+          <h4>Respond</h4>
+          <p>Support incident response through cases, timelines, and orchestration capabilities.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 2: Elastic Stack Architecture -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">01.02</span>
+      <h2 class="section-title">Elastic Stack Architecture</h2>
+    </div>
+    <div class="card">
+      <p>Elastic Security is built on top of the <strong style="color:#fff">Elastic Stack (ELK)</strong>. Understanding the data flow is critical for every SIEM analyst — from ingestion all the way to detection.</p>
+      <div class="arch-diagram">
+        <div class="arch-row">
+          <div class="arch-box">
+            <span class="label">Data Sources</span>
+            <span class="desc">Endpoints · Network · Cloud · Apps</span>
+          </div>
+        </div>
+        <div class="arch-arrow">↓</div>
+        <div class="arch-row">
+          <div class="arch-box">
+            <span class="label">Elastic Agent</span>
+            <span class="desc">Single agent, all integrations</span>
+          </div>
+          <div class="arch-box">
+            <span class="label">Beats</span>
+            <span class="desc">Filebeat · Winlogbeat · Auditbeat</span>
+          </div>
+          <div class="arch-box">
+            <span class="label">Logstash</span>
+            <span class="desc">Transform & enrich</span>
+          </div>
+        </div>
+        <div class="arch-arrow">↓</div>
+        <div class="arch-row">
+          <div class="arch-box" style="border-color:rgba(0,212,255,0.5)">
+            <span class="label" style="color:#fff">Elasticsearch</span>
+            <span class="desc">Store, index & search</span>
+          </div>
+        </div>
+        <div class="arch-arrow">↓</div>
+        <div class="arch-row">
+          <div class="arch-box" style="border-color:rgba(124,58,237,0.5)">
+            <span class="label" style="color:var(--accent3)">Kibana / Elastic Security</span>
+            <span class="desc">SIEM UI · Detection · Hunting · Cases</span>
+          </div>
+        </div>
+      </div>
+      <div class="highlight-box">
+        <p><strong>Key exam point:</strong> Elastic Agent is the modern, preferred collection method. It replaces deploying multiple Beats individually. It is managed via Fleet in Kibana and supports hundreds of integrations.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 3: Key Components -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">01.03</span>
+      <h2 class="section-title">Key Components Deep Dive</h2>
+    </div>
+    <div class="card">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab(event,'elasticsearch')">Elasticsearch</button>
+        <button class="tab" onclick="switchTab(event,'kibana')">Kibana</button>
+        <button class="tab" onclick="switchTab(event,'agent')">Elastic Agent</button>
+        <button class="tab" onclick="switchTab(event,'fleet')">Fleet</button>
+      </div>
+
+      <div id="tab-elasticsearch" class="tab-content active">
+        <p><strong style="color:#fff">Elasticsearch</strong> is the distributed search and analytics engine at the core of the Elastic Stack. Key concepts for SIEM analysts:</p>
+        <div class="code-block">
+<span class="comment"># Core Elasticsearch concepts for SIEM</span>
+
+<span class="key">Index</span>     → Named collection of documents (e.g., logs-endpoint.alerts-*)
+<span class="key">Document</span>  → Single JSON record representing a security event
+<span class="key">Shard</span>     → Horizontal partition for scalability
+<span class="key">Replica</span>   → Copy of shard for redundancy
+<span class="key">Mapping</span>   → Schema defining field types (keyword, date, ip, etc.)
+<span class="key">ILM</span>       → Index Lifecycle Management — hot/warm/cold/frozen/delete
+        </div>
+        <p>For SIEM, Elasticsearch stores all security events. Analysts query it via KQL, EQL, or ES|QL from the Kibana UI — no need to write raw Elasticsearch queries directly.</p>
+      </div>
+
+      <div id="tab-kibana" class="tab-content">
+        <p><strong style="color:#fff">Kibana</strong> is the visualization and management layer. For SIEM analysts, the critical sections are:</p>
+        <div class="info-grid" style="margin-top:12px">
+          <div class="info-tile">
+            <span class="icon">🛡️</span>
+            <h4>Security App</h4>
+            <p>Main SIEM interface: Overview, Alerts, Timelines, Cases, and more.</p>
+          </div>
+          <div class="info-tile">
+            <span class="icon">🔎</span>
+            <h4>Discover</h4>
+            <p>Ad-hoc log search using KQL. The analyst's primary investigation starting point.</p>
+          </div>
+          <div class="info-tile">
+            <span class="icon">📈</span>
+            <h4>Dashboards</h4>
+            <p>Pre-built and custom security dashboards for monitoring and reporting.</p>
+          </div>
+          <div class="info-tile">
+            <span class="icon">⚙️</span>
+            <h4>Stack Management</h4>
+            <p>Index patterns, ILM policies, users, roles, and spaces administration.</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-agent" class="tab-content">
+        <p><strong style="color:#fff">Elastic Agent</strong> is a unified, multi-purpose data collection agent. It replaces separate Beats deployments and provides:</p>
+        <div class="code-block">
+<span class="comment"># Elastic Agent capabilities</span>
+
+<span class="key">Data Collection</span>   → Logs, metrics, traces from any source
+<span class="key">Endpoint Security</span> → EDR functionality via Elastic Defend integration
+<span class="key">Network Monitoring</span> → Packet capture and flow analysis
+<span class="key">Fleet Managed</span>    → Centrally managed via Kibana Fleet UI
+<span class="key">Policy Based</span>     → Agent policies define what data to collect
+<span class="key">Tamper Protected</span> → Can be locked to prevent unauthorized changes
+        </div>
+        <div class="highlight-box warning">
+          <p><strong>Exam tip:</strong> Know the difference between Elastic Agent, individual Beats (Filebeat, Winlogbeat, Packetbeat), and Logstash. Elastic Agent is preferred; Logstash is used for complex transformation pipelines.</p>
+        </div>
+      </div>
+
+      <div id="tab-fleet" class="tab-content">
+        <p><strong style="color:#fff">Fleet</strong> is the centralized management system for Elastic Agents. Accessible from Kibana → Management → Fleet.</p>
+        <div class="code-block">
+<span class="comment"># Fleet concepts</span>
+
+<span class="key">Fleet Server</span>     → Central server agents connect to for management
+<span class="key">Agent Policy</span>     → Defines integrations, data collection config, and outputs
+<span class="key">Integration</span>     → Pre-built connector for a specific data source
+<span class="key">Enrollment Token</span> → Used to register a new agent with Fleet
+<span class="key">Agent Status</span>    → Healthy / Unhealthy / Updating / Offline / Unenrolled
+<span class="key">Output</span>          → Where agents send data (usually Elasticsearch or Logstash)
+        </div>
+        <p>From Fleet, analysts and admins can remotely push policy updates, upgrade agents, unenroll agents, and view agent health — all without SSH access to endpoints.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 4: ECS -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">01.04</span>
+      <h2 class="section-title">Elastic Common Schema (ECS)</h2>
+    </div>
+    <div class="card">
+      <p><strong style="color:#fff">ECS</strong> defines a standard set of field names and data types across all Elastic security data. It enables consistent correlation across different data sources without custom field mappings.</p>
+      <p>Think of ECS as the "universal language" that allows a Windows event to be correlated with a firewall log and a DNS query — because they all use the same field names.</p>
+
+      <div class="code-block">
+<span class="comment"># ECS field categories used in SIEM</span>
+
+<span class="key">@timestamp</span>         → Event time (ISO 8601)
+<span class="key">event.*</span>            → category, type, action, outcome, severity
+<span class="key">host.*</span>             → hostname, ip, os.name, os.version
+<span class="key">user.*</span>             → name, id, domain, email
+<span class="key">process.*</span>          → name, pid, parent.pid, executable, args
+<span class="key">network.*</span>          → transport, protocol, direction
+<span class="key">source.*</span>           → ip, port, geo.country_name
+<span class="key">destination.*</span>      → ip, port, geo.country_name
+<span class="key">file.*</span>             → name, path, hash.sha256, size
+<span class="key">dns.*</span>              → question.name, answers.data, type
+<span class="key">threat.*</span>           → tactic.id, technique.id (MITRE ATT&CK)
+      </div>
+
+      <div class="highlight-box success">
+        <p><strong>Why ECS matters for the exam:</strong> Detection rules, timelines, and dashboards all rely on ECS-normalized fields. Understanding field names like <code style="color:var(--success);font-family:var(--mono)">process.name</code>, <code style="color:var(--success);font-family:var(--mono)">user.name</code>, and <code style="color:var(--success);font-family:var(--mono)">destination.ip</code> is essential for writing queries and building detection logic.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 5: Spaces -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">01.05</span>
+      <h2 class="section-title">Kibana Spaces & Deployment Models</h2>
+    </div>
+    <div class="card">
+      <p><strong style="color:#fff">Spaces</strong> in Kibana are isolated environments within a single Elastic cluster. Each space has its own dashboards, saved searches, detection rules, and cases. Users can be granted access to specific spaces based on roles.</p>
+      <div class="info-grid">
+        <div class="info-tile">
+          <span class="icon">🏠</span>
+          <h4>Default Space</h4>
+          <p>Exists by default. Can be renamed. All objects created here unless another space is selected.</p>
+        </div>
+        <div class="info-tile">
+          <span class="icon">🏢</span>
+          <h4>Custom Spaces</h4>
+          <p>Created for different teams, business units, or security domains (e.g., "SOC Team", "Cloud Security").</p>
+        </div>
+        <div class="info-tile">
+          <span class="icon">🔒</span>
+          <h4>Space Isolation</h4>
+          <p>Detection rules, cases, and saved objects are per-space. Data indices are cluster-wide.</p>
+        </div>
+        <div class="info-tile">
+          <span class="icon">☁️</span>
+          <h4>Elastic Cloud vs Self-Managed</h4>
+          <p>Elastic Cloud is SaaS (hosted by Elastic). Self-managed runs on-prem or your own cloud VMs.</p>
+        </div>
+      </div>
+      <div class="highlight-box">
+        <p><strong>Exam tip:</strong> RBAC in Elastic is applied via <em>Roles</em> and <em>Role Mappings</em>. A role can grant access to specific Kibana features within specific Spaces, and control index-level privileges in Elasticsearch. This is covered in depth in Topic 7.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Flashcards -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">01.06</span>
+      <h2 class="section-title">Flashcard Review</h2>
+    </div>
+    <div class="card">
+      <p style="margin-bottom:4px">Click the card to flip it. Use the arrows to navigate between cards.</p>
+      <div class="flashcard-container" onclick="flipCard()">
+        <div class="flashcard" id="flashcard">
+          <div class="card-face front">
+            <div class="face-label">Click to reveal answer</div>
+            <div class="face-text" id="fc-question">What does ECS stand for and why is it important in Elastic SIEM?</div>
+          </div>
+          <div class="card-face back">
+            <div class="face-label">Answer</div>
+            <div class="face-text" id="fc-answer">Elastic Common Schema. It standardizes field names and data types across all log sources, enabling consistent correlation, detection rule creation, and dashboard building without custom field mapping for each source.</div>
+          </div>
+        </div>
+      </div>
+      <div class="flashcard-nav">
+        <button class="fc-btn" onclick="prevCard()">← Prev</button>
+        <span class="fc-counter" id="fc-counter">1 / 6</span>
+        <button class="fc-btn" onclick="nextCard()">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Knowledge Check Quiz -->
+  <div class="quiz-card">
+    <div class="quiz-header">
+      <span class="quiz-badge">Knowledge Check</span>
+      <h2 class="quiz-title">Topic 1 · Practice Questions</h2>
+    </div>
+
+    <!-- Q1 -->
+    <div class="question-block" id="q1">
+      <div class="question-num">QUESTION 01</div>
+      <div class="question-text">Which component of the Elastic Stack serves as the primary storage and search engine for security event data?</div>
+      <div class="options">
+        <button class="option" onclick="answer(this,'q1','A','A')"><span class="opt-letter">A</span> Kibana</button>
+        <button class="option" onclick="answer(this,'q1','B','A')"><span class="opt-letter">B</span> Logstash</button>
+        <button class="option" onclick="answer(this,'q1','A','A')"><span class="opt-letter">A</span> Elasticsearch</button>
+        <button class="option" onclick="answer(this,'q1','D','A')"><span class="opt-letter">D</span> Elastic Agent</button>
+      </div>
+      <div class="explanation" id="exp-q1">
+        <strong>Correct: Elasticsearch</strong> is the distributed search and analytics engine where all security events are stored and indexed. Kibana is the UI layer, Logstash transforms/enriches data before indexing, and Elastic Agent collects data from endpoints.
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="question-block" id="q2">
+      <div class="question-num">QUESTION 02</div>
+      <div class="question-text">A security analyst wants to deploy a single agent on endpoints that handles log collection, metrics, and EDR. Which Elastic product should they deploy?</div>
+      <div class="options">
+        <button class="option" onclick="answer(this,'q2','A','B')"><span class="opt-letter">A</span> Filebeat + Winlogbeat (separate installations)</button>
+        <button class="option" onclick="answer(this,'q2','B','B')"><span class="opt-letter">B</span> Elastic Agent with the Elastic Defend integration</button>
+        <button class="option" onclick="answer(this,'q2','C','B')"><span class="opt-letter">C</span> Logstash with a Kafka pipeline</button>
+        <button class="option" onclick="answer(this,'q2','D','B')"><span class="opt-letter">D</span> Packetbeat standalone</button>
+      </div>
+      <div class="explanation" id="exp-q2">
+        <strong>Correct: Elastic Agent with Elastic Defend integration.</strong> Elastic Agent is the modern unified agent that replaces multiple Beats. Adding the Elastic Defend integration enables EDR capabilities (endpoint protection, process monitoring, file integrity, etc.) alongside log and metrics collection.
+      </div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="question-block" id="q3">
+      <div class="question-num">QUESTION 03</div>
+      <div class="question-text">In Elastic Common Schema (ECS), which field would you use to identify the name of a process that triggered a security event?</div>
+      <div class="options">
+        <button class="option" onclick="answer(this,'q3','A','C')"><span class="opt-letter">A</span> event.process</button>
+        <button class="option" onclick="answer(this,'q3','B','C')"><span class="opt-letter">B</span> host.process.name</button>
+        <button class="option" onclick="answer(this,'q3','C','C')"><span class="opt-letter">C</span> process.name</button>
+        <button class="option" onclick="answer(this,'q3','D','C')"><span class="opt-letter">D</span> system.process</button>
+      </div>
+      <div class="explanation" id="exp-q3">
+        <strong>Correct: process.name</strong> is the ECS-standard field for the process name. ECS uses dot-notation namespaces: <code style="color:var(--accent);font-family:var(--mono)">process.*</code> covers all process-related fields including <code style="color:var(--accent);font-family:var(--mono)">process.pid</code>, <code style="color:var(--accent);font-family:var(--mono)">process.parent.pid</code>, <code style="color:var(--accent);font-family:var(--mono)">process.executable</code>, etc.
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="question-block" id="q4">
+      <div class="question-num">QUESTION 04</div>
+      <div class="question-text">A SOC manager wants to give the "Cloud Security" team access to their own dashboards and detection rules without exposing data from the "Windows SOC" team. What Kibana feature enables this isolation?</div>
+      <div class="options">
+        <button class="option" onclick="answer(this,'q4','A','B')"><span class="opt-letter">A</span> Index-level security with field masking</button>
+        <button class="option" onclick="answer(this,'q4','B','B')"><span class="opt-letter">B</span> Kibana Spaces with role-based access</button>
+        <button class="option" onclick="answer(this,'q4','C','B')"><span class="opt-letter">C</span> Separate Elasticsearch clusters for each team</button>
+        <button class="option" onclick="answer(this,'q4','D','B')"><span class="opt-letter">D</span> Creating different index patterns per team</button>
+      </div>
+      <div class="explanation" id="exp-q4">
+        <strong>Correct: Kibana Spaces with role-based access.</strong> Spaces provide logical isolation of saved objects (dashboards, detection rules, cases, etc.) within a single cluster. Roles control which users can access which spaces, providing team isolation without needing separate infrastructure.
+      </div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="question-block" id="q5">
+      <div class="question-num">QUESTION 05</div>
+      <div class="question-text">What is the primary purpose of Fleet in Elastic Security?</div>
+      <div class="options">
+        <button class="option" onclick="answer(this,'q5','A','C')"><span class="opt-letter">A</span> To store and index security events at scale</button>
+        <button class="option" onclick="answer(this,'q5','B','C')"><span class="opt-letter">B</span> To visualize SIEM dashboards and alerts</button>
+        <button class="option" onclick="answer(this,'q5','C','C')"><span class="opt-letter">C</span> To centrally manage Elastic Agent deployments, policies, and updates</button>
+        <button class="option" onclick="answer(this,'q5','D','C')"><span class="opt-letter">D</span> To run detection rules against stored events</button>
+      </div>
+      <div class="explanation" id="exp-q5">
+        <strong>Correct: Fleet centrally manages Elastic Agent deployments.</strong> From Fleet in Kibana, you can enroll new agents, assign agent policies (which define what integrations/data to collect), push policy updates, upgrade agent versions, and monitor agent health — all from a single UI without direct access to endpoints.
+      </div>
+    </div>
+
+    <div class="score-display" id="scoreDisplay">
+      <div class="score-num" id="scoreNum">0/5</div>
+      <div class="score-label">Questions Correct</div>
+      <div class="score-msg" id="scoreMsg"></div>
+      <button class="btn-retry" onclick="resetQuiz()">↺ RETRY QUIZ</button>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-text">ECSA Study Guide &nbsp;·&nbsp; Topic 1: Fundamentals &nbsp;·&nbsp; Built for exam prep</div>
+    <button class="next-btn" onclick="alert('Topic 2: Data Ingestion & ECS Normalization — coming up next!')">Next Topic: Data Ingestion →</button>
+  </footer>
+</div>
+
+<script>
+  // Progress tracking
+  const totalQuestions = 5;
+  let answered = 0;
+  let correct = 0;
+  const correctAnswers = { q1: 'C', q2: 'B', q3: 'C', q4: 'B', q5: 'C' };
+  const answeredMap = {};
+
+  function answer(btn, qId, chosen, correctLetter) {
+    if (answeredMap[qId]) return;
+    answeredMap[qId] = true;
+
+    const block = document.getElementById(qId);
+    const options = block.querySelectorAll('.option');
+    const exp = document.getElementById('exp-' + qId);
+    const letters = ['A','B','C','D'];
+
+    options.forEach((opt, i) => {
+      opt.classList.add('answered');
+      opt.style.cursor = 'default';
+      if (letters[i] === correctAnswers[qId]) {
+        opt.classList.add('revealed-correct');
+      }
+    });
+
+    const isCorrect = chosen === correctAnswers[qId];
+    btn.classList.remove('revealed-correct');
+    btn.classList.add(isCorrect ? 'correct' : 'incorrect');
+    exp.classList.add('show');
+
+    if (isCorrect) correct++;
+    answered++;
+    updateProgress();
+
+    if (answered === totalQuestions) {
+      setTimeout(showScore, 600);
+    }
+  }
+
+  function updateProgress() {
+    const pct = (answered / totalQuestions) * 100;
+    document.getElementById('progressFill').style.width = pct + '%';
+  }
+
+  function showScore() {
+    const display = document.getElementById('scoreDisplay');
+    document.getElementById('scoreNum').textContent = correct + '/' + totalQuestions;
+    const pct = (correct / totalQuestions) * 100;
+    let msg = '';
+    if (pct === 100) msg = '🎯 Perfect score! You have a strong grasp of SIEM fundamentals.';
+    else if (pct >= 80) msg = '✅ Great work! Review any missed questions and move to Topic 2.';
+    else if (pct >= 60) msg = '📚 Good effort. Re-read the sections above before moving on.';
+    else msg = '🔄 Keep studying. Focus on ECS fields, architecture, and Fleet concepts.';
+    document.getElementById('scoreMsg').textContent = msg;
+    display.classList.add('show');
+  }
+
+  function resetQuiz() {
+    Object.keys(answeredMap).forEach(k => delete answeredMap[k]);
+    answered = 0;
+    correct = 0;
+    document.getElementById('progressFill').style.width = '0%';
+    document.getElementById('scoreDisplay').classList.remove('show');
+    const options = document.querySelectorAll('.option');
+    options.forEach(o => {
+      o.classList.remove('correct','incorrect','revealed-correct','answered');
+      o.style.cursor = '';
+    });
+    document.querySelectorAll('.explanation').forEach(e => e.classList.remove('show'));
+  }
+
+  // Tabs
+  function switchTab(e, name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    e.target.classList.add('active');
+    document.getElementById('tab-' + name).classList.add('active');
+  }
+
+  // Flashcards
+  const cards = [
+    {
+      q: 'What does ECS stand for and why is it important in Elastic SIEM?',
+      a: 'Elastic Common Schema. It standardizes field names across all log sources, enabling consistent correlation, detection rules, and dashboards without custom mapping.'
+    },
+    {
+      q: 'What is the role of Elasticsearch in the Elastic SIEM architecture?',
+      a: 'Elasticsearch is the distributed search and analytics engine that stores, indexes, and enables real-time querying of all security event data.'
+    },
+    {
+      q: 'What is Fleet and how does it relate to Elastic Agent?',
+      a: 'Fleet is the centralized management UI in Kibana for deploying, configuring, and updating Elastic Agents. It manages agent policies, integrations, and health status.'
+    },
+    {
+      q: 'Name 3 ECS field namespaces used in security investigations.',
+      a: 'process.* (process activity), user.* (user identity), network.* (connections), source.*/destination.* (IPs/ports), event.* (categorization), threat.* (MITRE ATT&CK mapping).'
+    },
+    {
+      q: 'How do Kibana Spaces support a multi-team SOC?',
+      a: 'Spaces isolate saved objects (dashboards, rules, cases) per team. Combined with role-based access control, each team sees only their own data and configurations in a single cluster.'
+    },
+    {
+      q: 'What is the difference between Elastic Agent and individual Beats like Filebeat?',
+      a: 'Elastic Agent is the modern unified agent managed by Fleet. It replaces multiple separate Beats. Individual Beats (Filebeat, Winlogbeat, etc.) are lightweight, single-purpose shippers that predate Elastic Agent.'
+    }
+  ];
+
+  let currentCard = 0;
+  let isFlipped = false;
+
+  function flipCard() {
+    isFlipped = !isFlipped;
+    document.getElementById('flashcard').classList.toggle('flipped', isFlipped);
+  }
+
+  function setCard(idx) {
+    currentCard = idx;
+    isFlipped = false;
+    const fc = document.getElementById('flashcard');
+    fc.classList.remove('flipped');
+    document.getElementById('fc-question').textContent = cards[idx].q;
+    document.getElementById('fc-answer').textContent = cards[idx].a;
+    document.getElementById('fc-counter').textContent = (idx+1) + ' / ' + cards.length;
+  }
+
+  function nextCard() { setCard((currentCard + 1) % cards.length); }
+  function prevCard() { setCard((currentCard - 1 + cards.length) % cards.length); }
+</script>
+</body>
+</html>

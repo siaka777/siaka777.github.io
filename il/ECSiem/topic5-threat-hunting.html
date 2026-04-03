@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topic 5: Threat Hunting — KQL · EQL · ES|QL</title>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Barlow+Condensed:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #060d06;
+    --bg2:     #0a120a;
+    --s1:      #0d1a0d;
+    --s2:      #111f11;
+    --s3:      #162616;
+    --border:  #1a2e1a;
+    --border2: #224022;
+    --ph:      #39ff14;   /* phosphor green */
+    --ph2:     #7fff4f;
+    --ph3:     #b8ffaa;
+    --ph4:     #d4ffc9;
+    --lime:    #a8ff3e;
+    --amber:   #ffb830;
+    --red:     #ff4040;
+    --cyan:    #00ffcc;
+    --blue:    #4488ff;
+    --dim:     #4a6b4a;
+    --muted:   #2a3d2a;
+    --text:    #c8e8c8;
+    --mono:    'Fira Code', monospace;
+    --cond:    'Barlow Condensed', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--mono);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    cursor: crosshair;
+  }
+
+  /* CRT scanlines */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 3px,
+      rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px
+    );
+    pointer-events: none; z-index: 100;
+  }
+
+  /* Green glow */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -30%; left: -20%;
+    width: 80vw; height: 80vw;
+    background: radial-gradient(ellipse, rgba(57,255,20,0.025) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .container { max-width: 1080px; margin: 0 auto; padding: 0 28px; position: relative; z-index: 1; }
+
+  /* ── HEADER ── */
+  header { padding: 40px 0 0; margin-bottom: 44px; }
+
+  .term-prompt {
+    font-size: 11px; color: var(--dim); letter-spacing: 1px; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .term-prompt::before { content: '$ '; color: var(--ph); }
+  .blink { animation: blink 1s step-end infinite; color: var(--ph); }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .hero {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 24px; flex-wrap: wrap; margin-bottom: 28px;
+  }
+
+  h1 {
+    font-family: var(--cond);
+    font-size: clamp(3rem, 7vw, 5.5rem);
+    font-weight: 900;
+    line-height: 0.9;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--ph);
+    text-shadow: 0 0 20px rgba(57,255,20,0.3), 0 0 60px rgba(57,255,20,0.1);
+  }
+  h1 .sub-h { display: block; color: var(--text); font-size: 0.5em; letter-spacing: 4px; font-weight: 400; margin-top: 4px; }
+
+  .hero-stats { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+  .hs-item {
+    font-size: 10px; letter-spacing: 2px; color: var(--dim);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .hs-item::before { content: '▶'; color: var(--ph); font-size: 8px; }
+  .hs-item .val { color: var(--ph2); }
+
+  /* Nav */
+  .topic-nav {
+    display: flex; gap: 4px; flex-wrap: wrap;
+    border-top: 1px solid var(--border2);
+    border-bottom: 1px solid var(--border2);
+    padding: 14px 0;
+  }
+  .topic-nav a {
+    font-size: 9px; padding: 5px 12px; text-decoration: none;
+    transition: all 0.15s; border: 1px solid var(--border2);
+    color: var(--muted); letter-spacing: 2px; text-transform: uppercase;
+  }
+  .topic-nav a.done  { color: var(--ph); border-color: var(--border2); background: rgba(57,255,20,0.04); }
+  .topic-nav a.done::before { content: '✓ '; }
+  .topic-nav a.active { background: var(--ph); color: var(--bg); border-color: var(--ph); font-weight: 700; }
+  .topic-nav a:hover:not(.active):not(.done) { border-color: var(--ph); color: var(--ph2); }
+
+  /* Progress */
+  .prog-row { display: flex; align-items: center; gap: 12px; margin: 20px 0 48px; }
+  .prog-track { flex: 1; height: 2px; background: var(--border2); overflow: hidden; }
+  .prog-fill  { height: 100%; background: linear-gradient(90deg, var(--ph), var(--lime)); width: 0%; transition: width 0.5s ease; }
+  .prog-txt   { font-size: 10px; color: var(--dim); white-space: nowrap; letter-spacing: 1px; }
+
+  /* ── SECTIONS ── */
+  .section { margin-bottom: 52px; animation: typeIn 0.4s ease both; }
+  @keyframes typeIn { from{opacity:0;transform:translateX(-12px)} to{opacity:1;transform:translateX(0)} }
+  .section:nth-child(1){animation-delay:.04s}.section:nth-child(2){animation-delay:.09s}
+  .section:nth-child(3){animation-delay:.14s}.section:nth-child(4){animation-delay:.19s}
+  .section:nth-child(5){animation-delay:.24s}.section:nth-child(6){animation-delay:.29s}
+
+  .sec-hd { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+  .sec-tag {
+    font-size: 10px; color: var(--ph); border: 1px solid var(--ph);
+    background: rgba(57,255,20,0.06); padding: 3px 12px; letter-spacing: 2px;
+  }
+  .sec-title {
+    font-family: var(--cond); font-size: 1.4rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 2px; color: var(--text);
+  }
+
+  /* Card */
+  .card {
+    background: var(--s1); border: 1px solid var(--border2);
+    padding: 26px 30px; position: relative; overflow: hidden;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 2px;
+    background: linear-gradient(180deg, var(--ph), transparent);
+  }
+  .card p { font-size: 13px; line-height: 1.8; color: var(--dim); margin-bottom: 12px; }
+  .card p:last-child { margin-bottom: 0; }
+  strong { color: var(--text); }
+
+  /* ── QUERY RUNNER ── */
+  .query-runner {
+    background: var(--bg2); border: 1px solid var(--border2); overflow: hidden; margin: 20px 0;
+  }
+
+  .qr-tabs {
+    display: flex; border-bottom: 1px solid var(--border2);
+    background: var(--s2);
+  }
+  .qr-tab {
+    font-size: 11px; padding: 10px 20px; cursor: pointer; transition: all 0.15s;
+    color: var(--dim); letter-spacing: 2px; border: none; background: none;
+    border-right: 1px solid var(--border2); text-transform: uppercase;
+  }
+  .qr-tab.active { background: var(--bg2); color: var(--ph); border-bottom: 2px solid var(--ph); }
+  .qr-tab:hover:not(.active) { color: var(--ph2); background: rgba(57,255,20,0.03); }
+
+  .qr-panel { display: none; padding: 0; }
+  .qr-panel.active { display: block; }
+
+  .qr-examples { padding: 16px 20px; display: flex; flex-direction: column; gap: 6px; border-bottom: 1px solid var(--border); }
+  .qr-example-btn {
+    font-size: 11px; padding: 8px 14px; background: var(--s2); border: 1px solid var(--border2);
+    color: var(--dim); cursor: pointer; text-align: left; transition: all 0.15s;
+    font-family: var(--mono); letter-spacing: 0;
+  }
+  .qr-example-btn:hover { border-color: var(--ph); color: var(--ph2); background: rgba(57,255,20,0.04); }
+  .qr-example-btn.sel { border-color: var(--ph); color: var(--ph); background: rgba(57,255,20,0.06); }
+  .qr-example-btn span { color: var(--muted); font-size: 10px; display: block; margin-top: 2px; }
+
+  .qr-output { padding: 16px 20px; }
+  .qr-label { font-size: 10px; color: var(--dim); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+
+  .qr-code {
+    background: #020602; border: 1px solid var(--border);
+    border-left: 3px solid var(--ph);
+    padding: 16px 20px; font-size: 12.5px; line-height: 1.9;
+    overflow-x: auto; white-space: pre;
+    color: var(--dim); min-height: 80px;
+    transition: all 0.3s;
+  }
+  .qr-desc {
+    margin-top: 10px; padding: 10px 14px;
+    background: rgba(57,255,20,0.04); border: 1px solid rgba(57,255,20,0.1);
+    font-size: 11px; color: var(--dim); line-height: 1.7; display: none;
+  }
+  .qr-desc.show { display: block; }
+
+  /* Syntax colours */
+  .kw  { color: var(--ph);   } /* keywords, operators */
+  .fn  { color: var(--lime); } /* functions, clauses */
+  .str { color: var(--cyan); } /* strings */
+  .num { color: var(--amber);} /* numbers */
+  .fld { color: #88ccff;    } /* field names */
+  .cmt { color: #1e3a1e;    } /* comments */
+  .op  { color: var(--text); } /* operators */
+  .val { color: var(--ph2);  } /* values */
+
+  /* Comparison grid */
+  .lang-compare {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 20px 0;
+  }
+  @media(max-width:700px){ .lang-compare { grid-template-columns: 1fr; } }
+
+  .lang-card {
+    background: var(--s2); border: 1px solid var(--border2);
+    padding: 18px; cursor: pointer; transition: all 0.2s; position: relative;
+    overflow: hidden;
+  }
+  .lang-card::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: transparent; transition: background 0.2s;
+  }
+  .lang-card.kql::after { background: var(--ph); }
+  .lang-card.eql::after { background: var(--amber); }
+  .lang-card.esql::after { background: var(--cyan); }
+  .lang-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+
+  .lc-badge {
+    font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+    padding: 3px 10px; display: inline-block; margin-bottom: 10px;
+  }
+  .kql .lc-badge { background: rgba(57,255,20,0.12);  color: var(--ph);   border: 1px solid rgba(57,255,20,0.25); }
+  .eql .lc-badge { background: rgba(255,184,48,0.12); color: var(--amber); border: 1px solid rgba(255,184,48,0.25); }
+  .esql .lc-badge { background: rgba(0,255,204,0.12); color: var(--cyan);  border: 1px solid rgba(0,255,204,0.25); }
+
+  .lc-name {
+    font-family: var(--cond); font-size: 1.15rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px; color: var(--text); margin-bottom: 6px;
+  }
+  .lc-desc { font-size: 11px; color: var(--dim); line-height: 1.6; margin-bottom: 12px; }
+  .lc-uses { font-size: 10px; color: var(--dim); line-height: 1.7; }
+  .lc-uses .tag {
+    font-size: 9px; padding: 2px 8px; display: inline-block;
+    margin: 2px 2px 2px 0; border-radius: 1px;
+  }
+  .kql .tag { background: rgba(57,255,20,0.08);  color: var(--ph2);  border: 1px solid rgba(57,255,20,0.2); }
+  .eql .tag { background: rgba(255,184,48,0.08); color: var(--amber); border: 1px solid rgba(255,184,48,0.2); }
+  .esql .tag { background: rgba(0,255,204,0.08); color: var(--cyan);  border: 1px solid rgba(0,255,204,0.2); }
+
+  /* Hypothesis builder */
+  .hyp-builder {
+    background: var(--s2); border: 1px solid var(--border2); padding: 22px; margin: 20px 0;
+  }
+  .hb-title { font-size: 11px; color: var(--ph); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 16px; }
+
+  .hb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  @media(max-width:600px){ .hb-grid { grid-template-columns: 1fr; } }
+
+  .hb-field label { font-size: 10px; color: var(--dim); letter-spacing: 1px; text-transform: uppercase; display: block; margin-bottom: 6px; }
+  .hb-field select {
+    width: 100%; background: var(--s1); border: 1px solid var(--border2); color: var(--text);
+    font-family: var(--mono); font-size: 11px; padding: 9px 12px; outline: none;
+    transition: border-color 0.15s; cursor: pointer;
+  }
+  .hb-field select:focus { border-color: var(--ph); }
+  .hb-field select option { background: var(--s1); }
+
+  .hb-output {
+    background: #020602; border: 1px solid var(--border); border-left: 3px solid var(--lime);
+    padding: 16px 20px; font-size: 12px; line-height: 1.9; overflow-x: auto; white-space: pre;
+    min-height: 120px; transition: all 0.3s;
+  }
+
+  /* Hunt card list */
+  .hunt-list { display: flex; flex-direction: column; gap: 10px; margin: 20px 0; }
+  .hunt-item {
+    background: var(--s2); border: 1px solid var(--border2); padding: 16px 20px;
+    display: flex; align-items: flex-start; gap: 16px; cursor: pointer;
+    transition: all 0.2s; position: relative;
+  }
+  .hunt-item:hover { border-color: var(--ph2); background: var(--s3); transform: translateX(4px); }
+  .hunt-item.expanded { border-color: var(--ph); background: var(--s3); }
+
+  .hi-num {
+    font-size: 1.4rem; font-weight: 700; color: var(--border2); font-family: var(--cond);
+    min-width: 36px; line-height: 1; padding-top: 2px; transition: color 0.2s;
+  }
+  .hunt-item:hover .hi-num, .hunt-item.expanded .hi-num { color: var(--ph); }
+
+  .hi-content { flex: 1; }
+  .hi-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .hi-tactic { font-size: 10px; color: var(--amber); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+  .hi-desc { font-size: 11px; color: var(--dim); line-height: 1.6; }
+  .hi-query { display: none; margin-top: 14px; }
+  .hi-query.show { display: block; }
+
+  /* Note */
+  .note {
+    border-left: 3px solid var(--ph); background: rgba(57,255,20,0.04);
+    padding: 12px 18px; margin: 14px 0; font-size: 12px; line-height: 1.7; color: var(--dim);
+  }
+  .note.amber { border-left-color: var(--amber); background: rgba(255,184,48,0.04); }
+  .note.cyan  { border-left-color: var(--cyan);  background: rgba(0,255,204,0.04); }
+  .note.red   { border-left-color: var(--red);   background: rgba(255,64,64,0.04); }
+  .note strong { color: var(--ph2); }
+  .note.amber strong { color: var(--amber); }
+  .note.cyan  strong { color: var(--cyan); }
+  .note.red   strong { color: var(--red); }
+
+  /* Inline code */
+  code { background: var(--s2); border: 1px solid var(--border2); padding: 1px 6px; font-size: 11px; color: var(--ph2); }
+
+  /* Two-col */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 18px 0; }
+  @media(max-width:600px){ .two-col { grid-template-columns: 1fr; } }
+  .mini { background: var(--s2); border: 1px solid var(--border2); padding: 16px 18px; }
+  .ml { font-size: 10px; color: var(--dim); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+  .mv { font-size: 11px; color: var(--text); line-height: 1.8; }
+  .mv .g { color: var(--ph2); } .mv .a { color: var(--amber); } .mv .c { color: var(--cyan); } .mv .r { color: var(--red); }
+
+  /* ── QUIZ ── */
+  .quiz {
+    background: var(--s1); border: 1px solid var(--border2);
+    padding: 36px 30px; margin-top: 52px; position: relative;
+  }
+  .quiz::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--ph), var(--lime), var(--cyan));
+  }
+
+  .quiz-title {
+    font-family: var(--cond); font-size: 1.4rem; font-weight: 700; letter-spacing: 3px;
+    text-transform: uppercase; color: var(--ph); margin-bottom: 32px; padding-top: 8px;
+  }
+
+  .qb { margin-bottom: 36px; padding-bottom: 36px; border-bottom: 1px solid var(--border2); }
+  .qb:last-of-type { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .q-n { font-size: 10px; color: var(--ph); letter-spacing: 2px; margin-bottom: 8px; }
+  .q-t { font-family: var(--cond); font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 16px; line-height: 1.45; letter-spacing: 0.5px; }
+  pre.q-code {
+    background: #020602; border: 1px solid var(--border); border-left: 3px solid var(--ph);
+    font-size: 11px; padding: 12px 16px; color: var(--ph2); margin-bottom: 14px;
+    overflow-x: auto; line-height: 1.7; white-space: pre;
+  }
+
+  .opts { display: flex; flex-direction: column; gap: 8px; }
+  .opt {
+    display: flex; align-items: flex-start; gap: 12px; padding: 11px 16px;
+    border: 1px solid var(--border2); background: var(--s2); color: var(--dim);
+    font-size: 12px; cursor: pointer; transition: all 0.15s;
+    text-align: left; width: 100%; line-height: 1.55; font-family: var(--mono);
+  }
+  .opt:hover:not(.locked) { border-color: var(--ph); color: var(--text); background: rgba(57,255,20,0.04); }
+  .opt .ol { color: var(--ph); font-weight: 600; min-width: 16px; }
+  .opt.correct { border-color: var(--ph); background: rgba(57,255,20,0.08); color: var(--ph2); }
+  .opt.wrong   { border-color: var(--red); background: rgba(255,64,64,0.08); color: var(--red); }
+  .opt.revealc { border-color: var(--ph); background: rgba(57,255,20,0.03); color: var(--ph); opacity: 0.6; }
+
+  .exp {
+    display: none; margin-top: 12px; padding: 12px 16px;
+    background: rgba(57,255,20,0.04); border: 1px solid rgba(57,255,20,0.15);
+    font-size: 11px; color: var(--dim); line-height: 1.8;
+  }
+  .exp.show { display: block; }
+  .exp strong { color: var(--ph2); }
+
+  .scorebox { display: none; margin-top: 28px; padding: 28px; background: var(--s2); border: 1px solid var(--border2); text-align: center; }
+  .scorebox.show { display: block; }
+  .score-big { font-family: var(--cond); font-size: 4.5rem; font-weight: 900; color: var(--ph); letter-spacing: 4px; text-shadow: 0 0 30px rgba(57,255,20,0.4); }
+  .score-sub { font-size: 10px; color: var(--dim); letter-spacing: 3px; text-transform: uppercase; margin: 4px 0 12px; }
+  .score-msg { font-size: 12px; color: var(--dim); }
+  .btn-reset {
+    margin-top: 18px; background: none; border: 1px solid var(--ph); color: var(--ph);
+    font-family: var(--mono); font-size: 11px; padding: 10px 28px; cursor: pointer;
+    letter-spacing: 3px; text-transform: uppercase; transition: all 0.2s;
+  }
+  .btn-reset:hover { background: var(--ph); color: var(--bg); }
+
+  footer {
+    margin-top: 80px; padding: 32px 0; border-top: 1px solid var(--border2);
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;
+  }
+  .ft { font-size: 10px; color: var(--muted); letter-spacing: 2px; }
+  .nav-btns { display: flex; gap: 10px; }
+  .nbtn {
+    font-size: 10px; padding: 10px 18px; border: 1px solid var(--border2);
+    color: var(--dim); background: none; cursor: pointer; letter-spacing: 2px;
+    text-decoration: none; transition: all 0.2s; text-transform: uppercase;
+  }
+  .nbtn:hover { border-color: var(--ph); color: var(--ph2); }
+  .nbtn.primary { background: var(--ph); color: var(--bg); border-color: var(--ph); font-weight: 700; }
+  .nbtn.primary:hover { background: var(--ph2); border-color: var(--ph2); transform: translateX(2px); }
+
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── HEADER ── -->
+  <header>
+    <div class="term-prompt">elastic-security hunt --mode=active --languages=KQL,EQL,ESQL<span class="blink">█</span></div>
+    <div class="hero">
+      <div>
+        <h1>THREAT<br>HUNTING<span class="sub-h">KQL · EQL · ES|QL · Timelines</span></h1>
+      </div>
+      <div class="hero-stats">
+        <div class="hs-item">Topic <span class="val">05</span> of 08</div>
+        <div class="hs-item">Query Languages: <span class="val">3</span></div>
+        <div class="hs-item">Hunt Scenarios: <span class="val">6</span></div>
+        <div class="hs-item">Quiz Questions: <span class="val">7</span></div>
+      </div>
+    </div>
+
+    <nav class="topic-nav">
+      <a href="#" class="done">01 · Fundamentals</a>
+      <a href="#" class="done">02 · Data Ingestion</a>
+      <a href="#" class="done">03 · Detection Engine</a>
+      <a href="#" class="done">04 · Alert Triage</a>
+      <a href="#" class="active">05 · Threat Hunting</a>
+      <a href="#">06 · Cases</a>
+      <a href="#">07 · RBAC & Admin</a>
+      <a href="#">08 · Visualization</a>
+    </nav>
+  </header>
+
+  <div class="prog-row">
+    <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+    <span class="prog-txt" id="progTxt">0 / 7 answered</span>
+  </div>
+
+  <!-- ══════════════════════════════
+       SECTION 1 — WHAT IS THREAT HUNTING
+  ═══════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">05.01</span><h2 class="sec-title">What Is Threat Hunting?</h2></div>
+    <div class="card">
+      <p>Threat hunting is a <strong>proactive, human-led</strong> investigation process that searches for threats that have evaded automated detection. Unlike alert triage (reactive), threat hunting starts with a <strong>hypothesis</strong> derived from threat intelligence, MITRE ATT&CK techniques, or analyst intuition — then actively looks for evidence in the data.</p>
+      <p>In Elastic Security, threat hunters primarily work in <strong>Discover</strong>, <strong>Timelines</strong>, and the <strong>Osquery Manager</strong>, using KQL, EQL, and ES|QL to interrogate raw event data across any time range.</p>
+
+      <div class="two-col">
+        <div class="mini">
+          <div class="ml">Reactive (Alert Triage)</div>
+          <div class="mv">
+            <span class="r">Starts from an alert.</span><br>
+            Rule fired → analyst investigates.<br>
+            Alert-driven, rule-dependent.<br>
+            Catches known patterns only.<br><br>
+            <span class="a">Limitation:</span> only finds what<br>
+            rules are configured to catch.
+          </div>
+        </div>
+        <div class="mini">
+          <div class="ml">Proactive (Threat Hunting)</div>
+          <div class="mv">
+            <span class="g">Starts from a hypothesis.</span><br>
+            Analyst queries raw data directly.<br>
+            Not dependent on existing rules.<br>
+            Can find unknown/novel threats.<br><br>
+            <span class="g">Outcome:</span> new IOCs, new rules,<br>
+            hardened detections.
+          </div>
+        </div>
+      </div>
+
+      <div class="note">
+        <p><strong>The hunt lifecycle:</strong><br>
+        1. <strong>Form hypothesis</strong> — from threat intel, ATT&CK, news, intuition<br>
+        2. <strong>Collect &amp; search</strong> — query raw events with KQL/EQL/ES|QL<br>
+        3. <strong>Analyze results</strong> — look for anomalies, patterns, outliers<br>
+        4. <strong>Respond or document</strong> — create rules, cases, or close as benign<br>
+        5. <strong>Improve detections</strong> — turn findings into new detection rules</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       SECTION 2 — THREE LANGUAGES
+  ═══════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">05.02</span><h2 class="sec-title">The Three Query Languages</h2></div>
+    <div class="card">
+      <p>Elastic Security supports three query languages for threat hunting. Understanding the <strong>strengths, syntax differences, and appropriate use cases</strong> for each is heavily tested on the exam.</p>
+
+      <div class="lang-compare">
+        <div class="lang-card kql">
+          <span class="lc-badge">KQL</span>
+          <div class="lc-name">Kibana Query Language</div>
+          <div class="lc-desc">Simple, human-readable field matching. Used in Discover, alert filters, and most SIEM UI search bars.</div>
+          <div class="lc-uses">
+            <span class="tag">Discover searches</span>
+            <span class="tag">Alert filtering</span>
+            <span class="tag">Dashboard filters</span>
+            <span class="tag">Custom Query rules</span>
+            <span class="tag">Timeline queries</span>
+          </div>
+        </div>
+        <div class="lang-card eql">
+          <span class="lc-badge">EQL</span>
+          <div class="lc-name">Event Query Language</div>
+          <div class="lc-desc">Sequence detection and event correlation. Requires event category prefix. Used for attack chains and process trees.</div>
+          <div class="lc-uses">
+            <span class="tag">Sequence detection</span>
+            <span class="tag">Process trees</span>
+            <span class="tag">Attack chain hunting</span>
+            <span class="tag">Event Correlation rules</span>
+          </div>
+        </div>
+        <div class="lang-card esql">
+          <span class="lc-badge">ES|QL</span>
+          <div class="lc-name">Elasticsearch Query Language</div>
+          <div class="lc-desc">Pipe-based analytics language for aggregation, transformation, and enrichment. Like SQL + pipes. New and powerful.</div>
+          <div class="lc-uses">
+            <span class="tag">Aggregations</span>
+            <span class="tag">Top-N analysis</span>
+            <span class="tag">Statistical hunting</span>
+            <span class="tag">Data transformation</span>
+            <span class="tag">ES|QL rules</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="note amber">
+        <p><strong>Critical syntax differences — exam trap:</strong><br>
+        KQL uses <code>field: "value"</code> (colon). EQL uses <code>field == "value"</code> (double equals). ES|QL uses <code>WHERE field == "value"</code> (SQL-like). Mixing these up is the most common exam mistake. KQL uses <code>AND/OR/NOT</code>. EQL uses <code>and/or/not</code>. ES|QL uses <code>AND/OR/NOT</code> in WHERE clauses.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       SECTION 3 — INTERACTIVE QUERY LAB
+  ═══════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">05.03</span><h2 class="sec-title">Interactive Query Lab</h2></div>
+    <div class="card">
+      <p>Click any example query to see its syntax, purpose, and explanation. Master these patterns — the exam tests whether you can select the right query for a given scenario.</p>
+
+      <div class="query-runner">
+        <div class="qr-tabs">
+          <button class="qr-tab active" onclick="switchLang('kql', this)">KQL</button>
+          <button class="qr-tab" onclick="switchLang('eql', this)">EQL</button>
+          <button class="qr-tab" onclick="switchLang('esql', this)">ES|QL</button>
+        </div>
+
+        <!-- KQL PANEL -->
+        <div class="qr-panel active" id="panel-kql">
+          <div class="qr-examples">
+            <button class="qr-example-btn sel" onclick="showQuery('kql',0,this)">
+              Suspicious process parent chain<span>Find cmd.exe spawned by Office applications</span>
+            </button>
+            <button class="qr-example-btn" onclick="showQuery('kql',1,this)">
+              Lateral movement via SMB<span>Detect remote process execution indicators</span>
+            </button>
+            <button class="qr-example-btn" onclick="showQuery('kql',2,this)">
+              DNS beaconing pattern<span>Hunt for periodic DNS queries (C2 indicators)</span>
+            </button>
+            <button class="qr-example-btn" onclick="showQuery('kql',3,this)">
+              Credential access via reg query<span>Detect registry queries to credential stores</span>
+            </button>
+            <button class="qr-example-btn" onclick="showQuery('kql',4,this)">
+              Persistence via scheduled task<span>New scheduled tasks created by non-system users</span>
+            </button>
+          </div>
+          <div class="qr-output">
+            <div class="qr-label">// KQL query</div>
+            <div class="qr-code" id="kql-code"></div>
+            <div class="qr-desc" id="kql-desc"></div>
+          </div>
+        </div>
+
+        <!-- EQL PANEL -->
+        <div class="qr-panel" id="panel-eql">
+          <div class="qr-examples">
+            <button class="qr-example-btn sel" onclick="showQuery('eql',0,this)">
+              Macro → PowerShell chain<span>Office macro spawning encoded PowerShell</span>
+            </button>
+            <button class="qr-example-btn" onclick="showQuery('eql',1,this)">
+              Credential dump sequence<span>LSASS access followed by network connection</span>
+            </button>
+            <button class="qr-example-btn" onclick="showQuery('eql',2,this)">
+              Living-off-the-land sequence<span>LOLBin abuse: certutil + file write + exec</span>
+            </button>
+            <button class="qr-example-btn" onclick="showQuery('eql',3,this)">
+              Ransomware indicator chain<span>Mass file rename + shadow copy deletion</span>
+            </button>
+          </div>
+          <div class="qr-output">
+            <div class="qr-label">// EQL sequence query</div>
+            <div class="qr-code" id="eql-code"></div>
+            <div class="qr-desc" id="eql-desc"></div>
+          </div>
+        </div>
+
+        <!-- ES|QL PANEL -->
+        <div class="qr-panel" id="panel-esql">
+          <div class="qr-examples">
+            <button class="qr-example-btn sel" onclick="showQuery('esql',0,this)">
+              Top talkers by destination IP<span>Find hosts making most outbound connections</span>
+            </button>
+            <button class="qr-example-btn" onclick="showQuery('esql',1,this)">
+              Failed auth per user per hour<span>Aggregate brute force patterns</span>
+            </button>
+            <button class="qr-example-btn" onclick="showQuery('esql',2,this)">
+              Rare process per host<span>Find processes seen on only 1 host (anomaly)</span>
+            </button>
+            <button class="qr-example-btn" onclick="showQuery('esql',3,this)">
+              DNS query volume anomaly<span>Hosts with unusually high unique DNS queries</span>
+            </button>
+          </div>
+          <div class="qr-output">
+            <div class="qr-label">// ES|QL analytics query</div>
+            <div class="qr-code" id="esql-code"></div>
+            <div class="qr-desc" id="esql-desc"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       SECTION 4 — KQL DEEP DIVE
+  ═══════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">05.04</span><h2 class="sec-title">KQL Syntax Deep Dive</h2></div>
+    <div class="card">
+      <p>KQL (Kibana Query Language) is the most-used query language in Elastic Security. It is used in Discover, alert filtering, Timeline, and as the query language for Custom Query detection rules.</p>
+
+      <div class="qr-code" style="border-left-color:var(--ph);margin:0 0 14px">
+<span class="cmt">// ─── KQL SYNTAX REFERENCE ───────────────────────────────────────────</span>
+
+<span class="cmt">// Field matching (most common)</span>
+<span class="fld">process.name</span><span class="kw">:</span> <span class="str">"powershell.exe"</span>
+<span class="fld">event.category</span><span class="kw">:</span> <span class="str">"authentication"</span>
+
+<span class="cmt">// Wildcard</span>
+<span class="fld">process.args</span><span class="kw">:</span> <span class="str">*EncodedCommand*</span>           <span class="cmt">// * wildcard, no quotes needed</span>
+<span class="fld">destination.domain</span><span class="kw">:</span> <span class="str">*.onion</span>
+
+<span class="cmt">// Boolean operators (UPPERCASE)</span>
+<span class="fld">process.name</span><span class="kw">:</span> <span class="str">"cmd.exe"</span> <span class="kw">AND</span> <span class="fld">user.name</span><span class="kw">:</span> <span class="str">"Administrator"</span>
+<span class="fld">event.outcome</span><span class="kw">:</span> <span class="str">"failure"</span> <span class="kw">OR</span> <span class="fld">event.outcome</span><span class="kw">:</span> <span class="str">"unknown"</span>
+<span class="kw">NOT</span> <span class="fld">source.ip</span><span class="kw">:</span> <span class="str">"10.0.0.0/8"</span>
+
+<span class="cmt">// Multi-value (parentheses)</span>
+<span class="fld">process.name</span><span class="kw">:</span> (<span class="str">"cmd.exe"</span> <span class="kw">OR</span> <span class="str">"powershell.exe"</span> <span class="kw">OR</span> <span class="str">"wscript.exe"</span>)
+
+<span class="cmt">// Range queries</span>
+<span class="fld">destination.port</span><span class="kw">:</span> [<span class="num">1024</span> <span class="kw">TO</span> <span class="num">65535</span>]
+<span class="fld">event.risk_score</span><span class="kw">:</span> &gt;<span class="num">70</span>
+<span class="fld">@timestamp</span><span class="kw">:</span> [<span class="str">"2024-03-01"</span> <span class="kw">TO</span> <span class="str">"2024-03-31"</span>]
+
+<span class="cmt">// Exists check</span>
+<span class="fld">process.hash.sha256</span><span class="kw">:</span> *                   <span class="cmt">// field has any value</span>
+
+<span class="cmt">// Nested fields</span>
+<span class="fld">process.parent.name</span><span class="kw">:</span> <span class="str">"WINWORD.EXE"</span>
+<span class="fld">source.geo.country_iso_code</span><span class="kw">:</span> (<span class="str">"RU"</span> <span class="kw">OR</span> <span class="str">"CN"</span> <span class="kw">OR</span> <span class="str">"KP"</span>)
+      </div>
+
+      <div class="note red">
+        <p><strong>Common KQL mistakes:</strong> (1) Using <code>==</code> instead of <code>:</code> — that's EQL syntax. (2) Using lowercase <code>and/or</code> — KQL requires uppercase <code>AND/OR/NOT</code>. (3) Quoting wildcards: write <code>process.args: *enc*</code> not <code>process.args: "*enc*"</code> — quotes disable wildcards.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       SECTION 5 — ES|QL DEEP DIVE
+  ═══════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">05.05</span><h2 class="sec-title">ES|QL — The Analytics Powerhouse</h2></div>
+    <div class="card">
+      <p><strong>ES|QL</strong> (Elasticsearch Query Language) is a pipe-based analytics language introduced to replace complex aggregation queries. It is ideal for <em>statistical threat hunting</em> — finding outliers, calculating baselines, and identifying anomalous patterns at scale.</p>
+
+      <div class="qr-code" style="border-left-color:var(--cyan);margin:0 0 14px">
+<span class="cmt">// ─── ES|QL SYNTAX REFERENCE ──────────────────────────────────────────</span>
+<span class="cmt">// Format: SOURCE | COMMAND1 | COMMAND2 | ...</span>
+
+<span class="cmt">// Basic structure</span>
+<span class="fn">FROM</span> <span class="fld">logs-endpoint*</span>
+<span class="kw">|</span> <span class="fn">WHERE</span> <span class="fld">event.category</span> <span class="op">==</span> <span class="str">"process"</span>
+<span class="kw">|</span> <span class="fn">WHERE</span> <span class="fld">@timestamp</span> <span class="op">&gt;</span> <span class="fn">NOW</span>() <span class="op">-</span> <span class="str">"24h"</span>
+<span class="kw">|</span> <span class="fn">STATS</span> <span class="val">count</span> <span class="op">=</span> <span class="fn">COUNT</span>(*) <span class="fn">BY</span> <span class="fld">process.name</span>, <span class="fld">host.name</span>
+<span class="kw">|</span> <span class="fn">SORT</span> <span class="val">count</span> <span class="fn">DESC</span>
+<span class="kw">|</span> <span class="fn">LIMIT</span> <span class="num">20</span>
+
+<span class="cmt">// Find rare processes (low host count = suspicious)</span>
+<span class="fn">FROM</span> <span class="fld">logs-endpoint*</span>
+<span class="kw">|</span> <span class="fn">WHERE</span> <span class="fld">event.type</span> <span class="op">==</span> <span class="str">"start"</span>
+<span class="kw">|</span> <span class="fn">STATS</span> <span class="val">host_count</span> <span class="op">=</span> <span class="fn">COUNT_DISTINCT</span>(<span class="fld">host.name</span>) <span class="fn">BY</span> <span class="fld">process.executable</span>
+<span class="kw">|</span> <span class="fn">WHERE</span> <span class="val">host_count</span> <span class="op">==</span> <span class="num">1</span>                 <span class="cmt">// only seen on 1 host</span>
+<span class="kw">|</span> <span class="fn">SORT</span> <span class="val">host_count</span> <span class="fn">ASC</span>
+
+<span class="cmt">// Key ES|QL commands</span>
+<span class="fn">FROM</span>          <span class="cmt">→ data source (index pattern)</span>
+<span class="fn">WHERE</span>         <span class="cmt">→ filter rows</span>
+<span class="fn">STATS ... BY</span> <span class="cmt">→ aggregate (like GROUP BY in SQL)</span>
+<span class="fn">SORT</span>          <span class="cmt">→ order results</span>
+<span class="fn">LIMIT</span>         <span class="cmt">→ max rows returned</span>
+<span class="fn">EVAL</span>          <span class="cmt">→ compute new fields</span>
+<span class="fn">KEEP</span>          <span class="cmt">→ select specific fields to display</span>
+<span class="fn">DROP</span>          <span class="cmt">→ remove fields from output</span>
+<span class="fn">RENAME</span>        <span class="cmt">→ rename a field in output</span>
+<span class="fn">DISSECT</span>       <span class="cmt">→ parse text using patterns</span>
+<span class="fn">GROK</span>          <span class="cmt">→ extract fields using regex patterns</span>
+      </div>
+
+      <div class="note cyan">
+        <p><strong>Exam tip — KQL vs ES|QL choice:</strong> If the scenario asks to <em>find</em> specific events matching conditions → use KQL. If the scenario asks to <em>count, aggregate, rank, or identify statistical outliers</em> → use ES|QL. ES|QL cannot detect event sequences (use EQL for that). ES|QL is accessed in Discover by switching the query language selector.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       SECTION 6 — HYPOTHESIS BUILDER
+  ═══════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">05.06</span><h2 class="sec-title">Hunt Hypothesis Builder</h2></div>
+    <div class="card">
+      <p>Every threat hunt starts with a hypothesis. Select a scenario below to generate a hunt hypothesis and the appropriate query approach.</p>
+
+      <div class="hyp-builder">
+        <div class="hb-title">// Build Your Hunt — Select Parameters</div>
+        <div class="hb-grid">
+          <div class="hb-field">
+            <label>ATT&CK Tactic</label>
+            <select id="hb-tactic" onchange="buildHyp()">
+              <option value="exec">Execution (TA0002)</option>
+              <option value="persist">Persistence (TA0003)</option>
+              <option value="cred">Credential Access (TA0006)</option>
+              <option value="lat">Lateral Movement (TA0008)</option>
+              <option value="exfil">Exfiltration (TA0010)</option>
+              <option value="c2">Command & Control (TA0011)</option>
+            </select>
+          </div>
+          <div class="hb-field">
+            <label>Data Source</label>
+            <select id="hb-source" onchange="buildHyp()">
+              <option value="endpoint">Endpoint (Elastic Defend)</option>
+              <option value="windows">Windows Event Logs</option>
+              <option value="network">Network / Firewall</option>
+              <option value="auth">Authentication Logs</option>
+            </select>
+          </div>
+          <div class="hb-field">
+            <label>Query Language</label>
+            <select id="hb-lang" onchange="buildHyp()">
+              <option value="kql">KQL</option>
+              <option value="eql">EQL</option>
+              <option value="esql">ES|QL</option>
+            </select>
+          </div>
+          <div class="hb-field">
+            <label>Hunt Goal</label>
+            <select id="hb-goal" onchange="buildHyp()">
+              <option value="find">Find specific events</option>
+              <option value="sequence">Detect event sequence</option>
+              <option value="stats">Statistical analysis / outliers</option>
+            </select>
+          </div>
+        </div>
+        <div class="hb-output" id="hb-output"></div>
+      </div>
+
+      <p style="margin-top:16px">Six high-value hunt scenarios — click to expand the hunt query:</p>
+
+      <div class="hunt-list">
+        <div class="hunt-item" onclick="toggleHunt(this,'h1')">
+          <div class="hi-num">01</div>
+          <div class="hi-content">
+            <div class="hi-tactic">TA0002 · Execution</div>
+            <div class="hi-title">Office Application Spawning Shell</div>
+            <div class="hi-desc">Hunt for Office apps (Word, Excel, Outlook) spawning command interpreters — a classic macro/phishing indicator.</div>
+            <div class="hi-query" id="h1">
+              <div class="qr-code" style="border-left-color:var(--ph)"><span class="cmt">// KQL — Office spawning shells</span>
+<span class="fld">process.parent.name</span><span class="kw">:</span> (<span class="str">"WINWORD.EXE"</span> <span class="kw">OR</span> <span class="str">"EXCEL.EXE"</span> <span class="kw">OR</span> <span class="str">"OUTLOOK.EXE"</span> <span class="kw">OR</span> <span class="str">"POWERPNT.EXE"</span>)
+<span class="kw">AND</span> <span class="fld">process.name</span><span class="kw">:</span> (<span class="str">"cmd.exe"</span> <span class="kw">OR</span> <span class="str">"powershell.exe"</span> <span class="kw">OR</span> <span class="str">"wscript.exe"</span> <span class="kw">OR</span> <span class="str">"mshta.exe"</span>)
+
+<span class="cmt">// Follow-up: pivot to full process tree in Analyzer</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hunt-item" onclick="toggleHunt(this,'h2')">
+          <div class="hi-num">02</div>
+          <div class="hi-content">
+            <div class="hi-tactic">TA0006 · Credential Access</div>
+            <div class="hi-title">LSASS Memory Access Patterns</div>
+            <div class="hi-desc">Hunt for unusual processes accessing lsass.exe memory — the primary credential dumping technique.</div>
+            <div class="hi-query" id="h2">
+              <div class="qr-code" style="border-left-color:var(--amber)"><span class="cmt">// KQL — LSASS access hunt</span>
+<span class="fld">event.category</span><span class="kw">:</span> <span class="str">"process"</span>
+<span class="kw">AND</span> <span class="fld">event.action</span><span class="kw">:</span> <span class="str">"ProcessAccess"</span>
+<span class="kw">AND</span> <span class="fld">process.pe.original_file_name</span><span class="kw">:</span> <span class="str">"lsass.exe"</span>
+<span class="kw">AND NOT</span> <span class="fld">process.name</span><span class="kw">:</span> (<span class="str">"csrss.exe"</span> <span class="kw">OR</span> <span class="str">"wininit.exe"</span> <span class="kw">OR</span> <span class="str">"MsMpEng.exe"</span>)
+
+<span class="cmt">// Legitimate lsass accessors are few — any unknown process is suspicious</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hunt-item" onclick="toggleHunt(this,'h3')">
+          <div class="hi-num">03</div>
+          <div class="hi-content">
+            <div class="hi-tactic">TA0011 · Command & Control</div>
+            <div class="hi-title">DNS Beaconing — High-Frequency Queries</div>
+            <div class="hi-desc">Hunt for hosts making unusually frequent DNS queries to the same domain — a common C2 beaconing pattern.</div>
+            <div class="hi-query" id="h3">
+              <div class="qr-code" style="border-left-color:var(--cyan)"><span class="cmt">// ES|QL — DNS query frequency per host per domain</span>
+<span class="fn">FROM</span> <span class="fld">logs-*</span>
+<span class="kw">|</span> <span class="fn">WHERE</span> <span class="fld">event.category</span> <span class="op">==</span> <span class="str">"dns"</span>
+<span class="kw">|</span> <span class="fn">WHERE</span> <span class="fld">@timestamp</span> <span class="op">&gt;</span> <span class="fn">NOW</span>() <span class="op">-</span> <span class="str">"1h"</span>
+<span class="kw">|</span> <span class="fn">STATS</span> <span class="val">query_count</span> <span class="op">=</span> <span class="fn">COUNT</span>(*) <span class="fn">BY</span> <span class="fld">dns.question.name</span>, <span class="fld">host.name</span>
+<span class="kw">|</span> <span class="fn">WHERE</span> <span class="val">query_count</span> <span class="op">&gt;</span> <span class="num">50</span>
+<span class="kw">|</span> <span class="fn">SORT</span> <span class="val">query_count</span> <span class="fn">DESC</span>
+<span class="kw">|</span> <span class="fn">LIMIT</span> <span class="num">20</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hunt-item" onclick="toggleHunt(this,'h4')">
+          <div class="hi-num">04</div>
+          <div class="hi-content">
+            <div class="hi-tactic">TA0008 · Lateral Movement</div>
+            <div class="hi-title">Unusual RDP Logins Across Subnets</div>
+            <div class="hi-desc">Hunt for RDP authentications where source and destination are in different subnets — especially admin accounts.</div>
+            <div class="hi-query" id="h4">
+              <div class="qr-code" style="border-left-color:var(--ph)"><span class="cmt">// KQL — Cross-subnet RDP auth hunt</span>
+<span class="fld">event.category</span><span class="kw">:</span> <span class="str">"authentication"</span>
+<span class="kw">AND</span> <span class="fld">event.outcome</span><span class="kw">:</span> <span class="str">"success"</span>
+<span class="kw">AND</span> <span class="fld">winlog.logon.type</span><span class="kw">:</span> <span class="str">"RemoteInteractive"</span>
+<span class="kw">AND</span> <span class="fld">user.name</span><span class="kw">:</span> <span class="str">*admin*</span>
+<span class="kw">AND NOT</span> <span class="fld">source.ip</span><span class="kw">:</span> <span class="str">"10.10.0.0/16"</span>   <span class="cmt">// filter known management subnet</span>
+
+<span class="cmt">// Follow up: check user.name for lateral movement across multiple hosts</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hunt-item" onclick="toggleHunt(this,'h5')">
+          <div class="hi-num">05</div>
+          <div class="hi-content">
+            <div class="hi-tactic">TA0003 · Persistence</div>
+            <div class="hi-title">Scheduled Task Creation by Non-System Users</div>
+            <div class="hi-desc">Hunt for scheduled tasks created by interactive user accounts — a common persistence mechanism post-compromise.</div>
+            <div class="hi-query" id="h5">
+              <div class="qr-code" style="border-left-color:var(--ph)"><span class="cmt">// KQL — Scheduled task creation hunt</span>
+<span class="fld">event.category</span><span class="kw">:</span> <span class="str">"process"</span>
+<span class="kw">AND</span> <span class="fld">process.name</span><span class="kw">:</span> <span class="str">"schtasks.exe"</span>
+<span class="kw">AND</span> <span class="fld">process.args</span><span class="kw">:</span> <span class="str">*/create*</span>
+<span class="kw">AND NOT</span> <span class="fld">user.name</span><span class="kw">:</span> (<span class="str">"SYSTEM"</span> <span class="kw">OR</span> <span class="str">"LOCAL SERVICE"</span> <span class="kw">OR</span> <span class="str">"NETWORK SERVICE"</span>)
+
+<span class="cmt">// Check process.args for task name, action, and schedule details</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hunt-item" onclick="toggleHunt(this,'h6')">
+          <div class="hi-num">06</div>
+          <div class="hi-content">
+            <div class="hi-tactic">TA0010 · Exfiltration</div>
+            <div class="hi-title">Large Outbound Data Transfers</div>
+            <div class="hi-desc">Hunt for endpoints sending unusually large volumes of data to external destinations — potential data exfiltration.</div>
+            <div class="hi-query" id="h6">
+              <div class="qr-code" style="border-left-color:var(--cyan)"><span class="cmt">// ES|QL — Top outbound data senders</span>
+<span class="fn">FROM</span> <span class="fld">logs-network*</span>
+<span class="kw">|</span> <span class="fn">WHERE</span> <span class="fld">network.direction</span> <span class="op">==</span> <span class="str">"egress"</span>
+<span class="kw">|</span> <span class="fn">WHERE</span> <span class="kw">NOT</span> <span class="fn">CIDR_MATCH</span>(<span class="fld">destination.ip</span>, <span class="str">"10.0.0.0/8"</span>, <span class="str">"192.168.0.0/16"</span>)
+<span class="kw">|</span> <span class="fn">STATS</span>
+    <span class="val">total_bytes</span> <span class="op">=</span> <span class="fn">SUM</span>(<span class="fld">network.bytes</span>),
+    <span class="val">dest_count</span>  <span class="op">=</span> <span class="fn">COUNT_DISTINCT</span>(<span class="fld">destination.ip</span>)
+  <span class="fn">BY</span> <span class="fld">host.name</span>, <span class="fld">process.name</span>
+<span class="kw">|</span> <span class="fn">WHERE</span> <span class="val">total_bytes</span> <span class="op">&gt;</span> <span class="num">10000000</span>       <span class="cmt">// > 10MB</span>
+<span class="kw">|</span> <span class="fn">SORT</span> <span class="val">total_bytes</span> <span class="fn">DESC</span>
+<span class="kw">|</span> <span class="fn">LIMIT</span> <span class="num">10</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       SECTION 7 — TIMELINES & OSQUERY
+  ═══════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">05.07</span><h2 class="sec-title">Timelines & Osquery</h2></div>
+    <div class="card">
+      <p><strong>Timelines</strong> are the analyst's investigation notebook in Elastic Security. During threat hunting, analysts use Timelines to collect, organize, and annotate events that support a hunt finding. They support KQL, EQL, and ES|QL queries directly.</p>
+
+      <div class="two-col">
+        <div class="mini">
+          <div class="ml">Timeline Features</div>
+          <div class="mv">
+            <span class="g">Pinned events</span> — bookmark key events<br>
+            <span class="g">Notes</span> — analyst annotations per event<br>
+            <span class="g">Query bar</span> — KQL/EQL/ES|QL search<br>
+            <span class="g">Time range</span> — custom date/time window<br>
+            <span class="g">Templates</span> — pre-built hunt templates<br>
+            <span class="g">Attach to Case</span> — link to incident<br>
+            <span class="a">Saved Timelines</span> — persist for team sharing
+          </div>
+        </div>
+        <div class="mini">
+          <div class="ml">Osquery Manager</div>
+          <div class="mv">
+            Live endpoint interrogation via SQL.<br>
+            Requires Osquery integration deployed.<br><br>
+            <span class="c">SELECT</span> * <span class="c">FROM</span> processes<br>
+            <span class="c">WHERE</span> name = <span class="str">'mimikatz.exe'</span><br><br>
+            Queries run <span class="g">live on the host</span>,<br>
+            not on historical indexed data.<br>
+            Great for volatile data: processes,<br>
+            network connections, users.
+          </div>
+        </div>
+      </div>
+
+      <div class="qr-code" style="border-left-color:var(--amber);margin-top:16px">
+<span class="cmt">// Osquery — Live endpoint queries during a hunt</span>
+
+<span class="cmt">// All running processes and their hashes</span>
+<span class="fn">SELECT</span> pid, name, path, <span class="fn">md5</span>, <span class="fn">sha256</span> <span class="fn">FROM</span> <span class="val">processes</span>
+<span class="fn">JOIN</span> <span class="val">hash</span> <span class="fn">ON</span> processes.path = hash.path;
+
+<span class="cmt">// Active network connections</span>
+<span class="fn">SELECT</span> pid, <span class="val">p</span>.name, local_address, remote_address, remote_port, state
+<span class="fn">FROM</span> <span class="val">process_open_sockets</span> <span class="fn">AS</span> <span class="val">s</span>
+<span class="fn">JOIN</span> <span class="val">processes</span> <span class="fn">AS</span> <span class="val">p</span> <span class="fn">USING</span> (pid)
+<span class="fn">WHERE</span> state = <span class="str">'ESTABLISHED'</span>;
+
+<span class="cmt">// Persistence — Scheduled tasks (Windows)</span>
+<span class="fn">SELECT</span> name, action, path, <span class="fn">enabled</span> <span class="fn">FROM</span> <span class="val">scheduled_tasks</span>
+<span class="fn">WHERE</span> enabled = <span class="num">1</span>;
+      </div>
+
+      <div class="note">
+        <p><strong>Timelines vs Discover:</strong> Both use KQL/EQL queries. Timelines are designed for <em>investigation documentation</em> — they let you pin events, write notes, and attach findings to Cases. Discover is better for ad-hoc exploration and data overview. For a threat hunt that needs to be shared with the team or escalated, always build a Timeline.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ QUIZ ═══════════ -->
+  <div class="quiz">
+    <div class="quiz-title">$ topic_05 --quiz --questions=7</div>
+
+    <!-- Q1 -->
+    <div class="qb" id="q1">
+      <div class="q-n">QUESTION 01</div>
+      <div class="q-t">A threat hunter wants to find processes that ran on only ONE host across the entire environment in the past 7 days — a classic "rare process" hunt. Which query language is BEST suited for this task?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q1','A','C')"><span class="ol">A</span>KQL — filter process.name with a wildcard on a single host</button>
+        <button class="opt" onclick="ans(this,'q1','B','C')"><span class="ol">B</span>EQL — sequence query with a maxspan of 7 days</button>
+        <button class="opt" onclick="ans(this,'q1','C','C')"><span class="ol">C</span>ES|QL — STATS COUNT_DISTINCT(host.name) BY process.executable, then filter where count == 1</button>
+        <button class="opt" onclick="ans(this,'q1','D','C')"><span class="ol">D</span>KQL — use a range filter on host.name field</button>
+      </div>
+      <div class="exp" id="e-q1"><strong>Correct: ES|QL with COUNT_DISTINCT.</strong> This is a statistical aggregation task — counting how many unique hosts have seen each process executable. KQL cannot aggregate; it only filters. EQL sequences don't apply here. ES|QL with <code style="color:var(--ph2)">STATS host_count = COUNT_DISTINCT(host.name) BY process.executable | WHERE host_count == 1</code> is the precise tool for this.</div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="qb" id="q2">
+      <div class="q-n">QUESTION 02</div>
+      <div class="q-t">Review this query. What is WRONG with it?</div>
+      <pre class="q-code">process.name == "powershell.exe" and process.args: *EncodedCommand*</pre>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q2','A','A')"><span class="ol">A</span>KQL uses : for equality, not ==. The first condition should be process.name: "powershell.exe"</button>
+        <button class="opt" onclick="ans(this,'q2','B','A')"><span class="ol">B</span>Wildcards cannot be used with process.args in KQL</button>
+        <button class="opt" onclick="ans(this,'q2','C','A')"><span class="ol">C</span>The AND operator must be lowercase in KQL</button>
+        <button class="opt" onclick="ans(this,'q2','D','A')"><span class="ol">D</span>process.name and process.args cannot be combined in a single query</button>
+      </div>
+      <div class="exp" id="e-q2"><strong>Correct: KQL uses colon (:) not double-equals (==) for field matching.</strong> The query mixes EQL syntax (<code>==</code>) with KQL syntax (<code>:</code>). In KQL, equality is written as <code>process.name: "powershell.exe"</code>. The <code>==</code> operator is EQL syntax only. The wildcard on <code>process.args</code> is valid KQL. AND (uppercase) is correct for KQL.</div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="qb" id="q3">
+      <div class="q-n">QUESTION 03</div>
+      <div class="q-t">A hunter wants to detect when: (1) a user runs wscript.exe, (2) which spawns cmd.exe, (3) which then makes a network connection — all within 3 minutes on the same host. Which query type achieves this?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q3','A','B')"><span class="ol">A</span>KQL with three AND conditions and a time range filter</button>
+        <button class="opt" onclick="ans(this,'q3','B','B')"><span class="ol">B</span>EQL sequence query with by host.id and with maxspan=3m</button>
+        <button class="opt" onclick="ans(this,'q3','C','B')"><span class="ol">C</span>ES|QL STATS query counting events by host within a 3-minute window</button>
+        <button class="opt" onclick="ans(this,'q3','D','B')"><span class="ol">D</span>KQL with nested field conditions on process.parent.name</button>
+      </div>
+      <div class="exp" id="e-q3"><strong>Correct: EQL sequence query.</strong> Only EQL can enforce ordered event sequences within a time window on the same entity. The query would be: <code style="color:var(--ph2)">sequence by host.id with maxspan=3m [process where process.name=="wscript.exe"] [process where process.name=="cmd.exe"] [network where true]</code>. KQL cannot express ordering between events; it just filters a pool of events. ES|QL aggregates but doesn't sequence.</div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="qb" id="q4">
+      <div class="q-n">QUESTION 04</div>
+      <div class="q-t">A threat hunter wants to search for events where the source.ip field contains ANY value (i.e., the field exists and is populated). What is the correct KQL syntax?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q4','A','C')"><span class="ol">A</span>source.ip: EXISTS</button>
+        <button class="opt" onclick="ans(this,'q4','B','C')"><span class="ol">B</span>source.ip != null</button>
+        <button class="opt" onclick="ans(this,'q4','C','C')"><span class="ol">C</span>source.ip: *</button>
+        <button class="opt" onclick="ans(this,'q4','D','C')"><span class="ol">D</span>_exists_: source.ip</button>
+      </div>
+      <div class="exp" id="e-q4"><strong>Correct: <code style="color:var(--ph2)">source.ip: *</code></strong> — In KQL, using a wildcard <code>*</code> as the value matches any document where that field has any value (i.e., the field exists and is not null). This is the standard KQL idiom for "field exists." Option D (<code>_exists_</code>) is Lucene syntax, not KQL. Options A and B are not valid KQL syntax.</div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="qb" id="q5">
+      <div class="q-n">QUESTION 05</div>
+      <div class="q-t">During a threat hunt, an analyst finds suspicious events and wants to document findings, pin key events, write analyst notes, and share with the team for a collaborative investigation. Which feature should they use?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q5','A','C')"><span class="ol">A</span>Export matching events to CSV for offline analysis</button>
+        <button class="opt" onclick="ans(this,'q5','B','C')"><span class="ol">B</span>Save the Discover search query and share the link</button>
+        <button class="opt" onclick="ans(this,'q5','C','C')"><span class="ol">C</span>Create a Timeline, pin relevant events, add notes, then attach it to a Case</button>
+        <button class="opt" onclick="ans(this,'q5','D','C')"><span class="ol">D</span>Create a detection rule to alert on the same pattern going forward</button>
+      </div>
+      <div class="exp" id="e-q5"><strong>Correct: Create a Timeline and attach to a Case.</strong> Timelines are the purpose-built investigation documentation tool — they support pinned events, per-event analyst notes, query history, and team sharing. Attaching to a Case (Topic 6) creates a full incident record. Creating a detection rule is also a good outcome but doesn't document the current hunt finding. CSV export and saved searches lose context and collaboration features.</div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="qb" id="q6">
+      <div class="q-n">QUESTION 06</div>
+      <div class="q-t">What is the correct ES|QL syntax to count the number of unique destination IPs per source host from network logs?</div>
+      <pre class="q-code">FROM logs-network*
+| WHERE event.category == "network"
+| _____ unique_dests = ________(destination.ip) BY host.name
+| SORT unique_dests DESC</pre>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q6','A','C')"><span class="ol">A</span>GROUP BY ... COUNT(destination.ip)</button>
+        <button class="opt" onclick="ans(this,'q6','B','C')"><span class="ol">B</span>AGGREGATE ... DISTINCT(destination.ip)</button>
+        <button class="opt" onclick="ans(this,'q6','C','C')"><span class="ol">C</span>STATS ... COUNT_DISTINCT(destination.ip)</button>
+        <button class="opt" onclick="ans(this,'q6','D','C')"><span class="ol">D</span>SELECT ... UNIQUE(destination.ip)</button>
+      </div>
+      <div class="exp" id="e-q6"><strong>Correct: <code style="color:var(--ph2)">STATS unique_dests = COUNT_DISTINCT(destination.ip) BY host.name</code></strong> — ES|QL uses <code>STATS</code> for aggregations (not GROUP BY — that's SQL). <code>COUNT_DISTINCT()</code> counts unique values. The correct full line is: <code style="color:var(--ph2)">| STATS unique_dests = COUNT_DISTINCT(destination.ip) BY host.name</code>. GROUP BY, AGGREGATE, and SELECT are SQL keywords — ES|QL has its own command set.</div>
+    </div>
+
+    <!-- Q7 -->
+    <div class="qb" id="q7">
+      <div class="q-n">QUESTION 07</div>
+      <div class="q-t">An analyst uses Osquery to interrogate a live endpoint during a hunt. What is a key difference between Osquery results and Elastic Security event data in Discover?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q7','A','B')"><span class="ol">A</span>Osquery only works on Linux endpoints; Discover covers all platforms</button>
+        <button class="opt" onclick="ans(this,'q7','B','B')"><span class="ol">B</span>Osquery captures live, volatile endpoint state at query time; Discover searches historical indexed events</button>
+        <button class="opt" onclick="ans(this,'q7','C','B')"><span class="ol">C</span>Osquery results are stored permanently in a separate index; Discover data expires after 30 days</button>
+        <button class="opt" onclick="ans(this,'q7','D','B')"><span class="ol">D</span>Osquery uses EQL syntax; Discover uses SQL syntax</button>
+      </div>
+      <div class="exp" id="e-q7"><strong>Correct: Osquery captures live volatile state; Discover searches historical events.</strong> Osquery queries the endpoint in real-time — it sees currently running processes, active network connections, and current file state. This is volatile data that may not have been logged. Discover searches events that have already been ingested into Elasticsearch. Both are complementary: Discover for historical investigation, Osquery for current endpoint state verification. Osquery uses SQL syntax and works on Windows, Linux, and macOS.</div>
+    </div>
+
+    <div class="scorebox" id="scorebox">
+      <div class="score-big" id="score-num">0/7</div>
+      <div class="score-sub">QUERIES RESOLVED CORRECTLY</div>
+      <div class="score-msg" id="score-msg"></div>
+      <button class="btn-reset" onclick="resetQuiz()">↺ RESET_HUNT</button>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="ft">ECSA · TOPIC 05 · THREAT HUNTING · KQL · EQL · ES|QL</div>
+    <div class="nav-btns">
+      <a href="#" class="nbtn">← Topic 4</a>
+      <button class="nbtn primary" onclick="alert('Topic 6: Cases & Incident Management — coming next!')">Topic 6: Cases →</button>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+// ── Query Lab data ──
+const queries = {
+  kql: [
+    {
+      code: `<span class="cmt">// Hunt: Office app spawning shell — KQL</span>\n<span class="fld">process.parent.name</span><span class="kw">:</span> (<span class="str">"WINWORD.EXE"</span> <span class="kw">OR</span> <span class="str">"EXCEL.EXE"</span> <span class="kw">OR</span> <span class="str">"OUTLOOK.EXE"</span>)\n<span class="kw">AND</span> <span class="fld">process.name</span><span class="kw">:</span> (<span class="str">"cmd.exe"</span> <span class="kw">OR</span> <span class="str">"powershell.exe"</span> <span class="kw">OR</span> <span class="str">"wscript.exe"</span> <span class="kw">OR</span> <span class="str">"mshta.exe"</span>)\n<span class="kw">AND NOT</span> <span class="fld">user.name</span><span class="kw">:</span> <span class="str">"svc-*"</span>`,
+      desc: `<strong>What it hunts:</strong> Command interpreters spawned by Office applications — the classic macro/phishing initial access pattern.\n<strong>Key fields:</strong> process.parent.name (Office apps) → process.name (shells)\n<strong>Exam tip:</strong> KQL uses : for equality and AND/OR/NOT (uppercase). Parentheses group multi-value conditions.`
+    },
+    {
+      code: `<span class="cmt">// Hunt: Lateral movement via PsExec/SMB — KQL</span>\n<span class="fld">event.category</span><span class="kw">:</span> <span class="str">"process"</span>\n<span class="kw">AND</span> <span class="fld">process.name</span><span class="kw">:</span> (<span class="str">"psexesvc.exe"</span> <span class="kw">OR</span> <span class="str">"paexec.exe"</span> <span class="kw">OR</span> <span class="str">"remcom.exe"</span>)\n<span class="kw">AND NOT</span> <span class="fld">user.name</span><span class="kw">:</span> (<span class="str">"SYSTEM"</span> <span class="kw">OR</span> <span class="str">"svc-deployment"</span>)`,
+      desc: `<strong>What it hunts:</strong> Remote execution services associated with lateral movement tools like PsExec.\n<strong>Key insight:</strong> Whitelist known service accounts (svc-deployment) — the rest are suspicious.\n<strong>Exam tip:</strong> Combining NOT with a list of known-good values is a common tuning pattern.`
+    },
+    {
+      code: `<span class="cmt">// Hunt: DNS beaconing — regular queries to same domain — KQL</span>\n<span class="fld">event.category</span><span class="kw">:</span> <span class="str">"dns"</span>\n<span class="kw">AND</span> <span class="fld">dns.question.type</span><span class="kw">:</span> <span class="str">"A"</span>\n<span class="kw">AND NOT</span> <span class="fld">dns.question.name</span><span class="kw">:</span> (<span class="str">"*.microsoft.com"</span> <span class="kw">OR</span> <span class="str">"*.windows.com"</span> <span class="kw">OR</span> <span class="str">"*.google.com"</span>)\n<span class="kw">AND</span> <span class="fld">dns.question.name</span><span class="kw">:</span> <span class="str">*.onion</span>`,
+      desc: `<strong>What it hunts:</strong> DNS queries to Tor hidden services (.onion domains) — a C2 beaconing indicator.\n<strong>Next step:</strong> Use ES|QL to quantify frequency per host/domain.\n<strong>Exam tip:</strong> Wildcard NOT exclusions (*.microsoft.com) reduce noise from legitimate system processes.`
+    },
+    {
+      code: `<span class="cmt">// Hunt: Credential access via registry — KQL</span>\n<span class="fld">event.category</span><span class="kw">:</span> <span class="str">"registry"</span>\n<span class="kw">AND</span> <span class="fld">registry.path</span><span class="kw">:</span> (<span class="str">*\\SAM\\*</span> <span class="kw">OR</span> <span class="str">*\\Security\\*</span> <span class="kw">OR</span> <span class="str">*\\System\\CurrentControlSet\\Control\\LSA*</span>)\n<span class="kw">AND NOT</span> <span class="fld">process.name</span><span class="kw">:</span> (<span class="str">"services.exe"</span> <span class="kw">OR</span> <span class="str">"lsass.exe"</span> <span class="kw">OR</span> <span class="str">"svchost.exe"</span>)`,
+      desc: `<strong>What it hunts:</strong> Processes accessing credential-storing registry hives (SAM, LSA, Security).\n<strong>Key fields:</strong> registry.path for hive paths; process.name to exclude legitimate system processes.\n<strong>Exam tip:</strong> Wildcards in registry paths use * without quotes. Always exclude legitimate system processes to reduce false positives.`
+    },
+    {
+      code: `<span class="cmt">// Hunt: Persistence via scheduled task creation — KQL</span>\n<span class="fld">event.category</span><span class="kw">:</span> <span class="str">"process"</span>\n<span class="kw">AND</span> <span class="fld">process.name</span><span class="kw">:</span> <span class="str">"schtasks.exe"</span>\n<span class="kw">AND</span> <span class="fld">process.args</span><span class="kw">:</span> <span class="str">*/create*</span>\n<span class="kw">AND NOT</span> <span class="fld">user.name</span><span class="kw">:</span> (<span class="str">"SYSTEM"</span> <span class="kw">OR</span> <span class="str">"LOCAL SERVICE"</span> <span class="kw">OR</span> <span class="str">"NETWORK SERVICE"</span>)`,
+      desc: `<strong>What it hunts:</strong> Interactive users (not system accounts) creating scheduled tasks — persistence after compromise.\n<strong>Key field:</strong> process.args: */create* — the /create flag means a new task is being registered.\n<strong>Exam tip:</strong> After finding this, check process.args for the full task command to see what will execute.`
+    }
+  ],
+  eql: [
+    {
+      code: `<span class="cmt">// Hunt: Office macro → encoded PowerShell (EQL sequence)</span>\n<span class="kw">sequence</span> <span class="fn">by</span> <span class="fld">host.id</span> <span class="fn">with maxspan</span>=<span class="num">2m</span>\n  [<span class="fn">process</span> <span class="fn">where</span> <span class="fld">process.parent.name</span> <span class="op">in</span> (<span class="str">"WINWORD.EXE"</span>, <span class="str">"EXCEL.EXE"</span>)\n    <span class="fn">and</span> <span class="fld">process.name</span> <span class="op">==</span> <span class="str">"cmd.exe"</span>]\n  [<span class="fn">process</span> <span class="fn">where</span> <span class="fld">process.name</span> <span class="op">==</span> <span class="str">"powershell.exe"</span>\n    <span class="fn">and</span> <span class="fld">process.args</span> <span class="kw">:</span> <span class="str">"*EncodedCommand*"</span>]`,
+      desc: `<strong>EQL Syntax reminder:</strong> Uses == for equality (not :). Uses lowercase and/or. Event category prefix required (process where).\n<strong>by host.id:</strong> Both events must come from the same host.\n<strong>maxspan=2m:</strong> The full sequence must complete within 2 minutes.\n<strong>Exam trap:</strong> In EQL, wildcard strings use : not ==. Mixed syntax in the same query is intentional and valid.`
+    },
+    {
+      code: `<span class="cmt">// Hunt: LSASS access → outbound connection (EQL)</span>\n<span class="kw">sequence</span> <span class="fn">by</span> <span class="fld">host.id</span> <span class="fn">with maxspan</span>=<span class="num">5m</span>\n  [<span class="fn">process</span> <span class="fn">where</span> <span class="fld">event.action</span> <span class="op">==</span> <span class="str">"ProcessAccess"</span>\n    <span class="fn">and</span> <span class="fld">process.pe.original_file_name</span> <span class="op">==</span> <span class="str">"lsass.exe"</span>\n    <span class="fn">and</span> <span class="kw">not</span> <span class="fld">process.name</span> <span class="fn">in</span> (<span class="str">"csrss.exe"</span>, <span class="str">"wininit.exe"</span>)]\n  [<span class="fn">network</span> <span class="fn">where</span> <span class="fld">network.direction</span> <span class="op">==</span> <span class="str">"egress"</span>\n    <span class="fn">and</span> <span class="kw">not</span> <span class="fn">CIDR_MATCH</span>(<span class="fld">destination.ip</span>, <span class="str">"10.0.0.0/8"</span>)]`,
+      desc: `<strong>What it hunts:</strong> Credential dumping (lsass access) followed by C2 exfiltration over the network on the same host.\n<strong>CIDR_MATCH:</strong> A built-in EQL function to match IP addresses against CIDR ranges — used to exclude internal IPs.\n<strong>Exam tip:</strong> EQL in(list) uses commas, not OR. Also: lowercase not in EQL vs uppercase NOT in KQL.`
+    },
+    {
+      code: `<span class="cmt">// Hunt: LOLBin abuse — certutil download + execute (EQL)</span>\n<span class="kw">sequence</span> <span class="fn">by</span> <span class="fld">host.id</span>, <span class="fld">user.name</span> <span class="fn">with maxspan</span>=<span class="num">3m</span>\n  [<span class="fn">process</span> <span class="fn">where</span> <span class="fld">process.name</span> <span class="op">==</span> <span class="str">"certutil.exe"</span>\n    <span class="fn">and</span> <span class="fld">process.args</span> <span class="kw">:</span> <span class="str">*-urlcache*</span>]\n  [<span class="fn">file</span> <span class="fn">where</span> <span class="fld">event.action</span> <span class="op">==</span> <span class="str">"creation"</span>\n    <span class="fn">and</span> <span class="fld">file.extension</span> <span class="fn">in</span> (<span class="str">"exe"</span>, <span class="str">"dll"</span>, <span class="str">"bat"</span>)]\n  [<span class="fn">process</span> <span class="fn">where</span> <span class="fld">event.type</span> <span class="op">==</span> <span class="str">"start"</span>]`,
+      desc: `<strong>What it hunts:</strong> Living-off-the-land attack: certutil downloads a file → file is written to disk → new process executes.\n<strong>Multiple by fields:</strong> by host.id, user.name means all 3 events must match BOTH the same host AND the same user.\n<strong>Exam tip:</strong> File event categories use "file" not "process". file.extension does not include the dot.`
+    },
+    {
+      code: `<span class="cmt">// Hunt: Ransomware indicators — mass rename + shadow delete (EQL)</span>\n<span class="kw">sequence</span> <span class="fn">by</span> <span class="fld">host.id</span> <span class="fn">with maxspan</span>=<span class="num">10m</span>\n  [<span class="fn">file</span> <span class="fn">where</span> <span class="fld">event.action</span> <span class="op">in</span> (<span class="str">"rename"</span>, <span class="str">"overwrite"</span>) <span class="fn">with runs</span>=<span class="num">10</span>]\n  [<span class="fn">process</span> <span class="fn">where</span> <span class="fld">process.name</span> <span class="op">==</span> <span class="str">"vssadmin.exe"</span>\n    <span class="fn">and</span> <span class="fld">process.args</span> <span class="kw">:</span> <span class="str">*delete*</span>]`,
+      desc: `<strong>What it hunts:</strong> Ransomware behavior: mass file rename/overwrites followed by shadow copy deletion.\n<strong>with runs=10:</strong> EQL special syntax — the first event must occur AT LEAST 10 times before the sequence continues. Detects mass operations.\n<strong>Exam tip:</strong> "with runs=N" is a unique EQL feature for detecting repeated events in a sequence. Know this syntax.`
+    }
+  ],
+  esql: [
+    {
+      code: `<span class="cmt">// Hunt: Top outbound talkers by destination IP count (ES|QL)</span>\n<span class="fn">FROM</span> <span class="fld">logs-network*</span>\n<span class="kw">|</span> <span class="fn">WHERE</span> <span class="fld">network.direction</span> <span class="op">==</span> <span class="str">"egress"</span>\n<span class="kw">|</span> <span class="fn">WHERE</span> <span class="kw">NOT</span> <span class="fn">CIDR_MATCH</span>(<span class="fld">destination.ip</span>, <span class="str">"10.0.0.0/8"</span>, <span class="str">"192.168.0.0/16"</span>, <span class="str">"172.16.0.0/12"</span>)\n<span class="kw">|</span> <span class="fn">STATS</span> <span class="val">unique_dests</span> <span class="op">=</span> <span class="fn">COUNT_DISTINCT</span>(<span class="fld">destination.ip</span>),\n       <span class="val">total_bytes</span>   <span class="op">=</span> <span class="fn">SUM</span>(<span class="fld">network.bytes</span>)\n  <span class="fn">BY</span> <span class="fld">host.name</span>\n<span class="kw">|</span> <span class="fn">SORT</span> <span class="val">unique_dests</span> <span class="fn">DESC</span>\n<span class="kw">|</span> <span class="fn">LIMIT</span> <span class="num">15</span>`,
+      desc: `<strong>What it hunts:</strong> Hosts connecting to the most unique external IPs — potential port scanning, beaconing, or data exfil.\n<strong>CIDR_MATCH:</strong> Built-in ES|QL function — filters out RFC1918 private IP ranges.\n<strong>Multiple STATS:</strong> Calculate COUNT_DISTINCT and SUM in the same STATS clause. Exam tip: ES|QL pipe syntax — each | starts a new transformation command.`
+    },
+    {
+      code: `<span class="cmt">// Hunt: Failed authentications per user per hour (ES|QL)</span>\n<span class="fn">FROM</span> <span class="fld">logs-*</span>\n<span class="kw">|</span> <span class="fn">WHERE</span> <span class="fld">event.category</span> <span class="op">==</span> <span class="str">"authentication"</span>\n  <span class="fn">AND</span> <span class="fld">event.outcome</span> <span class="op">==</span> <span class="str">"failure"</span>\n<span class="kw">|</span> <span class="fn">EVAL</span> <span class="val">hour_bucket</span> <span class="op">=</span> <span class="fn">DATE_TRUNC</span>(<span class="num">1</span> <span class="val">hour</span>, <span class="fld">@timestamp</span>)\n<span class="kw">|</span> <span class="fn">STATS</span> <span class="val">fail_count</span> <span class="op">=</span> <span class="fn">COUNT</span>(*) <span class="fn">BY</span> <span class="fld">user.name</span>, <span class="val">hour_bucket</span>\n<span class="kw">|</span> <span class="fn">WHERE</span> <span class="val">fail_count</span> <span class="op">&gt;</span> <span class="num">20</span>\n<span class="kw">|</span> <span class="fn">SORT</span> <span class="val">fail_count</span> <span class="fn">DESC</span>`,
+      desc: `<strong>What it hunts:</strong> Users with more than 20 authentication failures in any single hour — brute force indicator.\n<strong>EVAL + DATE_TRUNC:</strong> Creates a new computed field (hour_bucket) for time-based bucketing. EVAL is ES|QL's field computation command.\n<strong>Exam tip:</strong> DATE_TRUNC is the ES|QL way to group events by time period (not available in KQL or EQL).`
+    },
+    {
+      code: `<span class="cmt">// Hunt: Rare process executables (seen on only 1 host) (ES|QL)</span>\n<span class="fn">FROM</span> <span class="fld">logs-endpoint*</span>\n<span class="kw">|</span> <span class="fn">WHERE</span> <span class="fld">event.category</span> <span class="op">==</span> <span class="str">"process"</span>\n  <span class="fn">AND</span> <span class="fld">event.type</span> <span class="op">==</span> <span class="str">"start"</span>\n  <span class="fn">AND</span> <span class="fld">@timestamp</span> <span class="op">&gt;</span> <span class="fn">NOW</span>() <span class="op">-</span> <span class="val">7</span> <span class="str">days</span>\n<span class="kw">|</span> <span class="fn">STATS</span> <span class="val">host_count</span> <span class="op">=</span> <span class="fn">COUNT_DISTINCT</span>(<span class="fld">host.name</span>),\n       <span class="val">exec_count</span>  <span class="op">=</span> <span class="fn">COUNT</span>(*)\n  <span class="fn">BY</span> <span class="fld">process.executable</span>\n<span class="kw">|</span> <span class="fn">WHERE</span> <span class="val">host_count</span> <span class="op">==</span> <span class="num">1</span>\n<span class="kw">|</span> <span class="fn">SORT</span> <span class="val">exec_count</span> <span class="fn">DESC</span>\n<span class="kw">|</span> <span class="fn">LIMIT</span> <span class="num">50</span>`,
+      desc: `<strong>What it hunts:</strong> Processes seen on only 1 host in 7 days — unique executables are often malware or unusual tools.\n<strong>COUNT_DISTINCT(host.name):</strong> Counts unique host values per executable path.\n<strong>Exam tip:</strong> This "rare baseline" technique is a cornerstone of behavioral threat hunting and requires ES|QL aggregation — impossible to express in KQL alone.`
+    },
+    {
+      code: `<span class="cmt">// Hunt: DNS query volume anomaly per host (ES|QL)</span>\n<span class="fn">FROM</span> <span class="fld">logs-*</span>\n<span class="kw">|</span> <span class="fn">WHERE</span> <span class="fld">event.category</span> <span class="op">==</span> <span class="str">"dns"</span>\n  <span class="fn">AND</span> <span class="fld">@timestamp</span> <span class="op">&gt;</span> <span class="fn">NOW</span>() <span class="op">-</span> <span class="val">1</span> <span class="str">hour</span>\n<span class="kw">|</span> <span class="fn">STATS</span>\n    <span class="val">total_queries</span>  <span class="op">=</span> <span class="fn">COUNT</span>(*),\n    <span class="val">unique_domains</span> <span class="op">=</span> <span class="fn">COUNT_DISTINCT</span>(<span class="fld">dns.question.name</span>)\n  <span class="fn">BY</span> <span class="fld">host.name</span>\n<span class="kw">|</span> <span class="fn">EVAL</span> <span class="val">ratio</span> <span class="op">=</span> <span class="val">total_queries</span> <span class="op">/</span> <span class="val">unique_domains</span>  <span class="cmt">// high ratio = beaconing (same domain repeated)</span>\n<span class="kw">|</span> <span class="fn">WHERE</span> <span class="val">total_queries</span> <span class="op">&gt;</span> <span class="num">100</span> <span class="fn">AND</span> <span class="val">ratio</span> <span class="op">&gt;</span> <span class="num">10</span>\n<span class="kw">|</span> <span class="fn">SORT</span> <span class="val">ratio</span> <span class="fn">DESC</span>`,
+      desc: `<strong>What it hunts:</strong> Hosts querying a small set of domains very frequently (high total/unique ratio = beaconing).\n<strong>EVAL for derived metrics:</strong> Creates a ratio field by dividing two computed stats. This kind of computed hunting metric is uniquely powerful in ES|QL.\n<strong>Exam tip:</strong> EVAL runs after STATS — you can compute derived fields from aggregated values, enabling sophisticated behavioral analytics.`
+    }
+  ]
+};
+
+let activeLang = 'kql';
+let activeIdx  = { kql: 0, eql: 0, esql: 0 };
+
+function switchLang(lang, btn) {
+  activeLang = lang;
+  document.querySelectorAll('.qr-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.qr-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + lang).classList.add('active');
+  renderQuery(lang, activeIdx[lang]);
+  // reset selection highlight
+  document.querySelectorAll(`#panel-${lang} .qr-example-btn`).forEach((b,i) => {
+    b.classList.toggle('sel', i === activeIdx[lang]);
+  });
+}
+
+function showQuery(lang, idx, btn) {
+  activeIdx[lang] = idx;
+  document.querySelectorAll(`#panel-${lang} .qr-example-btn`).forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  renderQuery(lang, idx);
+}
+
+function renderQuery(lang, idx) {
+  const q = queries[lang][idx];
+  document.getElementById(lang + '-code').innerHTML = q.code;
+  const desc = document.getElementById(lang + '-desc');
+  desc.innerHTML = `<pre style="font-family:var(--mono);font-size:11px;white-space:pre-wrap;line-height:1.75">${q.desc}</pre>`;
+  desc.classList.add('show');
+}
+
+// ── init query lab ──
+renderQuery('kql', 0);
+
+// ── Hunt items ──
+function toggleHunt(el, qId) {
+  const q = document.getElementById(qId);
+  const isOpen = q.classList.contains('show');
+  el.classList.toggle('expanded', !isOpen);
+  q.classList.toggle('show', !isOpen);
+}
+
+// ── Hypothesis builder ──
+const hypTemplates = {
+  exec: {
+    endpoint: {
+      kql: { h: 'Hypothesis: Attacker is using a scripting engine (PowerShell/WScript) for code execution after initial access via a macro-enabled document.', q: `<span class="kw">process.parent.name</span>: ("WINWORD.EXE" <span class="fn">OR</span> "EXCEL.EXE")\n<span class="fn">AND</span> <span class="kw">process.name</span>: ("powershell.exe" <span class="fn">OR</span> "wscript.exe" <span class="fn">OR</span> "cmd.exe")` },
+      eql:  { h: 'Hypothesis: Macro spawns a shell, which executes an encoded command chain on the same host within 2 minutes.', q: `<span class="fn">sequence</span> by host.id with maxspan=2m\n  [process where process.parent.name in ("WINWORD.EXE","EXCEL.EXE")]\n  [process where process.name == "powershell.exe" and process.args : "*-enc*"]` },
+      esql: { h: 'Hypothesis: Find the most commonly abused execution LOLBins across all endpoints in the past 24 hours.', q: `FROM logs-endpoint*\n| WHERE event.category == "process"\n| STATS count = COUNT(*) BY process.name\n| WHERE process.name in ("wscript.exe","mshta.exe","regsvr32.exe","rundll32.exe")\n| SORT count DESC` }
+    },
+    windows: {
+      kql: { h: 'Hypothesis: Attacker is abusing Windows built-in tools (LOLBins) visible in Windows Event Logs (4688).', q: `<span class="kw">event.code</span>: "4688"\n<span class="fn">AND</span> <span class="kw">process.name</span>: ("certutil.exe" <span class="fn">OR</span> "mshta.exe" <span class="fn">OR</span> "regsvr32.exe")\n<span class="fn">AND NOT</span> <span class="kw">user.name</span>: "SYSTEM"` },
+      eql: { h: 'Hypothesis: Detect LOLBin downloading and executing a payload in sequence via Windows Event Logs.', q: `sequence by host.id with maxspan=3m\n  [process where event.code == "4688" and process.name == "certutil.exe" and process.args : "*-urlcache*"]\n  [process where event.code == "4688" and event.type == "start"]` },
+      esql: { h: 'Hypothesis: Which Windows hosts have the most unique process executions in 24 hours — potential post-exploitation.', q: `FROM logs-windows*\n| WHERE event.code == "4688"\n| STATS unique_procs = COUNT_DISTINCT(process.name) BY host.name\n| SORT unique_procs DESC\n| LIMIT 20` }
+    },
+    network: {
+      kql: { h: 'Hypothesis: Execution is followed by immediate C2 callback on unusual ports.', q: `<span class="kw">event.category</span>: "network"\n<span class="fn">AND</span> <span class="kw">destination.port</span>: (4444 <span class="fn">OR</span> 1234 <span class="fn">OR</span> 8080 <span class="fn">OR</span> 8443)\n<span class="fn">AND</span> <span class="kw">network.direction</span>: "egress"` },
+      eql: { h: 'Hypothesis: Process execution immediately followed by outbound connection to non-standard port.', q: `sequence by host.id with maxspan=30s\n  [process where process.name in ("cmd.exe","powershell.exe")]\n  [network where destination.port in (4444,1234,8080) and network.direction == "egress"]` },
+      esql: { h: 'Hypothesis: Find top destination ports used in egress connections to identify C2 channels.', q: `FROM logs-network*\n| WHERE network.direction == "egress"\n| STATS conn_count = COUNT(*) BY destination.port\n| SORT conn_count DESC | LIMIT 20` }
+    },
+    auth: {
+      kql: { h: 'Hypothesis: Execution via remote service or scheduled task is preceded by unusual authentication.', q: `<span class="kw">event.category</span>: "authentication"\n<span class="fn">AND</span> <span class="kw">event.outcome</span>: "success"\n<span class="fn">AND</span> <span class="kw">winlog.logon.type</span>: ("Network" <span class="fn">OR</span> "RemoteInteractive")` },
+      eql: { h: 'Hypothesis: Successful auth immediately followed by process execution — indicate remote command execution.', q: `sequence by host.id, user.name with maxspan=1m\n  [any where event.category == "authentication" and event.outcome == "success"]\n  [process where process.name in ("cmd.exe","powershell.exe")]` },
+      esql: { h: 'Hypothesis: Find users with successful auth on most unique hosts — potential lateral movement.', q: `FROM logs-*\n| WHERE event.category == "authentication" AND event.outcome == "success"\n| STATS host_count = COUNT_DISTINCT(host.name) BY user.name\n| WHERE host_count > 3 | SORT host_count DESC` }
+    }
+  }
+};
+
+// Fill other tactics with sensible defaults
+['persist','cred','lat','exfil','c2'].forEach(t => {
+  hypTemplates[t] = hypTemplates.exec; // simplified — reuse exec structure for demo
+});
+
+function buildHyp() {
+  const tactic = document.getElementById('hb-tactic').value;
+  const source = document.getElementById('hb-source').value;
+  const lang   = document.getElementById('hb-lang').value;
+  const goal   = document.getElementById('hb-goal').value;
+
+  // Override lang based on goal
+  let effectiveLang = lang;
+  if (goal === 'sequence' && lang !== 'eql') effectiveLang = 'eql';
+  if (goal === 'stats' && lang !== 'esql') effectiveLang = 'esql';
+  if (goal === 'find' && lang === 'esql') effectiveLang = 'kql';
+
+  const tmpl = (hypTemplates[tactic]?.[source]?.[effectiveLang]) || hypTemplates.exec.endpoint.kql;
+
+  const langColors = { kql: 'var(--ph)', eql: 'var(--amber)', esql: 'var(--cyan)' };
+  const lc = langColors[effectiveLang];
+
+  document.getElementById('hb-output').innerHTML =
+    `<span style="color:${lc};font-size:10px;letter-spacing:2px">// HYPOTHESIS</span>\n<span style="color:var(--dim)">${tmpl.h}</span>\n\n<span style="color:${lc};font-size:10px;letter-spacing:2px">// QUERY [${effectiveLang.toUpperCase()}]</span>\n<span style="color:var(--ph2)">${tmpl.q}</span>`;
+}
+
+buildHyp();
+
+// ── Quiz ──
+const correct = { q1:'C', q2:'A', q3:'B', q4:'C', q5:'C', q6:'C', q7:'B' };
+const answered = {};
+let score = 0;
+
+function ans(btn, qId, chosen) {
+  if (answered[qId]) return;
+  answered[qId] = true;
+  const isRight = chosen === correct[qId];
+  if (isRight) score++;
+  const block = document.getElementById(qId);
+  block.querySelectorAll('.opt').forEach((o, i) => {
+    o.classList.add('locked'); o.style.cursor = 'default';
+    const letter = ['A','B','C','D'][i];
+    if (letter === correct[qId]) o.classList.add(isRight && o===btn ? 'correct' : 'revealc');
+  });
+  if (!isRight) { btn.classList.remove('revealc'); btn.classList.add('wrong'); }
+  else { btn.classList.remove('revealc'); btn.classList.add('correct'); }
+  document.getElementById('e-' + qId).classList.add('show');
+  updateProgress();
+  if (Object.keys(answered).length === 7) setTimeout(showScore, 500);
+}
+
+function updateProgress() {
+  const n = Object.keys(answered).length;
+  document.getElementById('progFill').style.width = (n / 7 * 100) + '%';
+  document.getElementById('progTxt').textContent = n + ' / 7 answered';
+}
+
+function showScore() {
+  document.getElementById('score-num').textContent = score + '/7';
+  const p = score / 7 * 100;
+  document.getElementById('score-msg').textContent =
+    p === 100 ? '█ HUNT SUCCESSFUL. All queries resolved. Threat neutralized.' :
+    p >= 85   ? '> Strong hunter. Review syntax differences before the exam.' :
+    p >= 57   ? '> Developing skill. Revisit KQL vs EQL vs ES|QL use cases.' :
+                '> Continue training. Focus on when to use each query language.';
+  document.getElementById('scorebox').classList.add('show');
+}
+
+function resetQuiz() {
+  Object.keys(answered).forEach(k => delete answered[k]);
+  score = 0;
+  document.getElementById('scorebox').classList.remove('show');
+  document.querySelectorAll('.opt').forEach(o => { o.classList.remove('correct','wrong','revealc','locked'); o.style.cursor = ''; });
+  document.querySelectorAll('.exp').forEach(e => e.classList.remove('show'));
+  document.getElementById('progFill').style.width = '0%';
+  document.getElementById('progTxt').textContent = '0 / 7 answered';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topic 3: Detection Engine & Rule Creation</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #0e0b0b;
+    --s1:       #160e0e;
+    --s2:       #1e1212;
+    --s3:       #261616;
+    --border:   #2e1a1a;
+    --border2:  #3d2020;
+    --red:      #e8291c;
+    --red2:     #ff4444;
+    --red3:     #ff7070;
+    --orange:   #ff7b2e;
+    --yellow:   #f5c842;
+    --green:    #3db872;
+    --green2:   #5fd38d;
+    --blue:     #3b9eff;
+    --text:     #f0e8e8;
+    --dim:      #9e8585;
+    --muted:    #5a3a3a;
+    --mono:     'Share Tech Mono', monospace;
+    --head:     'Rajdhani', sans-serif;
+    --body:     'Crimson Pro', serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Diagonal stripe bg */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(
+      -55deg,
+      transparent 0px,
+      transparent 60px,
+      rgba(232,41,28,0.015) 60px,
+      rgba(232,41,28,0.015) 61px
+    );
+    pointer-events: none; z-index: 0;
+  }
+
+  /* Vignette */
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.6) 100%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 28px; position: relative; z-index: 1; }
+
+  /* ── HEADER ── */
+  header { padding: 44px 0 0; margin-bottom: 48px; }
+
+  .crumb {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    letter-spacing: 2px; margin-bottom: 18px; display: flex; gap: 10px; align-items: center;
+  }
+  .crumb .cur { color: var(--red); }
+  .crumb span { color: var(--border2); }
+
+  .hero-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+
+  .hero-left {}
+
+  .t-label {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 3px;
+    color: var(--red); text-transform: uppercase; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .t-label::after { content: ''; flex: 1; height: 1px; background: var(--border2); max-width: 80px; }
+
+  h1 {
+    font-family: var(--head); font-size: clamp(2.8rem, 6vw, 5rem);
+    font-weight: 700; line-height: 0.95; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--text);
+  }
+  h1 .accent { color: var(--red); display: block; }
+
+  .hero-stat {
+    background: var(--s2); border: 1px solid var(--border2);
+    border-left: 3px solid var(--red);
+    padding: 16px 22px; font-family: var(--mono);
+    border-radius: 2px; min-width: 180px;
+  }
+  .hero-stat .hs-val { font-size: 2.2rem; font-weight: 700; color: var(--red); line-height: 1; }
+  .hero-stat .hs-label { font-size: 10px; color: var(--muted); letter-spacing: 2px; margin-top: 4px; text-transform: uppercase; }
+
+  /* Topic nav */
+  .topic-nav {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    padding: 18px 0; margin-top: 28px;
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  }
+  .topic-nav a {
+    font-family: var(--mono); font-size: 10px; padding: 5px 13px;
+    border-radius: 2px; text-decoration: none; transition: all 0.15s;
+    border: 1px solid var(--border2); color: var(--muted); letter-spacing: 1px;
+  }
+  .topic-nav a.done { border-color: var(--muted); color: var(--dim); }
+  .topic-nav a.done::before { content: '✓ '; }
+  .topic-nav a.active { background: var(--red); color: #fff; border-color: var(--red); font-weight: 700; }
+  .topic-nav a:hover:not(.active) { border-color: var(--red); color: var(--red3); }
+
+  /* Progress */
+  .prog-row { display: flex; align-items: center; gap: 14px; margin: 24px 0 52px; }
+  .prog-track { flex: 1; height: 2px; background: var(--border); overflow: hidden; }
+  .prog-fill { height: 100%; background: linear-gradient(90deg, var(--red), var(--orange)); width: 0%; transition: width 0.5s ease; }
+  .prog-txt { font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+  /* ── SECTIONS ── */
+  .section { margin-bottom: 52px; animation: riseIn 0.45s ease both; }
+  @keyframes riseIn { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
+  .section:nth-child(1){animation-delay:.05s} .section:nth-child(2){animation-delay:.1s}
+  .section:nth-child(3){animation-delay:.15s} .section:nth-child(4){animation-delay:.2s}
+  .section:nth-child(5){animation-delay:.25s} .section:nth-child(6){animation-delay:.3s}
+
+  .sec-hd { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+  .sec-tag {
+    font-family: var(--mono); font-size: 10px; color: var(--red);
+    border: 1px solid var(--red); padding: 3px 10px; letter-spacing: 2px;
+    background: rgba(232,41,28,0.08);
+  }
+  .sec-title { font-family: var(--head); font-size: 1.4rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* Card */
+  .card {
+    background: var(--s1); border: 1px solid var(--border2);
+    padding: 28px 32px; position: relative; overflow: hidden;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--red), transparent);
+  }
+  .card p { font-size: 1.05rem; line-height: 1.78; color: var(--dim); margin-bottom: 14px; }
+  .card p:last-child { margin-bottom: 0; }
+  strong { color: var(--text); }
+
+  /* ── RULE TYPE GRID ── */
+  .rule-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin: 24px 0; }
+
+  .rule-card {
+    background: var(--s2); border: 1px solid var(--border2);
+    padding: 18px 20px; cursor: pointer; transition: all 0.2s; position: relative;
+    border-top: 3px solid transparent;
+  }
+  .rule-card:hover, .rule-card.selected {
+    border-color: var(--border2);
+    border-top-color: var(--red);
+    background: var(--s3);
+    box-shadow: 0 6px 28px rgba(232,41,28,0.12);
+  }
+  .rc-badge {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 1px; display: inline-block; margin-bottom: 8px;
+  }
+  .rc-badge.kql   { background: rgba(59,158,255,0.15); color: var(--blue); border: 1px solid rgba(59,158,255,0.3); }
+  .rc-badge.eql   { background: rgba(232,41,28,0.15);  color: var(--red2); border: 1px solid rgba(232,41,28,0.3); }
+  .rc-badge.esql  { background: rgba(93,211,141,0.15); color: var(--green2); border: 1px solid rgba(93,211,141,0.3); }
+  .rc-badge.ml    { background: rgba(245,200,66,0.15); color: var(--yellow); border: 1px solid rgba(245,200,66,0.3); }
+  .rc-badge.thresh{ background: rgba(255,123,46,0.15); color: var(--orange); border: 1px solid rgba(255,123,46,0.3); }
+  .rc-badge.newterms{ background: rgba(175,100,255,0.15); color: #c47fff; border: 1px solid rgba(175,100,255,0.3);}
+  .rc-name { font-family: var(--head); font-size: 1.05rem; font-weight: 600; letter-spacing: 1px; color: var(--text); margin-bottom: 4px; }
+  .rc-desc { font-family: var(--mono); font-size: 10px; color: var(--muted); line-height: 1.5; }
+
+  /* Detail panel */
+  .rule-detail {
+    background: rgba(0,0,0,0.4); border: 1px solid var(--border2);
+    border-left: 3px solid var(--red); padding: 20px 24px;
+    font-family: var(--mono); font-size: 12px; line-height: 1.8;
+    color: var(--dim); margin-top: 8px; display: none;
+    animation: popIn 0.2s ease;
+  }
+  @keyframes popIn { from{opacity:0;transform:scaleY(0.95)} to{opacity:1;transform:scaleY(1)} }
+  .rule-detail.show { display: block; }
+  .rule-detail .rd-head { color: var(--red2); font-weight: 700; margin-bottom: 8px; font-size: 13px; }
+  .rule-detail .rd-ex { color: var(--green2); }
+  .rule-detail .rd-note { color: var(--yellow); }
+
+  /* Code blocks */
+  .codeblock {
+    background: #080404; border: 1px solid var(--border);
+    border-left: 3px solid var(--red2); font-family: var(--mono);
+    font-size: 13px; line-height: 1.85; overflow-x: auto;
+    padding: 20px 24px; margin: 18px 0;
+  }
+  .c-comment { color: #4a2020; }
+  .c-kw  { color: var(--red2); }
+  .c-fn  { color: var(--orange); }
+  .c-str { color: var(--green2); }
+  .c-num { color: var(--yellow); }
+  .c-op  { color: var(--dim); }
+  .c-field { color: #7bbfff; }
+  .c-val { color: var(--green); }
+
+  /* Two-col layout */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+  @media(max-width:640px){ .two-col { grid-template-columns: 1fr; } }
+
+  .mini-card {
+    background: var(--s2); border: 1px solid var(--border2); padding: 16px 18px;
+  }
+  .mc-label { font-family: var(--mono); font-size: 10px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
+  .mc-val { font-family: var(--mono); font-size: 12px; color: var(--text); line-height: 1.65; }
+  .mc-val .hi { color: var(--red2); }
+  .mc-val .g  { color: var(--green2); }
+  .mc-val .y  { color: var(--yellow); }
+  .mc-val .b  { color: var(--blue); }
+
+  /* Severity pills */
+  .sev-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0; }
+  .sev-pill {
+    font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 2px;
+    padding: 8px 18px; border-radius: 2px; text-transform: uppercase; cursor: default;
+    transition: transform 0.15s;
+  }
+  .sev-pill:hover { transform: scale(1.05); }
+  .sev-pill.critical { background: rgba(232,41,28,0.2);   border: 1px solid var(--red);    color: var(--red);    }
+  .sev-pill.high     { background: rgba(255,123,46,0.2);  border: 1px solid var(--orange); color: var(--orange); }
+  .sev-pill.medium   { background: rgba(245,200,66,0.2);  border: 1px solid var(--yellow); color: var(--yellow); }
+  .sev-pill.low      { background: rgba(93,211,141,0.15); border: 1px solid var(--green);  color: var(--green2); }
+  .sev-pill.info     { background: rgba(59,158,255,0.15); border: 1px solid var(--blue);   color: var(--blue);   }
+
+  /* MITRE matrix mini */
+  .mitre-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap: 8px; margin: 20px 0; }
+  .mitre-tactic {
+    background: var(--s2); border: 1px solid var(--border2); padding: 12px 14px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .mitre-tactic:hover { border-color: var(--red); background: var(--s3); }
+  .mt-id { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 1px; margin-bottom: 4px; }
+  .mt-name { font-family: var(--head); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--dim); line-height: 1.3; }
+  .mitre-tactic.lit { border-color: var(--red); }
+  .mitre-tactic.lit .mt-name { color: var(--red3); }
+  .mitre-tactic.lit .mt-id   { color: var(--red); }
+
+  /* Rule builder interactive */
+  .rule-builder {
+    background: var(--s2); border: 1px solid var(--border2); padding: 24px; margin: 20px 0;
+  }
+  .rb-title { font-family: var(--mono); font-size: 11px; letter-spacing: 2px; color: var(--red); text-transform: uppercase; margin-bottom: 18px; }
+  .rb-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  @media(max-width:640px){ .rb-fields { grid-template-columns: 1fr; } }
+  .rb-field label { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 1px; display: block; margin-bottom: 5px; text-transform: uppercase; }
+  .rb-field select, .rb-field input {
+    width: 100%; background: var(--s1); border: 1px solid var(--border2); color: var(--text);
+    font-family: var(--mono); font-size: 12px; padding: 9px 12px; outline: none;
+    transition: border-color 0.15s;
+  }
+  .rb-field select:focus, .rb-field input:focus { border-color: var(--red); }
+  .rb-field select option { background: var(--s1); }
+  .rb-preview {
+    background: #080404; border: 1px solid var(--border);
+    font-family: var(--mono); font-size: 12px; padding: 18px 20px;
+    line-height: 1.85; min-height: 140px; color: var(--dim);
+  }
+
+  /* Note boxes */
+  .note {
+    border-left: 3px solid var(--red); background: rgba(232,41,28,0.06);
+    padding: 14px 18px; margin: 16px 0; font-family: var(--mono); font-size: 12px;
+    line-height: 1.7; color: var(--dim);
+  }
+  .note.y { border-left-color: var(--yellow); background: rgba(245,200,66,0.06); }
+  .note.g { border-left-color: var(--green);  background: rgba(61,184,114,0.06); }
+  .note strong { color: var(--text); }
+  .note.y strong { color: var(--yellow); }
+  .note.g strong { color: var(--green2); }
+
+  /* ── QUIZ ── */
+  .quiz {
+    background: var(--s1); border: 1px solid var(--border2);
+    padding: 36px 32px; margin-top: 52px; position: relative;
+  }
+  .quiz::before {
+    content: '▶ KNOWLEDGE CHECK';
+    position: absolute; top: -1px; left: 0;
+    background: var(--red); color: #fff;
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    padding: 5px 18px; letter-spacing: 3px;
+  }
+  .quiz-heading { font-family: var(--head); font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 32px; padding-top: 12px; }
+
+  .qb { margin-bottom: 36px; padding-bottom: 36px; border-bottom: 1px solid var(--border); }
+  .qb:last-of-type { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .q-n { font-family: var(--mono); font-size: 10px; color: var(--red); letter-spacing: 2px; margin-bottom: 8px; }
+  .q-t { font-family: var(--head); font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 16px; line-height: 1.45; letter-spacing: 0.5px; }
+
+  pre.q-code {
+    background: #080404; border: 1px solid var(--border);
+    font-family: var(--mono); font-size: 11px; padding: 12px 16px;
+    color: var(--green2); margin-bottom: 14px; overflow-x: auto; line-height: 1.65;
+  }
+
+  .opts { display: flex; flex-direction: column; gap: 8px; }
+  .opt {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 16px; border: 1px solid var(--border); background: var(--s2);
+    color: var(--dim); font-family: var(--mono); font-size: 12px;
+    cursor: pointer; transition: all 0.15s; text-align: left; width: 100%; line-height: 1.55;
+  }
+  .opt:hover:not(.locked) { border-color: var(--red2); color: var(--text); background: var(--s3); }
+  .opt .ol { color: var(--red2); font-weight: 700; min-width: 16px; }
+  .opt.correct  { border-color: var(--green);  background: rgba(61,184,114,0.08); color: var(--green2); }
+  .opt.wrong    { border-color: var(--red);     background: rgba(232,41,28,0.1);   color: var(--red3); }
+  .opt.revealc  { border-color: var(--green);  background: rgba(61,184,114,0.04); color: var(--green); opacity: 0.6; }
+
+  .exp {
+    display: none; margin-top: 12px; padding: 12px 16px;
+    background: rgba(61,184,114,0.05); border: 1px solid rgba(61,184,114,0.2);
+    font-family: var(--mono); font-size: 11px; color: var(--dim); line-height: 1.75;
+  }
+  .exp.show { display: block; }
+  .exp strong { color: var(--green2); }
+
+  /* Score */
+  .scorebox { display: none; margin-top: 28px; padding: 28px; background: var(--s2); border: 1px solid var(--border2); text-align: center; }
+  .scorebox.show { display: block; }
+  .score-big { font-family: var(--head); font-size: 4rem; font-weight: 700; letter-spacing: 4px; color: var(--red); }
+  .score-sub { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 2px; margin: 4px 0 12px; }
+  .score-msg { font-family: var(--body); font-size: 1rem; color: var(--dim); }
+  .btn-reset {
+    margin-top: 18px; background: none; border: 1px solid var(--red);
+    color: var(--red); font-family: var(--mono); font-size: 11px;
+    padding: 10px 28px; cursor: pointer; letter-spacing: 3px; text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  .btn-reset:hover { background: var(--red); color: #fff; }
+
+  /* Footer */
+  footer { margin-top: 80px; padding: 32px 0; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+  .ft { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+  .nav-btns { display: flex; gap: 10px; }
+  .nbtn {
+    font-family: var(--mono); font-size: 11px; padding: 10px 20px;
+    border: 1px solid var(--border2); color: var(--muted); background: none;
+    cursor: pointer; letter-spacing: 1px; text-decoration: none; transition: all 0.2s;
+  }
+  .nbtn:hover { border-color: var(--red); color: var(--red3); }
+  .nbtn.primary { background: var(--red); color: #fff; border-color: var(--red); font-weight: 700; }
+  .nbtn.primary:hover { background: var(--red2); border-color: var(--red2); transform: translateX(3px); }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <div class="crumb">
+      <span>ECSA</span><span>›</span><span>Study Guide</span><span>›</span><span class="cur">TOPIC 03</span>
+    </div>
+    <div class="hero-row">
+      <div class="hero-left">
+        <div class="t-label">Topic 3 of 8</div>
+        <h1>Detection<br><span class="accent">Engine</span></h1>
+        <p style="font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:2px;margin-top:10px;">// RULE TYPES · QUERY LANGUAGES · MITRE ATT&CK · TUNING</p>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div class="hero-stat"><div class="hs-val">6</div><div class="hs-label">Rule Types</div></div>
+        <div class="hero-stat" style="border-left-color:var(--orange)"><div class="hs-val" style="color:var(--orange)">14</div><div class="hs-label">MITRE Tactics</div></div>
+        <div class="hero-stat" style="border-left-color:var(--yellow)"><div class="hs-val" style="color:var(--yellow)">7</div><div class="hs-label">Quiz Questions</div></div>
+      </div>
+    </div>
+    <nav class="topic-nav">
+      <a href="#" class="done">01 · Fundamentals</a>
+      <a href="#" class="done">02 · Data Ingestion</a>
+      <a href="#" class="active">03 · Detection Engine</a>
+      <a href="#">04 · Alert Triage</a>
+      <a href="#">05 · Threat Hunting</a>
+      <a href="#">06 · Cases</a>
+      <a href="#">07 · RBAC & Admin</a>
+      <a href="#">08 · Visualization</a>
+    </nav>
+  </header>
+
+  <div class="prog-row">
+    <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+    <span class="prog-txt" id="progTxt">0 / 7 answered</span>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       SECTION 1 — OVERVIEW
+  ════════════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">03.01</span><h2 class="sec-title">The Detection Engine</h2></div>
+    <div class="card">
+      <p>The <strong>Elastic Security Detection Engine</strong> runs continuously against indexed security data, evaluating detection rules on a scheduled basis. When a rule's conditions are met, it generates an <strong>alert</strong> in the <code style="font-family:var(--mono);color:#7bbfff">.alerts-security.alerts-*</code> data stream.</p>
+      <p>Detection rules are the operational heart of a SOC — they encode threat knowledge into repeatable, automated detection logic. The exam focuses heavily on understanding the different rule types, when to use each, and how to configure them correctly.</p>
+
+      <div class="two-col">
+        <div class="mini-card">
+          <div class="mc-label">How Rules Execute</div>
+          <div class="mc-val">
+            Rules run on a <span class="hi">schedule</span> (e.g., every 5 min).<br>
+            Each execution queries a <span class="b">look-back window</span>.<br>
+            Matches create alerts with <span class="g">severity, risk score</span>,<br>
+            and MITRE ATT&amp;CK mappings.<br>
+            Rules can be <span class="y">enabled / disabled / snoozed</span>.
+          </div>
+        </div>
+        <div class="mini-card">
+          <div class="mc-label">Alert Storage</div>
+          <div class="mc-val">
+            Alerts go to:<br>
+            <span class="hi">.alerts-security.alerts-default</span><br><br>
+            They are separate from raw event indices.<br>
+            Analysts triage alerts in <span class="g">Security → Alerts</span>.<br>
+            Alerts persist until closed or deleted.
+          </div>
+        </div>
+      </div>
+
+      <div class="note g">
+        <p><strong>Key concept:</strong> Rules do NOT modify original event data. They generate new alert documents that reference the triggering event. The original log remains unchanged in its source index.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       SECTION 2 — RULE TYPES
+  ════════════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">03.02</span><h2 class="sec-title">Detection Rule Types</h2></div>
+    <div class="card">
+      <p>Elastic Security supports <strong>six rule types</strong>, each designed for different detection scenarios. Click a rule type to see examples and exam tips.</p>
+
+      <div class="rule-grid">
+        <div class="rule-card" onclick="selectRule(this,'custom-query')">
+          <span class="rc-badge kql">KQL / Lucene</span>
+          <div class="rc-name">Custom Query</div>
+          <div class="rc-desc">Match events using KQL or Lucene search syntax</div>
+        </div>
+        <div class="rule-card" onclick="selectRule(this,'eql')">
+          <span class="rc-badge eql">EQL</span>
+          <div class="rc-name">Event Correlation</div>
+          <div class="rc-desc">Detect sequences and patterns across multiple events</div>
+        </div>
+        <div class="rule-card" onclick="selectRule(this,'threshold')">
+          <span class="rc-badge thresh">Count</span>
+          <div class="rc-name">Threshold</div>
+          <div class="rc-desc">Alert when an event occurs N times within a time window</div>
+        </div>
+        <div class="rule-card" onclick="selectRule(this,'ml')">
+          <span class="rc-badge ml">ML</span>
+          <div class="rc-name">Machine Learning</div>
+          <div class="rc-desc">Use anomaly detection jobs to surface behavioral outliers</div>
+        </div>
+        <div class="rule-card" onclick="selectRule(this,'threat-match')">
+          <span class="rc-badge eql">IOC</span>
+          <div class="rc-name">Indicator Match</div>
+          <div class="rc-desc">Cross-reference events against threat intelligence IOCs</div>
+        </div>
+        <div class="rule-card" onclick="selectRule(this,'new-terms')">
+          <span class="rc-badge newterms">Behavioral</span>
+          <div class="rc-name">New Terms</div>
+          <div class="rc-desc">Alert when a field value is seen for the first time</div>
+        </div>
+      </div>
+
+      <div class="rule-detail" id="rule-detail">
+        <div class="rd-head" id="rd-head"></div>
+        <div id="rd-body"></div>
+      </div>
+
+      <div class="note">
+        <p><strong>Exam tip:</strong> The rule type determines what query language and configuration options are available. Custom Query = KQL/Lucene. Event Correlation = EQL only. Machine Learning = requires a pre-built or custom ML job. Know which type fits which scenario.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       SECTION 3 — RULE ANATOMY
+  ════════════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">03.03</span><h2 class="sec-title">Anatomy of a Detection Rule</h2></div>
+    <div class="card">
+      <p>Every rule shares a common set of configuration fields. Understanding each field is critical — many exam questions describe a scenario and ask you to identify which setting needs to be changed.</p>
+
+      <div class="codeblock">
+<span class="c-comment">// Detection Rule — Core Fields Reference</span>
+
+<span class="c-kw">name</span>:           <span class="c-str">"Suspicious PowerShell Encoded Command"</span>
+<span class="c-kw">description</span>:    <span class="c-str">"Detects use of -EncodedCommand flag in PowerShell"</span>
+<span class="c-kw">rule_type</span>:      <span class="c-str">"query"</span>           <span class="c-comment">// query | eql | threshold | machine_learning | threat_match | new_terms</span>
+<span class="c-kw">language</span>:       <span class="c-str">"kuery"</span>           <span class="c-comment">// kuery | lucene | eql | esql</span>
+<span class="c-kw">query</span>:          <span class="c-str">"process.name: powershell.exe AND process.args: (*EncodedCommand* OR *-enc*)"</span>
+
+<span class="c-comment">// Scheduling</span>
+<span class="c-kw">interval</span>:       <span class="c-num">5m</span>               <span class="c-comment">// How often the rule runs</span>
+<span class="c-kw">from</span>:           <span class="c-str">"now-6m"</span>          <span class="c-comment">// Look-back window start (should overlap interval)</span>
+<span class="c-kw">to</span>:             <span class="c-str">"now"</span>
+
+<span class="c-comment">// Risk & Severity</span>
+<span class="c-kw">severity</span>:       <span class="c-str">"high"</span>            <span class="c-comment">// critical | high | medium | low</span>
+<span class="c-kw">risk_score</span>:     <span class="c-num">73</span>               <span class="c-comment">// 0–100, used to sort/prioritize alerts</span>
+
+<span class="c-comment">// MITRE ATT&CK mapping</span>
+<span class="c-kw">threat</span>: [{
+  <span class="c-field">tactic</span>: { <span class="c-field">id</span>: <span class="c-str">"TA0002"</span>, <span class="c-field">name</span>: <span class="c-str">"Execution"</span> },
+  <span class="c-field">technique</span>: [{ <span class="c-field">id</span>: <span class="c-str">"T1059.001"</span>, <span class="c-field">name</span>: <span class="c-str">"PowerShell"</span> }]
+}]
+
+<span class="c-comment">// Actions (optional — notify on alert)</span>
+<span class="c-kw">actions</span>: [{ <span class="c-field">action_type_id</span>: <span class="c-str">".slack"</span>, <span class="c-field">params</span>: { <span class="c-field">message</span>: <span class="c-str">"Alert: {{rule.name}}"</span> } }]
+      </div>
+
+      <div class="two-col">
+        <div class="mini-card">
+          <div class="mc-label">Interval vs Look-Back</div>
+          <div class="mc-val">
+            <span class="hi">Interval</span> = how often rule runs (e.g., 5m)<br>
+            <span class="b">Look-back (from)</span> = window of data searched<br><br>
+            Best practice: look-back should be <span class="g">slightly longer</span> than interval to prevent gaps.<br>
+            E.g., interval=5m → from=now-<span class="g">6m</span>
+          </div>
+        </div>
+        <div class="mini-card">
+          <div class="mc-label">Risk Score</div>
+          <div class="mc-val">
+            Numeric value <span class="hi">0–100</span>.<br>
+            Used to sort and filter alerts.<br><br>
+            <span class="y">Severity</span> is qualitative (critical/high/medium/low).<br>
+            <span class="hi">Risk score</span> is quantitative — combine both for prioritization.
+          </div>
+        </div>
+      </div>
+
+      <p style="margin-top:16px">Alert <strong>severity levels</strong> and typical risk scores:</p>
+      <div class="sev-row">
+        <div class="sev-pill critical">CRITICAL &nbsp;91–100</div>
+        <div class="sev-pill high">HIGH &nbsp;73–90</div>
+        <div class="sev-pill medium">MEDIUM &nbsp;47–72</div>
+        <div class="sev-pill low">LOW &nbsp;21–46</div>
+        <div class="sev-pill info">INFORMATIONAL &nbsp;0–20</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       SECTION 4 — EQL
+  ════════════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">03.04</span><h2 class="sec-title">Event Query Language (EQL)</h2></div>
+    <div class="card">
+      <p><strong>EQL</strong> is a purpose-built language for detecting <em>sequences, patterns, and relationships</em> across multiple events. It's used by Event Correlation rules and is the most powerful rule type for detecting multi-step attack chains.</p>
+
+      <div class="codeblock">
+<span class="c-comment">// EQL — Three query types you must know</span>
+
+<span class="c-comment">// 1. SEQUENCE — ordered chain of events (most important for SIEM)</span>
+<span class="c-kw">sequence</span> <span class="c-fn">by</span> <span class="c-field">host.id</span> <span class="c-fn">with maxspan</span>=<span class="c-num">1m</span>
+  [<span class="c-fn">process</span> <span class="c-fn">where</span> <span class="c-field">process.name</span> == <span class="c-str">"cmd.exe"</span>]
+  [<span class="c-fn">process</span> <span class="c-fn">where</span> <span class="c-field">process.name</span> == <span class="c-str">"net.exe"</span> <span class="c-fn">and</span> <span class="c-field">process.args</span> : <span class="c-str">"user"</span>]
+  [<span class="c-fn">network</span> <span class="c-fn">where</span> <span class="c-field">destination.port</span> == <span class="c-num">4444</span>]
+
+<span class="c-comment">// → Detects: cmd spawns net user, then connects to C2 port — within 1 minute on same host</span>
+
+<span class="c-comment">// 2. EVENT — single event match (like KQL but typed)</span>
+<span class="c-fn">process</span> <span class="c-fn">where</span> <span class="c-field">process.name</span> == <span class="c-str">"mimikatz.exe"</span>
+  <span class="c-fn">and</span> <span class="c-field">event.type</span> == <span class="c-str">"start"</span>
+
+<span class="c-comment">// 3. ANY — matches across all event categories</span>
+<span class="c-fn">any</span> <span class="c-fn">where</span> <span class="c-field">network.direction</span> == <span class="c-str">"egress"</span>
+  <span class="c-fn">and</span> <span class="c-field">destination.port</span> <span class="c-fn">in</span> (<span class="c-num">22</span>, <span class="c-num">443</span>, <span class="c-num">8080</span>)
+  <span class="c-fn">and</span> <span class="c-fn">not</span> <span class="c-field">source.ip</span> : <span class="c-str">"10.0.0.0/8"</span>
+      </div>
+
+      <div class="two-col">
+        <div class="mini-card">
+          <div class="mc-label">EQL Event Categories</div>
+          <div class="mc-val">
+            <span class="hi">process</span> — process start/stop events<br>
+            <span class="hi">network</span> — connection events<br>
+            <span class="hi">file</span>    — file create/modify/delete<br>
+            <span class="hi">registry</span> — Windows registry changes<br>
+            <span class="hi">dns</span>     — DNS queries<br>
+            <span class="hi">any</span>     — any event type
+          </div>
+        </div>
+        <div class="mini-card">
+          <div class="mc-label">EQL Key Syntax</div>
+          <div class="mc-val">
+            <span class="b">by</span> field → group sequence by field<br>
+            <span class="b">with maxspan</span>=Xm → time window<br>
+            <span class="b">until</span> → stop sequence on event<br>
+            <span class="g">: "glob*"</span> → wildcard match<br>
+            <span class="g">in (a, b, c)</span> → multi-value match<br>
+            <span class="y">not</span> → negate a condition
+          </div>
+        </div>
+      </div>
+
+      <div class="note y">
+        <p><strong>Exam trap:</strong> EQL uses <span style="color:var(--yellow)">==</span> for equality (not <code>:</code> like KQL). It also requires an <em>event category</em> prefix (<code>process where</code>, <code>network where</code>). Mixing KQL and EQL syntax is a common exam distractor.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       SECTION 5 — MITRE ATT&CK
+  ════════════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">03.05</span><h2 class="sec-title">MITRE ATT&CK Integration</h2></div>
+    <div class="card">
+      <p>Elastic Security maps every detection rule to the <strong>MITRE ATT&CK framework</strong>. This lets analysts understand the adversary behavior a rule targets, and helps SOC managers measure coverage across the kill chain. Click any tactic to see key techniques.</p>
+
+      <div class="mitre-grid" id="mitreGrid">
+        <div class="mitre-tactic" onclick="showTactic(this,'recon')"><div class="mt-id">TA0043</div><div class="mt-name">Reconnaissance</div></div>
+        <div class="mitre-tactic" onclick="showTactic(this,'resource')"><div class="mt-id">TA0042</div><div class="mt-name">Resource Dev.</div></div>
+        <div class="mitre-tactic" onclick="showTactic(this,'initial')"><div class="mt-id">TA0001</div><div class="mt-name">Initial Access</div></div>
+        <div class="mitre-tactic" onclick="showTactic(this,'execution')"><div class="mt-id">TA0002</div><div class="mt-name">Execution</div></div>
+        <div class="mitre-tactic" onclick="showTactic(this,'persist')"><div class="mt-id">TA0003</div><div class="mt-name">Persistence</div></div>
+        <div class="mitre-tactic" onclick="showTactic(this,'privesc')"><div class="mt-id">TA0004</div><div class="mt-name">Priv. Escalation</div></div>
+        <div class="mitre-tactic" onclick="showTactic(this,'defense')"><div class="mt-id">TA0005</div><div class="mt-name">Defense Evasion</div></div>
+        <div class="mitre-tactic" onclick="showTactic(this,'credential')"><div class="mt-id">TA0006</div><div class="mt-name">Credential Access</div></div>
+        <div class="mitre-tactic" onclick="showTactic(this,'discovery')"><div class="mt-id">TA0007</div><div class="mt-name">Discovery</div></div>
+        <div class="mitre-tactic" onclick="showTactic(this,'lateral')"><div class="mt-id">TA0008</div><div class="mt-name">Lateral Movement</div></div>
+        <div class="mitre-tactic" onclick="showTactic(this,'collection')"><div class="mt-id">TA0009</div><div class="mt-name">Collection</div></div>
+        <div class="mitre-tactic" onclick="showTactic(this,'c2')"><div class="mt-id">TA0011</div><div class="mt-name">C2</div></div>
+        <div class="mitre-tactic" onclick="showTactic(this,'exfil')"><div class="mt-id">TA0010</div><div class="mt-name">Exfiltration</div></div>
+        <div class="mitre-tactic" onclick="showTactic(this,'impact')"><div class="mt-id">TA0040</div><div class="mt-name">Impact</div></div>
+      </div>
+
+      <div class="rule-detail show" id="mitre-detail" style="display:block; border-left-color:var(--orange)">
+        <div class="rd-head" style="color:var(--orange)">← Click a tactic above to explore ATT&CK techniques and how Elastic rules map to them</div>
+      </div>
+
+      <div class="note">
+        <p><strong>Exam tip:</strong> When creating or editing a rule, the MITRE ATT&CK mapping is set in the <em>About</em> step. Elastic pre-built rules include mappings. Custom rules need to be manually mapped. The <strong>Coverage</strong> view in Security → Detection Rules shows your MITRE coverage heatmap.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       SECTION 6 — RULE TUNING
+  ════════════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">03.06</span><h2 class="sec-title">Rule Tuning & Exceptions</h2></div>
+    <div class="card">
+      <p>Out-of-the-box rules often generate <strong>false positives</strong> — legitimate activity that matches the detection logic. Tuning rules to reduce noise without losing true positives is a core analyst skill.</p>
+
+      <div class="codeblock">
+<span class="c-comment">// Exception Types in Elastic Security</span>
+
+<span class="c-kw">Rule Exception</span>   → Applies to ONE specific rule only
+<span class="c-kw">Shared Exception List</span> → Applies to MULTIPLE rules (shared across space)
+<span class="c-kw">Endpoint Exception</span>   → Passed down to Elastic Defend agent (prevents event generation)
+
+<span class="c-comment">// Example: Exception entry to suppress FP from IT admin tool</span>
+{
+  <span class="c-field">field</span>: <span class="c-str">"process.name"</span>,   <span class="c-field">operator</span>: <span class="c-str">"is"</span>,      <span class="c-field">value</span>: <span class="c-str">"psexec.exe"</span>,
+  <span class="c-field">field</span>: <span class="c-str">"user.name"</span>,      <span class="c-field">operator</span>: <span class="c-str">"is"</span>,      <span class="c-field">value</span>: <span class="c-str">"svc-deployment"</span>,
+  <span class="c-field">field</span>: <span class="c-str">"host.name"</span>,      <span class="c-field">operator</span>: <span class="c-str">"is one of"</span>, <span class="c-field">value</span>: <span class="c-str">["deploy-srv-01", "deploy-srv-02"]</span>
+}
+
+<span class="c-comment">// → This suppresses alerts ONLY when all three conditions are true simultaneously</span>
+      </div>
+
+      <div class="two-col">
+        <div class="mini-card">
+          <div class="mc-label">Tuning Strategies</div>
+          <div class="mc-val">
+            <span class="g">Add exceptions</span> — whitelist known-good<br>
+            <span class="g">Raise risk threshold</span> — threshold rules<br>
+            <span class="b">Refine query</span> — add exclusion clauses<br>
+            <span class="y">Adjust look-back</span> — reduce noise window<br>
+            <span class="hi">Alert suppression</span> — deduplicate alerts<br>
+            <span class="hi">Rule schedule</span> — run less frequently
+          </div>
+        </div>
+        <div class="mini-card">
+          <div class="mc-label">Alert Suppression</div>
+          <div class="mc-val">
+            Suppresses duplicate alerts within<br>
+            a time window when the same<br>
+            <span class="hi">field value</span> triggers repeatedly.<br><br>
+            E.g., suppress by <span class="b">host.name</span> for 1h<br>
+            → 1 alert per host per hour max,<br>
+            even if rule fires 100 times.
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive rule builder -->
+      <div class="rule-builder" style="margin-top:20px">
+        <div class="rb-title">// Interactive Rule Preview Builder</div>
+        <div class="rb-fields">
+          <div class="rb-field">
+            <label>Rule Type</label>
+            <select id="rb-type" onchange="buildPreview()">
+              <option value="query">Custom Query (KQL)</option>
+              <option value="eql">Event Correlation (EQL)</option>
+              <option value="threshold">Threshold</option>
+              <option value="threat_match">Indicator Match</option>
+              <option value="new_terms">New Terms</option>
+            </select>
+          </div>
+          <div class="rb-field">
+            <label>Severity</label>
+            <select id="rb-sev" onchange="buildPreview()">
+              <option value="critical">Critical</option>
+              <option value="high" selected>High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div class="rb-field">
+            <label>Interval</label>
+            <select id="rb-int" onchange="buildPreview()">
+              <option value="1m">Every 1 minute</option>
+              <option value="5m" selected>Every 5 minutes</option>
+              <option value="15m">Every 15 minutes</option>
+              <option value="1h">Every 1 hour</option>
+            </select>
+          </div>
+          <div class="rb-field">
+            <label>Index Pattern</label>
+            <select id="rb-idx" onchange="buildPreview()">
+              <option value="logs-endpoint*">logs-endpoint* (Elastic Defend)</option>
+              <option value="logs-windows*">logs-windows* (Windows Events)</option>
+              <option value="logs-*">logs-* (All logs)</option>
+              <option value="logs-network*">logs-network* (Network)</option>
+            </select>
+          </div>
+        </div>
+        <div class="rb-preview" id="rb-preview"></div>
+      </div>
+
+      <div class="note y">
+        <p><strong>Critical exam concept:</strong> <span style="color:var(--yellow)">Endpoint exceptions</span> are the most powerful — they prevent the event from being generated on the agent entirely. Use them carefully. <span style="color:var(--yellow)">Rule exceptions</span> suppress the alert but the event is still indexed. <span style="color:var(--yellow)">Shared exception lists</span> help maintain consistency across many rules.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       QUIZ
+  ════════════════════════════════════════ -->
+  <div class="quiz">
+    <div class="quiz-heading">Topic 3 · Practice Questions</div>
+
+    <!-- Q1 -->
+    <div class="qb" id="q1">
+      <div class="q-n">QUESTION 01</div>
+      <div class="q-t">An analyst needs to detect when a process spawns cmd.exe, which then runs net.exe, followed by an outbound network connection — all within 2 minutes on the same host. Which rule type should be used?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q1','A','B')"><span class="ol">A</span> Custom Query rule with a complex KQL expression</button>
+        <button class="opt" onclick="ans(this,'q1','B','B')"><span class="ol">B</span> Event Correlation rule using an EQL sequence query</button>
+        <button class="opt" onclick="ans(this,'q1','C','B')"><span class="ol">C</span> Threshold rule with a count of 3 events</button>
+        <button class="opt" onclick="ans(this,'q1','D','B')"><span class="ol">D</span> Machine Learning rule with a behavioral anomaly job</button>
+      </div>
+      <div class="exp" id="e-q1"><strong>Correct: Event Correlation (EQL sequence)</strong> — This is the classic use case for EQL. Sequences detect ordered chains of events with a <code>by</code> clause (to scope to same host) and <code>with maxspan</code> (2-minute window). KQL cannot express event ordering. Threshold rules count occurrences, not sequences. ML detects anomalies, not specific chains.</div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="qb" id="q2">
+      <div class="q-n">QUESTION 02</div>
+      <div class="q-t">Review this EQL snippet. What is the purpose of the <code style="color:var(--green2)">by host.id</code> clause?</div>
+      <pre class="q-code">sequence by host.id with maxspan=5m
+  [process where process.name == "wscript.exe"]
+  [network where destination.port == 443]</pre>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q2','A','A')"><span class="ol">A</span> Ensures both events must come from the same host</button>
+        <button class="opt" onclick="ans(this,'q2','B','A')"><span class="ol">B</span> Filters results to only include hosts with the name "host.id"</button>
+        <button class="opt" onclick="ans(this,'q2','C','A')"><span class="ol">C</span> Groups results by host for aggregation in a dashboard</button>
+        <button class="opt" onclick="ans(this,'q2','D','A')"><span class="ol">D</span> Limits the sequence to run only on a specific host ID</button>
+      </div>
+      <div class="exp" id="e-q2"><strong>Correct: Ensures both events come from the same host.</strong> The <code>by</code> clause in an EQL sequence groups events by the specified field value, meaning event 1 and event 2 must share the same <code>host.id</code> to count as a sequence match. Without it, wscript on Host A followed by a network event on Host B would incorrectly trigger the rule.</div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="qb" id="q3">
+      <div class="q-n">QUESTION 03</div>
+      <div class="q-t">A detection rule has an interval of 5 minutes. Its look-back window is set to <code style="color:var(--green2)">now-4m</code>. What problem will this cause?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q3','A','B')"><span class="ol">A</span> The rule will generate duplicate alerts for the same events</button>
+        <button class="opt" onclick="ans(this,'q3','B','B')"><span class="ol">B</span> Events in the 1-minute gap between executions may be missed</button>
+        <button class="opt" onclick="ans(this,'q3','C','B')"><span class="ol">C</span> The rule will run twice as frequently as configured</button>
+        <button class="opt" onclick="ans(this,'q3','D','B')"><span class="ol">D</span> The rule will only alert on events older than 4 minutes</button>
+      </div>
+      <div class="exp" id="e-q3"><strong>Correct: Events in the gap may be missed.</strong> If the rule runs every 5 minutes but only looks back 4 minutes, there's a 1-minute blind spot. Events that occurred between 4 and 5 minutes ago fall outside the look-back window and are never evaluated. Best practice is to set the look-back slightly longer than the interval (e.g., interval=5m, from=now-6m).</div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="qb" id="q4">
+      <div class="q-n">QUESTION 04</div>
+      <div class="q-t">A security team wants to suppress duplicate alerts when the same host triggers a brute-force detection rule hundreds of times within an hour. They want only ONE alert per host per hour. Which feature should they configure?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q4','A','C')"><span class="ol">A</span> Add an exception entry for the affected hosts</button>
+        <button class="opt" onclick="ans(this,'q4','B','C')"><span class="ol">B</span> Convert the rule to a Threshold rule with count=1</button>
+        <button class="opt" onclick="ans(this,'q4','C','C')"><span class="ol">C</span> Enable Alert Suppression, group by host.name, with a 1-hour window</button>
+        <button class="opt" onclick="ans(this,'q4','D','C')"><span class="ol">D</span> Increase the rule interval to 1 hour</button>
+      </div>
+      <div class="exp" id="e-q4"><strong>Correct: Alert Suppression grouped by host.name.</strong> Alert Suppression deduplicates alerts within a time window by grouping on a field. Suppressing by <code>host.name</code> for 1 hour means only 1 alert fires per host per hour, even if the rule triggers hundreds of times. Exceptions would stop alerting entirely. Increasing the interval would create detection gaps.</div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="qb" id="q5">
+      <div class="q-n">QUESTION 05</div>
+      <div class="q-t">Which exception type should be used when you want to prevent Elastic Defend from even <em>generating</em> the security event on the endpoint (not just suppressing the alert)?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q5','A','C')"><span class="ol">A</span> Rule Exception added to the specific detection rule</button>
+        <button class="opt" onclick="ans(this,'q5','B','C')"><span class="ol">B</span> Shared Exception List applied to all rules in the space</button>
+        <button class="opt" onclick="ans(this,'q5','C','C')"><span class="ol">C</span> Endpoint Exception added to the Elastic Defend integration policy</button>
+        <button class="opt" onclick="ans(this,'q5','D','C')"><span class="ol">D</span> An ingest pipeline processor that drops matching documents</button>
+      </div>
+      <div class="exp" id="e-q5"><strong>Correct: Endpoint Exception.</strong> Endpoint exceptions are pushed to the Elastic Agent running Elastic Defend. They instruct the agent to not generate the telemetry event at the source. This is the most aggressive form of suppression — the event never reaches Elasticsearch. Rule exceptions and shared exception lists operate at the SIEM layer (post-ingestion) and only suppress alerts, not the underlying events.</div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="qb" id="q6">
+      <div class="q-n">QUESTION 06</div>
+      <div class="q-t">A rule needs to alert when a user account that has NEVER previously logged in from a specific country is seen doing so. Which rule type is BEST suited for this?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q6','A','D')"><span class="ol">A</span> Threshold rule — count logins by country > 1</button>
+        <button class="opt" onclick="ans(this,'q6','B','D')"><span class="ol">B</span> Custom Query — KQL for logins from foreign IPs</button>
+        <button class="opt" onclick="ans(this,'q6','C','D')"><span class="ol">C</span> Indicator Match — cross-reference against a threat intel country list</button>
+        <button class="opt" onclick="ans(this,'q6','D','D')"><span class="ol">D</span> New Terms rule — alert on first-seen value of source.geo.country_name per user</button>
+      </div>
+      <div class="exp" id="e-q6"><strong>Correct: New Terms rule.</strong> New Terms rules are purpose-built for detecting "first-ever seen" values of a field. Configuring it to track <code>source.geo.country_name</code> grouped by <code>user.name</code> means it will alert the first time a user is seen logging in from any new country, using a historical baseline. A Custom Query can't know what's "new" — it would need a static list of countries to exclude.</div>
+    </div>
+
+    <!-- Q7 -->
+    <div class="qb" id="q7">
+      <div class="q-n">QUESTION 07</div>
+      <div class="q-t">Where in the rule creation wizard do you map a detection rule to its MITRE ATT&CK tactic and technique?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q7','A','B')"><span class="ol">A</span> Define rule — in the index pattern selector</button>
+        <button class="opt" onclick="ans(this,'q7','B','B')"><span class="ol">B</span> About rule — in the threat section of the rule details</button>
+        <button class="opt" onclick="ans(this,'q7','C','B')"><span class="ol">C</span> Schedule rule — as part of the run interval configuration</button>
+        <button class="opt" onclick="ans(this,'q7','D','B')"><span class="ol">D</span> Rule actions — when setting up Slack/email notification</button>
+      </div>
+      <div class="exp" id="e-q7"><strong>Correct: About rule step.</strong> The rule creation wizard has four main steps: <em>Define rule</em> (query/type), <em>About rule</em> (name, severity, risk score, MITRE mapping, tags), <em>Schedule rule</em> (interval, look-back), and <em>Rule actions</em> (notifications). MITRE ATT&CK mapping is configured in the <strong>About</strong> step under the Threat section.</div>
+    </div>
+
+    <div class="scorebox" id="scorebox">
+      <div class="score-big" id="score-num">0/7</div>
+      <div class="score-sub">QUESTIONS CORRECT</div>
+      <div class="score-msg" id="score-msg"></div>
+      <button class="btn-reset" onclick="resetQuiz()">↺ RETRY</button>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="ft">ECSA · TOPIC 03 · DETECTION ENGINE &amp; RULE CREATION</div>
+    <div class="nav-btns">
+      <a href="#" class="nbtn">← Topic 2</a>
+      <button class="nbtn primary" onclick="alert('Topic 4: Alert Triage & Investigation — coming next!')">Topic 4: Alert Triage →</button>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+// ── Rule type detail panels ──
+const ruleDetails = {
+  'custom-query': {
+    head: 'Custom Query Rule — KQL / Lucene',
+    body: `<span class="rd-ex">Best for:</span> Simple to moderate detection logic. Single event matches using field conditions.
+
+<span class="rd-ex">Example:</span>
+  process.name: "mimikatz.exe"
+  process.args: (*sekurlsa* OR *lsadump*) AND NOT user.name: "sec-testing"
+
+<span class="rd-note">Exam tips:</span>
+  • Most common rule type. Used for the majority of detections.
+  • Supports KQL (kuery) or Lucene as the query language.
+  • Cannot detect event sequences or patterns — use EQL for those.
+  • Can filter by index pattern and add exceptions.`
+  },
+  'eql': {
+    head: 'Event Correlation Rule — EQL',
+    body: `<span class="rd-ex">Best for:</span> Multi-event sequences, process trees, attack chains, timed event patterns.
+
+<span class="rd-ex">Example (sequence):</span>
+  sequence by host.id with maxspan=2m
+    [process where process.name == "cmd.exe" and process.parent.name == "outlook.exe"]
+    [network where destination.port in (4444, 1234, 8080)]
+
+<span class="rd-note">Exam tips:</span>
+  • Only rule type that supports EQL. Cannot use KQL.
+  • "by" groups events — all events in sequence must share that field value.
+  • "maxspan" sets the time window for the whole sequence.
+  • EQL uses == for equality, not colon like KQL.`
+  },
+  'threshold': {
+    head: 'Threshold Rule',
+    body: `<span class="rd-ex">Best for:</span> Detecting high-frequency events — brute force, port scans, spray attacks.
+
+<span class="rd-ex">Example:</span>
+  Base query: event.category: "authentication" AND event.outcome: "failure"
+  Threshold: count > 10 grouped by host.name, user.name (in 5 min window)
+
+<span class="rd-note">Exam tips:</span>
+  • Alert fires once per unique group value (e.g., once per user per host).
+  • "Cardinality" option detects MANY unique values (e.g., >20 unique destination IPs = port scan).
+  • Does not alert on every single event — only when threshold is crossed.
+  • Combine with "group by" to get per-user, per-host thresholds.`
+  },
+  'ml': {
+    head: 'Machine Learning Rule',
+    body: `<span class="rd-ex">Best for:</span> Detecting behavioral anomalies that rules can't capture with known patterns.
+
+<span class="rd-ex">Example:</span>
+  ML Job: "v3_linux_anomalous_network_activity"
+  → Fires when a Linux process generates unusual network traffic volume
+
+<span class="rd-note">Exam tips:</span>
+  • Requires a pre-configured ML anomaly detection job to be running.
+  • Elastic ships 100+ pre-built ML jobs for security use cases.
+  • ML rules alert based on anomaly score threshold (configurable).
+  • Cannot write custom ML jobs in the SIEM exam — just enable/configure existing ones.
+  • ML rules complement signature rules — they catch unknown threats.`
+  },
+  'threat-match': {
+    head: 'Indicator Match (Threat Intel) Rule',
+    body: `<span class="rd-ex">Best for:</span> Matching live events against threat intelligence IOC lists (IPs, domains, hashes).
+
+<span class="rd-ex">Example:</span>
+  Event source index:    logs-*
+  Indicator index:       logs-ti_*    (threat intel feeds)
+  Match field:           destination.ip  ↔  threat.indicator.ip
+
+<span class="rd-note">Exam tips:</span>
+  • Requires a threat intelligence index with ECS-normalized indicators.
+  • Uses a JOIN-like operation between event data and indicator data.
+  • Performance-intensive — runs less frequently by default (every 1h).
+  • Supports IP, domain, hash, and URL indicator types.
+  • Indicators must follow ECS threat.indicator.* field names.`
+  },
+  'new-terms': {
+    head: 'New Terms Rule',
+    body: `<span class="rd-ex">Best for:</span> Detecting first-ever occurrences of a field value — new user agents, new countries, new processes.
+
+<span class="rd-ex">Example:</span>
+  Field to track: process.executable
+  Grouped by:     host.name, user.name
+  History window: 7 days
+  → Alert when a process.executable value is seen for the first time per user per host
+
+<span class="rd-note">Exam tips:</span>
+  • Elastic builds a baseline of "known good" values over the history window.
+  • After the history window, any NEW value triggers an alert.
+  • Very effective for detecting novel malware, living-off-the-land binaries.
+  • Multiple "new terms fields" can be tracked simultaneously.
+  • Does NOT require a manual whitelist — it self-baselines.`
+  }
+};
+
+let currentRuleCard = null;
+
+function selectRule(el, type) {
+  const detail = ruleDetails[type];
+  const panel = document.getElementById('rule-detail');
+  if (currentRuleCard === el) {
+    el.classList.remove('selected');
+    panel.classList.remove('show');
+    currentRuleCard = null;
+    return;
+  }
+  document.querySelectorAll('.rule-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  currentRuleCard = el;
+  document.getElementById('rd-head').textContent = detail.head;
+  document.getElementById('rd-body').innerHTML = `<pre style="font-family:var(--mono);font-size:11px;line-height:1.8;white-space:pre-wrap;color:var(--dim)">${detail.body}</pre>`;
+  panel.classList.add('show');
+}
+
+// ── MITRE Tactics ──
+const mitreData = {
+  recon:      { name:'Reconnaissance', id:'TA0043', techs:['T1595 Active Scanning','T1589 Gather Victim Identity Info','T1598 Phishing for Info'] },
+  resource:   { name:'Resource Development', id:'TA0042', techs:['T1583 Acquire Infrastructure','T1584 Compromise Infrastructure','T1587 Develop Capabilities'] },
+  initial:    { name:'Initial Access', id:'TA0001', techs:['T1566 Phishing','T1190 Exploit Public App','T1133 External Remote Services','T1078 Valid Accounts'] },
+  execution:  { name:'Execution', id:'TA0002', techs:['T1059 Command & Scripting Interpreter','T1059.001 PowerShell','T1059.003 Windows Cmd','T1204 User Execution'] },
+  persist:    { name:'Persistence', id:'TA0003', techs:['T1547 Boot/Logon Autostart','T1053 Scheduled Task','T1136 Create Account','T1078 Valid Accounts'] },
+  privesc:    { name:'Privilege Escalation', id:'TA0004', techs:['T1548 Abuse Elevation Control','T1055 Process Injection','T1078 Valid Accounts','T1134 Token Impersonation'] },
+  defense:    { name:'Defense Evasion', id:'TA0005', techs:['T1055 Process Injection','T1036 Masquerading','T1070 Indicator Removal','T1562 Impair Defenses','T1027 Obfuscated Files'] },
+  credential: { name:'Credential Access', id:'TA0006', techs:['T1003 OS Credential Dumping','T1110 Brute Force','T1552 Unsecured Credentials','T1558 Steal Kerberos Tickets'] },
+  discovery:  { name:'Discovery', id:'TA0007', techs:['T1082 System Info Discovery','T1083 File & Dir Discovery','T1087 Account Discovery','T1046 Network Service Scan'] },
+  lateral:    { name:'Lateral Movement', id:'TA0008', techs:['T1021 Remote Services','T1021.001 RDP','T1021.002 SMB','T1210 Exploit Remote Services'] },
+  collection: { name:'Collection', id:'TA0009', techs:['T1005 Data from Local System','T1056 Input Capture','T1074 Data Staged','T1113 Screen Capture'] },
+  c2:         { name:'Command & Control', id:'TA0011', techs:['T1071 App Layer Protocol','T1095 Non-App Layer Protocol','T1105 Ingress Tool Transfer','T1572 Protocol Tunneling'] },
+  exfil:      { name:'Exfiltration', id:'TA0010', techs:['T1041 Exfil Over C2 Channel','T1048 Exfil Over Alt Protocol','T1567 Exfil Over Web Service'] },
+  impact:     { name:'Impact', id:'TA0040', techs:['T1486 Data Encrypted (Ransomware)','T1490 Inhibit Recovery','T1498 Network DoS','T1529 System Shutdown'] }
+};
+
+function showTactic(el, key) {
+  document.querySelectorAll('.mitre-tactic').forEach(t => t.classList.remove('lit'));
+  el.classList.add('lit');
+  const d = mitreData[key];
+  const panel = document.getElementById('mitre-detail');
+  panel.innerHTML = `<div class="rd-head" style="color:var(--orange)">${d.id} — ${d.name}</div>
+<div style="font-family:var(--mono);font-size:11px;color:var(--dim);line-height:1.9">
+  <span style="color:var(--muted)">Key Techniques:</span><br>
+  ${d.techs.map(t=>`  <span style="color:var(--green2)">▸</span> ${t}`).join('<br>')}
+  <br><br>
+  <span style="color:var(--yellow)">Elastic coverage:</span> Use <span style="color:var(--text)">Security → Rules → Coverage</span> to see which tactics have active detection rules in your environment. Rules can be filtered by tactic/technique from the rule list view.
+</div>`;
+  panel.style.display = 'block';
+}
+
+// ── Rule Builder Preview ──
+const queryTemplates = {
+  query: {
+    'logs-endpoint*': `process where process.name == "suspicious.exe"\n  and event.type == "start"\n  and not user.name in ("svc-account","system")`,
+    'logs-windows*':  `event.code: "4688" and process.name: (cmd.exe or powershell.exe)\n  and NOT winlog.event_data.ParentProcessName: "C:\\\\Windows\\\\Explorer.EXE"`,
+    'logs-*':         `event.category: "authentication" and event.outcome: "failure"\n  and NOT source.ip: "10.0.0.0/8"`,
+    'logs-network*':  `destination.port: (4444 or 1234 or 31337)\n  and network.direction: "egress"\n  and NOT destination.ip: "10.0.0.0/8"`
+  },
+  eql: {
+    'logs-endpoint*': `sequence by host.id with maxspan=2m\n  [process where process.name == "cmd.exe"]\n  [network where destination.port == 4444]`,
+    'logs-windows*':  `sequence by host.id with maxspan=5m\n  [process where event.code == "4688" and process.name == "wscript.exe"]\n  [process where event.code == "4688" and process.name == "powershell.exe"]`,
+    'logs-*':         `sequence by user.name with maxspan=30s\n  [any where event.outcome == "failure" and event.category == "authentication"]\n  [any where event.outcome == "failure" and event.category == "authentication"]\n  [any where event.outcome == "success" and event.category == "authentication"]`,
+    'logs-network*':  `sequence by source.ip with maxspan=10m\n  [network where destination.port == 22]\n  [network where destination.port == 22 and source.packets > 1000]`
+  },
+  threshold: {
+    'logs-endpoint*': `Query: event.category: "authentication" and event.outcome: "failure"\nThreshold: count > 10\nGrouped by: host.name, user.name`,
+    'logs-windows*':  `Query: event.code: "4625"\nThreshold: count > 5 in 1 minute\nGrouped by: winlog.computer_name, user.name`,
+    'logs-*':         `Query: event.outcome: "failure"\nThreshold: count > 20\nGrouped by: source.ip`,
+    'logs-network*':  `Query: network.direction: "egress"\nThreshold: cardinality(destination.ip) > 20\nGrouped by: source.ip (port scan detection)`
+  },
+  threat_match: {
+    'logs-endpoint*': `Event index: logs-endpoint*\nIndicator index: logs-ti_*\nMatch: process.hash.sha256 ↔ threat.indicator.file.hash.sha256`,
+    'logs-windows*':  `Event index: logs-windows*\nIndicator index: logs-ti_*\nMatch: destination.ip ↔ threat.indicator.ip`,
+    'logs-*':         `Event index: logs-*\nIndicator index: logs-ti_*\nMatch: destination.domain ↔ threat.indicator.url.domain`,
+    'logs-network*':  `Event index: logs-network*\nIndicator index: logs-ti_*\nMatch: destination.ip ↔ threat.indicator.ip\nAdditional filter: threat.indicator.type: "ipv4-addr"`
+  },
+  new_terms: {
+    'logs-endpoint*': `Base query: event.type: "start"\nNew Terms Field: process.executable\nGrouped by: host.name, user.name\nHistory window: 7 days`,
+    'logs-windows*':  `Base query: event.code: "4624"\nNew Terms Field: source.geo.country_name\nGrouped by: user.name\nHistory window: 30 days`,
+    'logs-*':         `Base query: event.category: "network"\nNew Terms Field: destination.domain\nGrouped by: host.name\nHistory window: 14 days`,
+    'logs-network*':  `Base query: network.direction: "egress"\nNew Terms Field: destination.ip\nGrouped by: source.ip\nHistory window: 7 days`
+  }
+};
+
+const sevScores = { critical: 99, high: 73, medium: 47, low: 21 };
+const lookbacks = { '1m': '2m', '5m': '6m', '15m': '16m', '1h': '65m' };
+
+function buildPreview() {
+  const type = document.getElementById('rb-type').value;
+  const sev  = document.getElementById('rb-sev').value;
+  const intv = document.getElementById('rb-int').value;
+  const idx  = document.getElementById('rb-idx').value;
+  const rs   = sevScores[sev];
+  const lb   = lookbacks[intv];
+  const q    = queryTemplates[type][idx] || queryTemplates[type]['logs-*'];
+
+  const out = document.getElementById('rb-preview');
+  out.innerHTML = `<span style="color:var(--muted)">rule_type:</span>   <span style="color:var(--red2)">${type}</span>
+<span style="color:var(--muted)">index:</span>       <span style="color:#7bbfff">${idx}</span>
+<span style="color:var(--muted)">severity:</span>    <span style="color:${sev==='critical'?'var(--red2)':sev==='high'?'var(--orange)':sev==='medium'?'var(--yellow)':'var(--green2)'}">${sev}</span>
+<span style="color:var(--muted)">risk_score:</span>  <span style="color:var(--yellow)">${rs}</span>
+<span style="color:var(--muted)">interval:</span>    <span style="color:var(--green2)">${intv}</span>
+<span style="color:var(--muted)">from:</span>        <span style="color:var(--green2)">now-${lb}</span>  <span style="color:var(--muted)">← look-back (>${intv} to prevent gaps)</span>
+
+<span style="color:var(--muted)">query / config:</span>
+<span style="color:var(--green2)">${q}</span>`;
+}
+
+buildPreview();
+
+// ── Quiz ──
+const correct = { q1:'B', q2:'A', q3:'B', q4:'C', q5:'C', q6:'D', q7:'B' };
+const answered = {};
+let score = 0;
+
+function ans(btn, qId, chosen) {
+  if (answered[qId]) return;
+  answered[qId] = true;
+  const isRight = chosen === correct[qId];
+  if (isRight) score++;
+  const block = document.getElementById(qId);
+  const opts = block.querySelectorAll('.opt');
+  const letters = ['A','B','C','D'];
+  opts.forEach((o, i) => {
+    o.classList.add('locked'); o.style.cursor='default';
+    if (letters[i] === correct[qId]) o.classList.add(isRight && o===btn ? 'correct' : 'revealc');
+  });
+  if (!isRight) { btn.classList.remove('revealc'); btn.classList.add('wrong'); }
+  else          { btn.classList.remove('revealc'); btn.classList.add('correct'); }
+  document.getElementById('e-' + qId).classList.add('show');
+  updateProgress();
+  if (Object.keys(answered).length === 7) setTimeout(showScore, 500);
+}
+
+function updateProgress() {
+  const n = Object.keys(answered).length;
+  document.getElementById('progFill').style.width = (n/7*100)+'%';
+  document.getElementById('progTxt').textContent = n+' / 7 answered';
+}
+
+function showScore() {
+  document.getElementById('score-num').textContent = score+'/7';
+  const p = score/7*100;
+  document.getElementById('score-msg').textContent =
+    p===100 ? '🎯 Perfect. You understand the detection engine deeply.' :
+    p>=85   ? '✅ Excellent. You are ready to move to Alert Triage.' :
+    p>=57   ? '📚 Good. Review EQL sequences and exception types before proceeding.' :
+              '🔄 Keep studying. Focus on rule types, EQL syntax, and rule tuning.';
+  document.getElementById('scorebox').classList.add('show');
+}
+
+function resetQuiz() {
+  Object.keys(answered).forEach(k=>delete answered[k]);
+  score = 0;
+  document.getElementById('scorebox').classList.remove('show');
+  document.querySelectorAll('.opt').forEach(o=>{ o.classList.remove('correct','wrong','revealc','locked'); o.style.cursor=''; });
+  document.querySelectorAll('.exp').forEach(e=>e.classList.remove('show'));
+  document.getElementById('progFill').style.width='0%';
+  document.getElementById('progTxt').textContent='0 / 7 answered';
+}
+</script>
+</body>
+</html>

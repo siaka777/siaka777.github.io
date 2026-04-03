@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topic 6: Cases & Incident Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Fira+Code:wght@400;500&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #f5f0e8;
+    --bg2:      #ede8dc;
+    --s1:       #e8e1d2;
+    --s2:       #dfd7c5;
+    --border:   #c8bfa8;
+    --border2:  #b8ae98;
+    --ink:      #1a1510;
+    --ink2:     #2d2620;
+    --brown:    #4a3728;
+    --gold:     #b8860b;
+    --gold2:    #d4a017;
+    --gold3:    #f0c040;
+    --rust:     #8b3a2a;
+    --sage:     #3a6645;
+    --sage2:    #2d5238;
+    --blue:     #2a4a7a;
+    --blue2:    #1e3560;
+    --red:      #9b2020;
+    --text:     #1a1510;
+    --dim:      #5a4e40;
+    --muted:    #8a7e6e;
+    --mono:     'Fira Code', monospace;
+    --serif:    'Playfair Display', serif;
+    --sans:     'Source Sans 3', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Paper texture */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(ellipse at 20% 50%, rgba(184,134,11,0.03) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(58,102,69,0.03) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .container { max-width: 1060px; margin: 0 auto; padding: 0 32px; position: relative; z-index: 1; }
+
+  /* ── HEADER ── */
+  header {
+    padding: 48px 0 0;
+    margin-bottom: 52px;
+    border-bottom: 2px solid var(--ink);
+    position: relative;
+  }
+
+  .doc-meta {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 28px; flex-wrap: wrap; gap: 12px;
+  }
+
+  .doc-ref {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    letter-spacing: 1px;
+  }
+  .doc-ref span { color: var(--gold); }
+
+  .classification {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 4px; color: var(--rust); text-transform: uppercase;
+    border: 2px solid var(--rust); padding: 4px 14px;
+  }
+
+  .topic-label {
+    font-family: var(--sans); font-size: 12px; font-weight: 600;
+    letter-spacing: 3px; text-transform: uppercase; color: var(--gold);
+    margin-bottom: 8px; display: flex; align-items: center; gap: 10px;
+  }
+  .topic-label::before { content:'§'; font-family: var(--serif); font-size: 14px; }
+
+  h1 {
+    font-family: var(--serif);
+    font-size: clamp(2.4rem, 5.5vw, 4rem);
+    font-weight: 900; line-height: 1.05; color: var(--ink);
+    margin-bottom: 10px; letter-spacing: -0.5px;
+  }
+  h1 em { font-style: italic; color: var(--gold); }
+
+  .sub-headline {
+    font-family: var(--serif); font-style: italic;
+    font-size: 1.15rem; color: var(--dim); margin-bottom: 28px; font-weight: 400;
+  }
+
+  /* Stat row */
+  .stat-row { display: flex; gap: 0; margin-bottom: 32px; border: 1px solid var(--border2); }
+  .stat-item {
+    flex: 1; padding: 16px 20px; border-right: 1px solid var(--border2); text-align: center;
+  }
+  .stat-item:last-child { border-right: none; }
+  .si-val { font-family: var(--serif); font-size: 2rem; font-weight: 700; color: var(--gold); line-height: 1; }
+  .si-lbl { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 2px; margin-top: 3px; text-transform: uppercase; }
+
+  /* Topic nav */
+  .topic-nav {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    padding: 16px 0 20px;
+  }
+  .topic-nav a {
+    font-family: var(--mono); font-size: 10px; padding: 5px 13px; text-decoration: none;
+    transition: all 0.15s; border: 1px solid var(--border); color: var(--muted); letter-spacing: 1px;
+    background: transparent;
+  }
+  .topic-nav a.done { border-color: var(--sage); color: var(--sage); background: rgba(58,102,69,0.06); }
+  .topic-nav a.done::before { content:'✓ '; }
+  .topic-nav a.active { background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 600; }
+  .topic-nav a.skip { border-style: dashed; color: var(--muted); opacity: 0.6; }
+  .topic-nav a:hover:not(.active):not(.done) { border-color: var(--gold); color: var(--gold); }
+
+  /* Progress */
+  .prog-row { display: flex; align-items: center; gap: 14px; margin: 20px 0 52px; }
+  .prog-track { flex: 1; height: 3px; background: var(--s2); overflow: hidden; }
+  .prog-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--sage)); width: 0%; transition: width 0.5s ease; }
+  .prog-txt { font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+  /* ── SECTIONS ── */
+  .section { margin-bottom: 56px; animation: fadeIn 0.4s ease both; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  .section:nth-child(1){animation-delay:.05s}.section:nth-child(2){animation-delay:.1s}
+  .section:nth-child(3){animation-delay:.15s}.section:nth-child(4){animation-delay:.2s}
+  .section:nth-child(5){animation-delay:.25s}.section:nth-child(6){animation-delay:.3s}
+
+  .sec-hd {
+    display: flex; align-items: baseline; gap: 14px; margin-bottom: 20px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  }
+  .sec-tag { font-family: var(--mono); font-size: 11px; color: var(--gold); letter-spacing: 2px; }
+  .sec-title { font-family: var(--serif); font-size: 1.5rem; font-weight: 700; color: var(--ink); }
+
+  /* Card */
+  .card {
+    background: white; border: 1px solid var(--border);
+    padding: 28px 32px; position: relative;
+    box-shadow: 2px 2px 0 var(--s2);
+  }
+  .card p { font-size: 1rem; line-height: 1.82; color: var(--dim); margin-bottom: 14px; font-weight: 400; }
+  .card p:last-child { margin-bottom: 0; }
+  strong { color: var(--ink); font-weight: 600; }
+
+  /* Rule separator */
+  .rule { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+  /* Case anatomy */
+  .case-anatomy {
+    background: var(--bg2); border: 1px solid var(--border2);
+    padding: 0; margin: 24px 0; overflow: hidden;
+  }
+
+  .ca-header {
+    background: var(--ink); color: var(--bg);
+    padding: 12px 20px; display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 8px;
+  }
+  .ca-title { font-family: var(--mono); font-size: 12px; letter-spacing: 2px; }
+  .ca-id    { font-family: var(--mono); font-size: 11px; color: var(--gold3); }
+
+  .ca-body { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+  @media(max-width:640px){ .ca-body { grid-template-columns: 1fr; } }
+
+  .ca-col { padding: 20px 24px; border-right: 1px solid var(--border); }
+  .ca-col:last-child { border-right: none; }
+  .ca-col h4 { font-family: var(--mono); font-size: 10px; letter-spacing: 2px; color: var(--gold); text-transform: uppercase; margin-bottom: 12px; }
+
+  .ca-field { display: flex; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--s1); align-items: flex-start; }
+  .ca-field:last-child { border-bottom: none; }
+  .caf-key { font-family: var(--mono); font-size: 11px; color: var(--muted); min-width: 90px; flex-shrink: 0; }
+  .caf-val { font-family: var(--mono); font-size: 11px; color: var(--ink); }
+  .caf-val.gold  { color: var(--gold); }
+  .caf-val.rust  { color: var(--rust); }
+  .caf-val.sage  { color: var(--sage); }
+  .caf-val.blue  { color: var(--blue); }
+
+  /* Status flow */
+  .status-flow { display: flex; align-items: center; gap: 0; margin: 24px 0; flex-wrap: wrap; }
+  .sf-step {
+    flex: 1; min-width: 100px; padding: 16px; text-align: center;
+    background: white; border: 1px solid var(--border); border-right: none;
+    cursor: default; transition: all 0.2s; position: relative;
+  }
+  .sf-step:last-child { border-right: 1px solid var(--border); }
+  .sf-step::after {
+    content: '›'; position: absolute; right: -12px; top: 50%; transform: translateY(-50%);
+    font-size: 1.4rem; color: var(--border2); z-index: 2; background: white;
+    width: 22px; text-align: center; line-height: 1;
+  }
+  .sf-step:last-child::after { display: none; }
+  .sf-step:hover { background: var(--bg2); border-color: var(--gold); z-index: 1; }
+  .sf-step .ss-name { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 1px; color: var(--ink); margin-bottom: 4px; text-transform: uppercase; }
+  .sf-step .ss-desc { font-family: var(--mono); font-size: 9px; color: var(--muted); line-height: 1.5; }
+
+  /* Connector grid */
+  .connector-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap: 12px; margin: 20px 0; }
+  .conn-card {
+    background: white; border: 1px solid var(--border);
+    padding: 16px; cursor: pointer; transition: all 0.2s;
+    position: relative; overflow: hidden;
+  }
+  .conn-card:hover { border-color: var(--gold); box-shadow: 2px 2px 0 var(--gold3); transform: translate(-1px,-1px); }
+  .conn-card.selected { border-color: var(--gold); background: rgba(184,134,11,0.04); }
+  .cc-logo { font-size: 1.6rem; margin-bottom: 8px; }
+  .cc-name { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--ink); margin-bottom: 3px; }
+  .cc-type { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 1px; }
+  .conn-detail {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-left: 3px solid var(--gold);
+    padding: 16px 20px; font-family: var(--mono); font-size: 11px;
+    color: var(--dim); line-height: 1.85; margin-top: 4px;
+    display: none; animation: slideDown 0.2s ease;
+  }
+  @keyframes slideDown { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+  .conn-detail.show { display: block; }
+  .conn-detail strong { color: var(--ink); }
+
+  /* Timeline builder sim */
+  .tl-builder {
+    background: var(--bg2); border: 1px solid var(--border2);
+    padding: 0; margin: 20px 0; overflow: hidden;
+  }
+  .tl-header {
+    background: var(--ink2); padding: 12px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .tl-header-title { font-family: var(--mono); font-size: 11px; color: var(--gold3); letter-spacing: 2px; }
+  .tl-header-meta  { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+
+  .tl-events { padding: 0; }
+  .tl-event {
+    display: flex; align-items: flex-start; gap: 16px;
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+    cursor: pointer; transition: background 0.15s; position: relative;
+  }
+  .tl-event:last-child { border-bottom: none; }
+  .tl-event:hover { background: rgba(184,134,11,0.04); }
+  .tl-event.pinned { background: rgba(184,134,11,0.06); border-left: 3px solid var(--gold); }
+  .tl-event.pinned::before { content: '📌'; position: absolute; right: 16px; top: 14px; font-size: 12px; }
+
+  .te-time { font-family: var(--mono); font-size: 10px; color: var(--muted); min-width: 90px; padding-top: 2px; white-space: nowrap; }
+  .te-icon { font-size: 1rem; min-width: 20px; }
+  .te-content { flex: 1; }
+  .te-title { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--ink); margin-bottom: 3px; }
+  .te-detail { font-family: var(--mono); font-size: 10px; color: var(--muted); line-height: 1.5; }
+  .te-pin-btn {
+    font-family: var(--mono); font-size: 9px; padding: 3px 8px; border: 1px solid var(--border);
+    background: none; cursor: pointer; color: var(--muted); transition: all 0.15s; flex-shrink: 0;
+  }
+  .te-pin-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .te-pin-btn.pinned { border-color: var(--gold); color: var(--gold); background: rgba(184,134,11,0.08); }
+
+  /* Note boxes */
+  .note {
+    border-left: 3px solid var(--gold); background: rgba(184,134,11,0.06);
+    padding: 13px 18px; margin: 16px 0; font-family: var(--mono);
+    font-size: 12px; line-height: 1.7; color: var(--dim);
+  }
+  .note.sage  { border-left-color: var(--sage);  background: rgba(58,102,69,0.06); }
+  .note.rust  { border-left-color: var(--rust);  background: rgba(139,58,42,0.06); }
+  .note.blue  { border-left-color: var(--blue);  background: rgba(42,74,122,0.06); }
+  .note strong { color: var(--ink); }
+  .note.sage strong  { color: var(--sage2); }
+  .note.rust strong  { color: var(--rust); }
+  .note.blue strong  { color: var(--blue2); }
+
+  /* Code blocks */
+  .codeblock {
+    background: var(--ink2); border: 1px solid var(--border2);
+    border-left: 3px solid var(--gold2); font-family: var(--mono);
+    font-size: 12px; line-height: 1.85; overflow-x: auto; padding: 18px 22px; margin: 16px 0;
+  }
+  .ck { color: var(--gold3); } .cv { color: #8dcc7a; } .cs { color: #9ecbff; }
+  .cc { color: #3d5040; } .cn { color: #e8c46a; } .co { color: #6a7a8a; }
+  .cr { color: #f08080; }
+
+  /* Two-col */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+  @media(max-width:640px){ .two-col { grid-template-columns: 1fr; } }
+  .mini { background: white; border: 1px solid var(--border); padding: 18px 20px; }
+  .ml { font-family: var(--mono); font-size: 10px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
+  .mv { font-family: var(--mono); font-size: 12px; color: var(--dim); line-height: 1.75; }
+  .mv .g { color: var(--sage); } .mv .y { color: var(--gold); }
+  .mv .r { color: var(--rust); } .mv .b { color: var(--blue); }
+
+  /* Comparison table */
+  .ctable { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; margin: 20px 0; }
+  .ctable th { background: var(--ink); color: var(--bg); padding: 11px 16px; text-align: left; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; border: 1px solid var(--ink); }
+  .ctable td { padding: 11px 16px; border: 1px solid var(--border); color: var(--dim); vertical-align: top; line-height: 1.6; }
+  .ctable tr:hover td { background: var(--bg2); }
+  .ctable td.lbl { color: var(--ink); font-weight: 600; }
+  .ctable td.y { color: var(--gold); } .ctable td.g { color: var(--sage); } .ctable td.r { color: var(--rust); }
+
+  /* ── QUIZ ── */
+  .quiz {
+    background: white; border: 1px solid var(--border);
+    padding: 40px 36px; margin-top: 56px; position: relative;
+    box-shadow: 4px 4px 0 var(--s1);
+  }
+  .quiz::before {
+    content: 'KNOWLEDGE CHECK';
+    position: absolute; top: 0; left: 0;
+    background: var(--ink); color: var(--bg);
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    padding: 6px 20px; letter-spacing: 3px;
+  }
+
+  .quiz-title { font-family: var(--serif); font-size: 1.5rem; font-weight: 700; color: var(--ink); margin-bottom: 32px; padding-top: 16px; }
+
+  .qb { margin-bottom: 36px; padding-bottom: 36px; border-bottom: 1px solid var(--border); }
+  .qb:last-of-type { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .q-n { font-family: var(--mono); font-size: 10px; color: var(--gold); letter-spacing: 2px; margin-bottom: 8px; }
+  .q-t { font-size: 1rem; font-weight: 600; color: var(--ink); margin-bottom: 16px; line-height: 1.55; }
+
+  .opts { display: flex; flex-direction: column; gap: 9px; }
+  .opt {
+    display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px;
+    border: 1px solid var(--border); background: var(--bg);
+    color: var(--dim); font-family: var(--mono); font-size: 12px;
+    cursor: pointer; transition: all 0.15s; text-align: left; width: 100%; line-height: 1.55;
+  }
+  .opt:hover:not(.locked) { border-color: var(--gold); color: var(--ink); background: rgba(184,134,11,0.04); }
+  .opt .ol { color: var(--gold); font-weight: 700; min-width: 16px; }
+  .opt.correct  { border-color: var(--sage);  background: rgba(58,102,69,0.08);  color: var(--sage2); }
+  .opt.wrong    { border-color: var(--rust);   background: rgba(139,58,42,0.08);  color: var(--rust); }
+  .opt.revealc  { border-color: var(--sage);  background: rgba(58,102,69,0.04);  color: var(--sage); opacity: 0.7; }
+
+  .exp {
+    display: none; margin-top: 12px; padding: 13px 16px;
+    background: rgba(58,102,69,0.06); border: 1px solid rgba(58,102,69,0.2);
+    font-family: var(--mono); font-size: 11px; color: var(--dim); line-height: 1.8;
+  }
+  .exp.show { display: block; }
+  .exp strong { color: var(--sage2); }
+
+  .scorebox { display: none; margin-top: 28px; padding: 28px; background: var(--bg2); border: 1px solid var(--border2); text-align: center; }
+  .scorebox.show { display: block; }
+  .score-big { font-family: var(--serif); font-size: 4rem; font-weight: 900; color: var(--gold); }
+  .score-sub { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 2px; margin: 4px 0 12px; }
+  .score-msg { font-family: var(--serif); font-style: italic; font-size: 1.1rem; color: var(--dim); }
+  .btn-reset {
+    margin-top: 18px; background: none; border: 1px solid var(--ink);
+    color: var(--ink); font-family: var(--mono); font-size: 11px;
+    padding: 10px 28px; cursor: pointer; letter-spacing: 2px; text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  .btn-reset:hover { background: var(--ink); color: var(--bg); }
+
+  /* Footer */
+  footer { margin-top: 80px; padding: 32px 0; border-top: 2px solid var(--ink); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+  .ft { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+  .nav-btns { display: flex; gap: 10px; }
+  .nbtn { font-family: var(--mono); font-size: 11px; padding: 10px 20px; border: 1px solid var(--border2); color: var(--muted); background: none; cursor: pointer; letter-spacing: 1px; text-decoration: none; transition: all 0.2s; }
+  .nbtn:hover { border-color: var(--gold); color: var(--gold); }
+  .nbtn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 600; }
+  .nbtn.primary:hover { background: var(--ink2); transform: translateX(2px); }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg2); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── HEADER ── -->
+  <header>
+    <div class="doc-meta">
+      <div class="doc-ref">ECSA Study Guide · Ref: <span>ELASTIC-SEC-T06</span> · Rev 2.0</div>
+      <div class="classification">Exam Prep</div>
+    </div>
+
+    <div class="topic-label">Topic 6 of 8</div>
+    <h1>Cases &<br><em>Incident Management</em></h1>
+    <p class="sub-headline">The complete workflow for documenting, collaborating on, and resolving security incidents</p>
+
+    <div class="stat-row">
+      <div class="stat-item"><div class="si-val">4</div><div class="si-lbl">Case Statuses</div></div>
+      <div class="stat-item"><div class="si-val">5</div><div class="si-lbl">Connector Types</div></div>
+      <div class="stat-item"><div class="si-val">3</div><div class="si-lbl">Attachment Types</div></div>
+      <div class="stat-item"><div class="si-val">7</div><div class="si-lbl">Quiz Questions</div></div>
+    </div>
+
+    <nav class="topic-nav">
+      <a href="#" class="done">01 · Fundamentals</a>
+      <a href="#" class="done">02 · Data Ingestion</a>
+      <a href="#" class="done">03 · Detection Engine</a>
+      <a href="#" class="done">04 · Alert Triage</a>
+      <a href="#" class="skip">05 · Threat Hunting*</a>
+      <a href="#" class="active">06 · Cases</a>
+      <a href="#">07 · RBAC & Admin</a>
+      <a href="#">08 · Visualization</a>
+    </nav>
+    <p style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:16px;">* Topic 5 was skipped — come back to it anytime</p>
+  </header>
+
+  <div class="prog-row">
+    <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+    <span class="prog-txt" id="progTxt">0 / 7 answered</span>
+  </div>
+
+  <!-- ═══════════════════════════
+       SECTION 1 — WHAT ARE CASES
+  ════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">06.01</span><h2 class="sec-title">What Are Cases?</h2></div>
+    <div class="card">
+      <p><strong>Cases</strong> in Elastic Security are the incident management layer — a structured workspace for documenting security incidents, tracking investigation progress, collaborating with teammates, and integrating with external ticketing systems. Cases live at <strong>Security → Cases</strong>.</p>
+      <p>Think of a Case as the official incident record that ties together: the triggering alerts, investigation timelines, analyst notes, evidence, assigned owners, and final resolution — all in one place. Cases are scoped to a Kibana Space, so each team maintains their own incident records.</p>
+
+      <div class="note">
+        <p><strong>Cases vs. Alerts vs. Timelines:</strong> These three are related but distinct:<br>
+        &nbsp;&nbsp;• <strong>Alert</strong> — a single detection event generated by a rule<br>
+        &nbsp;&nbsp;• <strong>Timeline</strong> — an investigation notebook where you query and organize events<br>
+        &nbsp;&nbsp;• <strong>Case</strong> — the formal incident record that <em>contains</em> alerts, timelines, and comments</p>
+      </div>
+
+      <!-- Case anatomy mockup -->
+      <div class="case-anatomy">
+        <div class="ca-header">
+          <span class="ca-title">CASE RECORD — ANATOMY VIEW</span>
+          <span class="ca-id">CASE-2024-0042</span>
+        </div>
+        <div class="ca-body">
+          <div class="ca-col">
+            <h4>Case Metadata</h4>
+            <div class="ca-field"><span class="caf-key">Title</span><span class="caf-val">Suspected Ransomware on WIN-DC-01</span></div>
+            <div class="ca-field"><span class="caf-key">Status</span><span class="caf-val gold">In Progress</span></div>
+            <div class="ca-field"><span class="caf-key">Severity</span><span class="caf-val rust">Critical</span></div>
+            <div class="ca-field"><span class="caf-key">Owner</span><span class="caf-val">SOC Team</span></div>
+            <div class="ca-field"><span class="caf-key">Assignee</span><span class="caf-val blue">analyst.chen</span></div>
+            <div class="ca-field"><span class="caf-key">Tags</span><span class="caf-val sage">ransomware, dc, priority-1</span></div>
+            <div class="ca-field"><span class="caf-key">Created</span><span class="caf-val">2024-03-15 08:47 UTC</span></div>
+            <div class="ca-field"><span class="caf-key">Connector</span><span class="caf-val blue">Jira · INC-4421</span></div>
+          </div>
+          <div class="ca-col">
+            <h4>Attachments</h4>
+            <div class="ca-field"><span class="caf-key">Alert</span><span class="caf-val">🚨 Credential Dump via LSASS (Critical)</span></div>
+            <div class="ca-field"><span class="caf-key">Alert</span><span class="caf-val">🚨 Suspicious PS Encoded Command (High)</span></div>
+            <div class="ca-field"><span class="caf-key">Timeline</span><span class="caf-val">📋 DC-01 Incident Timeline — 45 events</span></div>
+            <div class="ca-field"><span class="caf-key">Timeline</span><span class="caf-val">📋 Lateral Movement Correlation</span></div>
+            <div class="ca-field"><span class="caf-key">Comments</span><span class="caf-val">4 analyst comments with evidence</span></div>
+            <div class="ca-field"><span class="caf-key">Files</span><span class="caf-val">memory_dump.zip, network_pcap.pcap</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════
+       SECTION 2 — CASE STATUSES
+  ════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">06.02</span><h2 class="sec-title">Case Statuses & Lifecycle</h2></div>
+    <div class="card">
+      <p>Cases progress through four statuses during their lifecycle. Unlike alert statuses, case statuses are manually managed by analysts and reflect the overall investigation state — not individual alert disposition.</p>
+
+      <div class="status-flow">
+        <div class="sf-step">
+          <div class="ss-name">Open</div>
+          <div class="ss-desc">New case created.<br>Investigation not started.</div>
+        </div>
+        <div class="sf-step">
+          <div class="ss-name">In Progress</div>
+          <div class="ss-desc">Actively being investigated by assigned analyst.</div>
+        </div>
+        <div class="sf-step">
+          <div class="ss-name">Closed</div>
+          <div class="ss-desc">Investigation complete. Incident resolved.</div>
+        </div>
+      </div>
+
+      <table class="ctable">
+        <thead>
+          <tr><th>Status</th><th>Description</th><th>Who Updates</th><th>Typical Duration</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="lbl">Open</td>
+            <td>Default state on creation. Case needs attention and assignment.</td>
+            <td>System / Creator</td>
+            <td class="y">Minutes–hours (should be picked up quickly)</td>
+          </tr>
+          <tr>
+            <td class="lbl">In Progress</td>
+            <td>Active investigation. Analyst is gathering evidence, building timelines.</td>
+            <td>Assigned Analyst</td>
+            <td class="y">Hours–days (proportional to incident complexity)</td>
+          </tr>
+          <tr>
+            <td class="lbl">Closed</td>
+            <td>All investigation tasks complete. Incident contained and documented.</td>
+            <td>Analyst / Lead</td>
+            <td class="g">Permanent (can be re-opened)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="note sage">
+        <p><strong>Case severity vs. Alert severity:</strong> Case severity is <em>independently set</em> from the alert severity. A case can be created from a High-severity alert but classified as Critical at the case level if the investigation reveals broader impact. The four case severity levels mirror alerts: <strong>Critical, High, Medium, Low</strong>.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════
+       SECTION 3 — CREATING CASES
+  ════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">06.03</span><h2 class="sec-title">Creating & Managing Cases</h2></div>
+    <div class="card">
+      <p>Cases can be created from three starting points. Understanding each entry point is important for exam scenarios about workflow.</p>
+
+      <div class="codeblock">
+<span class="cc">// Three ways to create a Case in Elastic Security</span>
+
+<span class="ck">1. FROM AN ALERT</span>
+   Security → Alerts → [select alert] → Actions → <span class="cv">"Add to existing case"</span> or <span class="cv">"Create new case"</span>
+   <span class="cc">// Most common path. Alert is automatically attached.</span>
+
+<span class="ck">2. FROM A TIMELINE</span>
+   Security → Timelines → [open timeline] → Attach to Case
+   <span class="cc">// Useful when investigation started in Timeline before case created.</span>
+
+<span class="ck">3. DIRECTLY</span>
+   Security → Cases → <span class="cv">Create case</span>
+   <span class="cc">// Used for proactive tracking or when starting from external report.</span>
+   <span class="cc">// Attach alerts and timelines afterwards.</span>
+      </div>
+
+      <p>When creating a case, the following fields are configured:</p>
+
+      <div class="two-col">
+        <div class="mini">
+          <div class="ml">Required Fields</div>
+          <div class="mv">
+            <span class="y">Title</span> — descriptive case name<br>
+            <span class="y">Severity</span> — Critical/High/Medium/Low<br>
+            <span class="y">Owner</span> — Kibana Space that owns the case<br><br>
+            <span class="g">Optional but recommended:</span><br>
+            Description, Assignees, Tags,<br>
+            External Connector mapping
+          </div>
+        </div>
+        <div class="mini">
+          <div class="ml">Post-Creation Actions</div>
+          <div class="mv">
+            <span class="y">Add alerts</span> — from Alerts page or flyout<br>
+            <span class="y">Add timelines</span> — from Timelines page<br>
+            <span class="y">Add comments</span> — analyst notes with markdown<br>
+            <span class="y">Upload files</span> — evidence attachments<br>
+            <span class="y">Sync to connector</span> — push to Jira/SNOW<br>
+            <span class="y">Assign/reassign</span> — change analyst owner
+          </div>
+        </div>
+      </div>
+
+      <div class="note rust">
+        <p><strong>Exam critical:</strong> You can add the <em>same alert to multiple cases</em>. You can add <em>multiple alerts to one case</em>. Alerts are not consumed or removed when added to a case — the original alert remains in the Alerts page. The case stores a <em>reference</em> to the alert, not a copy.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════
+       SECTION 4 — TIMELINES
+  ════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">06.04</span><h2 class="sec-title">Timelines — Investigation Notebooks</h2></div>
+    <div class="card">
+      <p>A <strong>Timeline</strong> is Elastic Security's investigation notebook. It provides a chronological workspace where analysts query raw event data, pin key events, write notes, and document the sequence of events in an incident. Timelines are attached to cases to become part of the formal incident record.</p>
+
+      <!-- Interactive timeline sim -->
+      <div class="tl-builder">
+        <div class="tl-header">
+          <span class="tl-header-title">Timeline: "WIN-DC-01 Incident — 2024-03-15"</span>
+          <span class="tl-header-meta">Click PIN to add events to your investigation</span>
+        </div>
+        <div class="tl-events">
+          <div class="tl-event" id="te1">
+            <div class="te-time">08:31:04 UTC</div>
+            <div class="te-icon">📥</div>
+            <div class="te-content">
+              <div class="te-title">WINWORD.EXE spawned cmd.exe</div>
+              <div class="te-detail">host: WIN-DC-01 · user: administrator · process.pid: 4421</div>
+            </div>
+            <button class="te-pin-btn" id="pb1" onclick="pinEvent('te1','pb1')">PIN</button>
+          </div>
+          <div class="tl-event" id="te2">
+            <div class="te-time">08:31:07 UTC</div>
+            <div class="te-icon">⚡</div>
+            <div class="te-content">
+              <div class="te-title">cmd.exe → powershell.exe -EncodedCommand JABz...</div>
+              <div class="te-detail">host: WIN-DC-01 · user: administrator · encoded payload detected</div>
+            </div>
+            <button class="te-pin-btn" id="pb2" onclick="pinEvent('te2','pb2')">PIN</button>
+          </div>
+          <div class="tl-event" id="te3">
+            <div class="te-time">08:31:09 UTC</div>
+            <div class="te-icon">🔑</div>
+            <div class="te-content">
+              <div class="te-title">mimikatz.exe process start → LSASS memory access</div>
+              <div class="te-detail">host: WIN-DC-01 · user: administrator · ALERT FIRED (Critical)</div>
+            </div>
+            <button class="te-pin-btn" id="pb3" onclick="pinEvent('te3','pb3')">PIN</button>
+          </div>
+          <div class="tl-event" id="te4">
+            <div class="te-time">08:31:22 UTC</div>
+            <div class="te-icon">🌐</div>
+            <div class="te-content">
+              <div class="te-title">Outbound connection to 185.234.x.x:4444</div>
+              <div class="te-detail">host: WIN-DC-01 · dest.port: 4444 · bytes_out: 48,291</div>
+            </div>
+            <button class="te-pin-btn" id="pb4" onclick="pinEvent('te4','pb4')">PIN</button>
+          </div>
+          <div class="tl-event" id="te5">
+            <div class="te-time">08:42:11 UTC</div>
+            <div class="te-icon">🔐</div>
+            <div class="te-content">
+              <div class="te-title">Successful RDP login to FINANCE-PC-03 from WIN-DC-01</div>
+              <div class="te-detail">source.ip: 10.10.1.5 (WIN-DC-01) · user: administrator · lateral movement</div>
+            </div>
+            <button class="te-pin-btn" id="pb5" onclick="pinEvent('te5','pb5')">PIN</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="two-col" style="margin-top:20px">
+        <div class="mini">
+          <div class="ml">Timeline Features</div>
+          <div class="mv">
+            <span class="y">Query bar</span> — KQL/EQL search across all log indices<br>
+            <span class="y">Pin events</span> — save important events to the timeline<br>
+            <span class="y">Notes</span> — add markdown analyst notes to pinned events<br>
+            <span class="y">Filter</span> — filter by data view, time range, field<br>
+            <span class="y">Templates</span> — pre-built timeline layouts for common investigations
+          </div>
+        </div>
+        <div class="mini">
+          <div class="ml">Timeline Templates</div>
+          <div class="mv">
+            Elastic ships pre-built templates for:<br>
+            <span class="g">• Endpoint investigation</span><br>
+            <span class="g">• Network investigation</span><br>
+            <span class="g">• Authentication investigation</span><br>
+            <span class="g">• Cloud investigation</span><br><br>
+            Templates pre-configure columns, filters, and data views for each scenario.
+          </div>
+        </div>
+      </div>
+
+      <div class="note">
+        <p><strong>Exam tip:</strong> Timelines search raw event data in the underlying log indices (<code style="color:var(--gold)">logs-*</code>, <code style="color:var(--gold)">filebeat-*</code>, etc.) — not just the alerts index. This means analysts can find events in a Timeline that never triggered any detection rule, which is critical for building complete incident timelines.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════
+       SECTION 5 — CONNECTORS
+  ════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">06.05</span><h2 class="sec-title">External Connectors & Integrations</h2></div>
+    <div class="card">
+      <p>Cases can be <strong>connected to external ticketing and notification systems</strong> via Connectors. When a case has an active connector, changes in Elastic Security can be pushed (synced) to the external system automatically, and external ticket IDs are displayed in the case record.</p>
+      <p>Connectors are configured at <strong>Stack Management → Connectors</strong> and then selected when creating or editing a case.</p>
+
+      <div class="connector-grid">
+        <div class="conn-card" onclick="showConn(this,'jira')">
+          <div class="cc-logo">🔷</div>
+          <div class="cc-name">Jira</div>
+          <div class="cc-type">TICKETING</div>
+        </div>
+        <div class="conn-card" onclick="showConn(this,'snow')">
+          <div class="cc-logo">❄️</div>
+          <div class="cc-name">ServiceNow</div>
+          <div class="cc-type">ITSM / ITOM</div>
+        </div>
+        <div class="conn-card" onclick="showConn(this,'ibm')">
+          <div class="cc-logo">🛡️</div>
+          <div class="cc-name">IBM Resilient</div>
+          <div class="cc-type">SOAR</div>
+        </div>
+        <div class="conn-card" onclick="showConn(this,'swimlane')">
+          <div class="cc-logo">🌊</div>
+          <div class="cc-name">Swimlane</div>
+          <div class="cc-type">SOAR</div>
+        </div>
+        <div class="conn-card" onclick="showConn(this,'webhook')">
+          <div class="cc-logo">🔗</div>
+          <div class="cc-name">Webhook</div>
+          <div class="cc-type">GENERIC</div>
+        </div>
+      </div>
+
+      <div class="conn-detail" id="conn-detail">
+        <span style="color:var(--muted)">← Click a connector above to see exam notes</span>
+      </div>
+
+      <div class="codeblock" style="margin-top:20px">
+<span class="cc">// Connector workflow — how it works</span>
+
+<span class="ck">1. Configure connector</span> → Stack Management → Connectors → Create connector
+   <span class="cc">// Enter API credentials, URL, project/queue settings</span>
+
+<span class="ck">2. Assign to case</span> → Case Settings → External incident management → Select connector
+   <span class="cc">// Maps Elastic case fields to external ticket fields</span>
+
+<span class="ck">3. Push / sync</span> → "Push as new incident" button in case
+   <span class="cc">// Creates or updates the external ticket</span>
+   <span class="cc">// External ticket ID stored in case as reference</span>
+
+<span class="ck">Field mapping example (Jira)</span>:
+   <span class="cv">case.title</span>      → <span class="cs">Jira Issue Summary</span>
+   <span class="cv">case.description</span> → <span class="cs">Jira Issue Description</span>
+   <span class="cv">case.severity</span>   → <span class="cs">Jira Priority</span>
+   <span class="cv">case.tags</span>       → <span class="cs">Jira Labels</span>
+      </div>
+
+      <div class="note blue">
+        <p><strong>Important:</strong> Connectors sync <em>from</em> Elastic Security <em>to</em> the external system (one-way push by default). Status changes in Jira/ServiceNow are NOT automatically reflected back in Elastic Security cases unless you configure bidirectional sync through their respective API workflows. This is a common exam distractor.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════
+       SECTION 6 — OBSERVABLES & TAGS
+  ════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">06.06</span><h2 class="sec-title">Observables, Tags & Case Management</h2></div>
+    <div class="card">
+      <p>Cases support structured enrichment through <strong>Observables</strong> (IOCs attached to the case record) and <strong>Tags</strong> (free-form labels for organizing and filtering cases).</p>
+
+      <table class="ctable">
+        <thead><tr><th>Feature</th><th>Purpose</th><th>Examples</th><th>Searchable</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="lbl">Observables</td>
+            <td>Structured IOC fields attached to a case</td>
+            <td class="y">IP address, domain, hash, URL, email</td>
+            <td class="g">Yes — filter cases by observable value</td>
+          </tr>
+          <tr>
+            <td class="lbl">Tags</td>
+            <td>Free-form labels for classification</td>
+            <td class="y">ransomware, IR-team, priority-1, phishing</td>
+            <td class="g">Yes — filter by tag</td>
+          </tr>
+          <tr>
+            <td class="lbl">Comments</td>
+            <td>Analyst notes with full markdown support</td>
+            <td class="y">Investigation notes, evidence description, timeline summary</td>
+            <td class="g">Text search</td>
+          </tr>
+          <tr>
+            <td class="lbl">Assignees</td>
+            <td>Kibana users assigned to the case</td>
+            <td class="y">Multiple analysts can be assigned</td>
+            <td class="g">Filter by assignee</td>
+          </tr>
+          <tr>
+            <td class="lbl">Attachments</td>
+            <td>File uploads (evidence, logs, reports)</td>
+            <td class="y">.pcap, .csv, screenshots, memory dumps</td>
+            <td>By filename</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="codeblock">
+<span class="cc">// Case search & filter — Cases page</span>
+
+<span class="cc">// Filter open Critical cases assigned to you</span>
+<span class="ck">Status</span>: <span class="cv">Open</span>  |  <span class="ck">Severity</span>: <span class="cv">Critical</span>  |  <span class="ck">Assignee</span>: <span class="cv">analyst.chen</span>
+
+<span class="cc">// Filter by tag for sprint/campaign tracking</span>
+<span class="ck">Tags</span>: <span class="cv">incident-march-2024</span>
+
+<span class="cc">// Filter by observable to find all cases involving a known C2 IP</span>
+<span class="ck">Observable</span>: <span class="cs">"185.234.x.x"</span>  <span class="cc">// Finds all cases where this IOC was recorded</span>
+
+<span class="cc">// Cases page metrics (visible at top)</span>
+<span class="ck">Total cases</span>    · <span class="ck">Open</span>    · <span class="ck">In Progress</span>
+<span class="ck">Closed</span>         · <span class="ck">Avg resolution time</span>
+      </div>
+
+      <div class="note sage">
+        <p><strong>Exam tip:</strong> Cases are <strong>scoped to a Kibana Space</strong>. Cases created in the "SOC-Windows" space are not visible in the "SOC-Cloud" space. Analysts must be in the correct space to see, create, or update cases. Space scoping applies to all saved objects including timelines and detection rules.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ QUIZ ═══════════ -->
+  <div class="quiz">
+    <div class="quiz-title">Topic 6 — Knowledge Assessment</div>
+
+    <!-- Q1 -->
+    <div class="qb" id="q1">
+      <div class="q-n">QUESTION 01</div>
+      <div class="q-t">An analyst confirms a True Positive alert and wants to begin formal incident tracking. They need to attach two additional related alerts and a timeline to the same record. What should they create?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q1','A','C')"><span class="ol">A</span>A saved search in Discover with a shared filter for all related events</button>
+        <button class="opt" onclick="ans(this,'q1','B','C')"><span class="ol">B</span>A new detection rule with the combined IOCs as the query</button>
+        <button class="opt" onclick="ans(this,'q1','C','C')"><span class="ol">C</span>A Case in Security → Cases, then attach all alerts and the timeline to it</button>
+        <button class="opt" onclick="ans(this,'q1','D','C')"><span class="ol">D</span>An exception list shared across all three related rules</button>
+      </div>
+      <div class="exp" id="e-q1"><strong>Correct: Create a Case and attach the alerts and timelines.</strong> Cases are the formal incident management construct in Elastic Security. They aggregate multiple alerts, timelines, comments, and file evidence into a single trackable record. Saved searches and exception lists serve different purposes. This is the canonical workflow for TP incident tracking.</div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="qb" id="q2">
+      <div class="q-n">QUESTION 02</div>
+      <div class="q-t">What is the key difference between attaching a Timeline to a Case versus adding an Alert to a Case?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q2','A','D')"><span class="ol">A</span>Timelines are copied into the case; alerts remain in the Alerts queue only</button>
+        <button class="opt" onclick="ans(this,'q2','B','D')"><span class="ol">B</span>Alerts cannot be added to cases — only timelines can</button>
+        <button class="opt" onclick="ans(this,'q2','C','D')"><span class="ol">C</span>Adding a timeline to a case deletes it from Security → Timelines</button>
+        <button class="opt" onclick="ans(this,'q2','D','D')"><span class="ol">D</span>Both store references; the originals remain accessible in their respective pages</button>
+      </div>
+      <div class="exp" id="e-q2"><strong>Correct: Both store references — originals remain.</strong> When you attach an alert or timeline to a case, Elastic Security stores a <em>reference</em>, not a copy. The original alert remains in the Alerts page (and can be attached to multiple cases). The original timeline remains in Security → Timelines. Nothing is deleted or moved. This means one alert can appear in multiple cases if it's relevant to several incidents.</div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="qb" id="q3">
+      <div class="q-n">QUESTION 03</div>
+      <div class="q-t">A SOC manager wants to automatically create a Jira ticket every time a Critical case is created in Elastic Security. Which feature enables this integration?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q3','A','B')"><span class="ol">A</span>A detection rule action that sends an HTTP POST to the Jira API</button>
+        <button class="opt" onclick="ans(this,'q3','B','B')"><span class="ol">B</span>A Jira Connector configured in Stack Management and assigned to the case settings</button>
+        <button class="opt" onclick="ans(this,'q3','C','B')"><span class="ol">C</span>Fleet policy that pushes case metadata to Jira via Elastic Agent</button>
+        <button class="opt" onclick="ans(this,'q3','D','B')"><span class="ol">D</span>An ingest pipeline that routes Critical alerts directly to Jira</button>
+      </div>
+      <div class="exp" id="e-q3"><strong>Correct: Jira Connector in Stack Management.</strong> Connectors (Stack Management → Connectors) are the built-in integration mechanism for external systems. A Jira Connector stores the API credentials and project settings. Once configured and assigned to a case, analysts can push the case to Jira with one click. Detection rule actions can also use connectors for alert-level notifications, but case-level integration uses the Cases connector setting.</div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="qb" id="q4">
+      <div class="q-n">QUESTION 04</div>
+      <div class="q-t">An analyst updates a case status to "Closed" in Elastic Security after resolution. The case had a Jira connector configured. What happens to the linked Jira ticket?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q4','A','B')"><span class="ol">A</span>The Jira ticket is automatically closed to mirror the case status</button>
+        <button class="opt" onclick="ans(this,'q4','B','B')"><span class="ol">B</span>Nothing happens automatically — the analyst must manually push the update or the Jira ticket remains unchanged</button>
+        <button class="opt" onclick="ans(this,'q4','C','B')"><span class="ol">C</span>The Jira ticket is deleted because the case is closed</button>
+        <button class="opt" onclick="ans(this,'q4','D','B')"><span class="ol">D</span>Elastic Security pulls the latest Jira status and syncs it back to the case</button>
+      </div>
+      <div class="exp" id="e-q4"><strong>Correct: Nothing happens automatically.</strong> Connectors in Elastic Security Cases are <em>manually triggered</em> — you click "Push as new incident" or "Update incident" to sync. Status changes in the Elastic Security case do NOT automatically propagate to Jira (or vice versa). This is a common exam trap. Bidirectional real-time sync would require custom webhook automation outside of Elastic's built-in connector functionality.</div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="qb" id="q5">
+      <div class="q-n">QUESTION 05</div>
+      <div class="q-t">An analyst working in the "Cloud-SOC" Kibana Space tries to find a case that was created in the "Windows-SOC" space. What will they see?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q5','A','C')"><span class="ol">A</span>The case appears in both spaces because cases are cluster-wide</button>
+        <button class="opt" onclick="ans(this,'q5','B','C')"><span class="ol">B</span>The case is visible but read-only in other spaces</button>
+        <button class="opt" onclick="ans(this,'q5','C','C')"><span class="ol">C</span>The case is not visible — cases are scoped to the Kibana Space where they were created</button>
+        <button class="opt" onclick="ans(this,'q5','D','C')"><span class="ol">D</span>The case can be found by searching the .cases index in Discover</button>
+      </div>
+      <div class="exp" id="e-q5"><strong>Correct: Cases are space-scoped and not visible in other spaces.</strong> All Kibana saved objects — including cases, timelines, detection rules, and dashboards — are scoped to a specific Kibana Space. An analyst in "Cloud-SOC" space cannot see cases created in "Windows-SOC" space. They would need to switch spaces (if they have access) to view those cases. This space isolation is intentional for multi-team SOC environments.</div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="qb" id="q6">
+      <div class="q-n">QUESTION 06</div>
+      <div class="q-t">Which case feature allows a security analyst to attach structured IOC data (such as a C2 IP address or malware hash) directly to a case record for future filtering and correlation?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q6','A','B')"><span class="ol">A</span>Case Tags</button>
+        <button class="opt" onclick="ans(this,'q6','B','B')"><span class="ol">B</span>Case Observables</button>
+        <button class="opt" onclick="ans(this,'q6','C','B')"><span class="ol">C</span>Case Comments</button>
+        <button class="opt" onclick="ans(this,'q6','D','B')"><span class="ol">D</span>Timeline pinned events</button>
+      </div>
+      <div class="exp" id="e-q6"><strong>Correct: Case Observables.</strong> Observables are structured IOC fields in a case that accept typed values like IP addresses, domain names, file hashes, URLs, and email addresses. They're distinct from tags (which are free-form labels) and comments (which are unstructured text). Observables enable searching across all cases that share a specific IOC — e.g., "show me all cases where 185.234.x.x was observed" — which is invaluable for campaign correlation.</div>
+    </div>
+
+    <!-- Q7 -->
+    <div class="qb" id="q7">
+      <div class="q-n">QUESTION 07</div>
+      <div class="q-t">What is the primary function of a Timeline in Elastic Security, and how does it differ from the Alerts page?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q7','A','C')"><span class="ol">A</span>Timelines show only ML anomaly alerts; the Alerts page shows rule-based alerts</button>
+        <button class="opt" onclick="ans(this,'q7','B','C')"><span class="ol">B</span>Timelines replace the Alerts page for high-severity incidents only</button>
+        <button class="opt" onclick="ans(this,'q7','C','C')"><span class="ol">C</span>Timelines are investigation notebooks that query raw event data across all log indices; the Alerts page shows only rule-triggered alert documents</button>
+        <button class="opt" onclick="ans(this,'q7','D','C')"><span class="ol">D</span>Timelines automatically run MITRE ATT&CK correlation; the Alerts page does not</button>
+      </div>
+      <div class="exp" id="e-q7"><strong>Correct: Timelines query raw event data; Alerts page shows rule-triggered alert documents.</strong> The Alerts page searches the <code style="color:var(--sage2)">.alerts-security.alerts-*</code> index — only events that triggered a detection rule. Timelines search the underlying raw event indices (<code style="color:var(--sage2)">logs-*</code>, <code style="color:var(--sage2)">filebeat-*</code>, etc.) using KQL or EQL. This means analysts can build complete incident narratives in Timelines using raw events — including events that never triggered any rule — providing full investigation coverage beyond just what was alerted.</div>
+    </div>
+
+    <div class="scorebox" id="scorebox">
+      <div class="score-big" id="score-num">0/7</div>
+      <div class="score-sub">QUESTIONS CORRECT</div>
+      <div class="score-msg" id="score-msg"></div>
+      <button class="btn-reset" onclick="resetQuiz()">↺ RETRY</button>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="ft">ECSA · TOPIC 06 · CASES & INCIDENT MANAGEMENT · Elastic Security</div>
+    <div class="nav-btns">
+      <a href="#" class="nbtn">← Topic 4</a>
+      <button class="nbtn primary" onclick="alert('Topic 7: RBAC, Spaces & Security Administration — coming next!')">Topic 7: RBAC & Admin →</button>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  // ── Timeline pin sim ──
+  function pinEvent(rowId, btnId) {
+    const row = document.getElementById(rowId);
+    const btn = document.getElementById(btnId);
+    row.classList.toggle('pinned');
+    btn.classList.toggle('pinned');
+    btn.textContent = btn.classList.contains('pinned') ? 'UNPIN' : 'PIN';
+  }
+
+  // ── Connector details ──
+  const connData = {
+    jira: {
+      title: 'Jira Connector',
+      body: `<strong>Use case:</strong> Connect to Jira Cloud or Jira Server to push cases as Jira Issues.
+
+<strong>Configuration:</strong>
+  • Jira URL, username, API token (or password)
+  • Project key (e.g., "SOC", "INC")
+  • Issue type (Bug, Story, Task, Incident)
+
+<strong>Field mapping:</strong>
+  case.title       → Jira Summary
+  case.description → Jira Description
+  case.severity    → Jira Priority
+  case.tags        → Jira Labels
+
+<strong>Exam tip:</strong> Most commonly tested connector. Know that pushing is manual — not automatic on case creation.`
+    },
+    snow: {
+      title: 'ServiceNow Connector (ITSM / ITOM / SecOps)',
+      body: `<strong>Use case:</strong> Push cases as ServiceNow Incidents, Problems, or Security Incidents.
+
+<strong>Three ServiceNow connector types:</strong>
+  • ServiceNow ITSM  — Incident Management
+  • ServiceNow ITOM  — Event Management
+  • ServiceNow SecOps — Security Operations (SIR module)
+
+<strong>Configuration:</strong>
+  • ServiceNow instance URL
+  • Username and password (or OAuth)
+
+<strong>Exam tip:</strong> ServiceNow SecOps maps most directly to security incident workflows. Know that there are THREE distinct ServiceNow connector types — this appears on the exam.`
+    },
+    ibm: {
+      title: 'IBM Resilient (SOAR)',
+      body: `<strong>Use case:</strong> Push cases to IBM Resilient for SOAR playbook orchestration.
+
+<strong>Configuration:</strong>
+  • IBM Resilient URL
+  • API key ID and API key secret
+  • Organization ID
+
+<strong>What gets pushed:</strong>
+  Case title, description, severity → Resilient incident
+  Tags → Resilient incident types
+
+<strong>Exam tip:</strong> IBM Resilient is a SOAR (Security Orchestration, Automation, and Response) platform. If a scenario mentions automating incident response playbooks, IBM Resilient or Swimlane are the relevant connectors.`
+    },
+    swimlane: {
+      title: 'Swimlane Connector (SOAR)',
+      body: `<strong>Use case:</strong> Push cases to Swimlane SOAR for automated incident response workflows.
+
+<strong>Configuration:</strong>
+  • Swimlane URL
+  • API token
+  • Application ID (the Swimlane app to push to)
+
+<strong>Exam tip:</strong> Like IBM Resilient, Swimlane is a SOAR platform. Both enable automated playbook execution from Elastic case data. The exam may ask which connector type to use for "automated response workflows" — the answer is a SOAR connector (IBM Resilient or Swimlane), not Jira or ServiceNow.`
+    },
+    webhook: {
+      title: 'Webhook Connector (Generic)',
+      body: `<strong>Use case:</strong> Send case data to any HTTP endpoint — Slack, Teams, PagerDuty, custom APIs, etc.
+
+<strong>Configuration:</strong>
+  • URL (HTTP/HTTPS endpoint)
+  • Method (POST, PUT)
+  • Authentication (basic, token, none)
+  • Headers and body template (with Mustache templating)
+
+<strong>Example uses:</strong>
+  • Post case creation to Slack channel
+  • Trigger PagerDuty incident on Critical case
+  • Call custom SOAR API not natively supported
+
+<strong>Exam tip:</strong> Webhook is the "escape hatch" connector — use it when no native connector exists for your target system.`
+    }
+  };
+
+  let currentConn = null;
+
+  function showConn(el, key) {
+    const detail = document.getElementById('conn-detail');
+    if (currentConn === key) {
+      detail.classList.remove('show');
+      el.classList.remove('selected');
+      currentConn = null;
+      return;
+    }
+    document.querySelectorAll('.conn-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    currentConn = key;
+    const d = connData[key];
+    detail.innerHTML = `<strong style="color:var(--ink);font-size:13px">${d.title}</strong><br><br><pre style="font-family:var(--mono);font-size:11px;white-space:pre-wrap;line-height:1.8;color:var(--dim)">${d.body}</pre>`;
+    detail.classList.add('show');
+  }
+
+  // ── Quiz ──
+  const correct = { q1:'C', q2:'D', q3:'B', q4:'B', q5:'C', q6:'B', q7:'C' };
+  const answered = {};
+  let score = 0;
+
+  function ans(btn, qId, chosen) {
+    if (answered[qId]) return;
+    answered[qId] = true;
+    const isRight = chosen === correct[qId];
+    if (isRight) score++;
+    const block = document.getElementById(qId);
+    const opts = block.querySelectorAll('.opt');
+    const letters = ['A','B','C','D'];
+    opts.forEach((o, i) => {
+      o.classList.add('locked'); o.style.cursor = 'default';
+      if (letters[i] === correct[qId]) o.classList.add(isRight && o === btn ? 'correct' : 'revealc');
+    });
+    if (!isRight) { btn.classList.remove('revealc'); btn.classList.add('wrong'); }
+    else { btn.classList.remove('revealc'); btn.classList.add('correct'); }
+    document.getElementById('e-' + qId).classList.add('show');
+    updateProgress();
+    if (Object.keys(answered).length === 7) setTimeout(showScore, 500);
+  }
+
+  function updateProgress() {
+    const n = Object.keys(answered).length;
+    document.getElementById('progFill').style.width = (n / 7 * 100) + '%';
+    document.getElementById('progTxt').textContent = n + ' / 7 answered';
+  }
+
+  function showScore() {
+    document.getElementById('score-num').textContent = score + '/7';
+    const p = score / 7 * 100;
+    document.getElementById('score-msg').textContent =
+      p === 100 ? 'Flawless. You have mastered incident management in Elastic Security.' :
+      p >= 85   ? 'Excellent. You understand the Cases workflow thoroughly.' :
+      p >= 57   ? 'Good effort. Review connector sync behavior and space scoping.' :
+                  'Keep studying. Focus on Cases vs Timelines vs Alerts distinctions, and connector types.';
+    document.getElementById('scorebox').classList.add('show');
+  }
+
+  function resetQuiz() {
+    Object.keys(answered).forEach(k => delete answered[k]);
+    score = 0;
+    document.getElementById('scorebox').classList.remove('show');
+    document.querySelectorAll('.opt').forEach(o => { o.classList.remove('correct','wrong','revealc','locked'); o.style.cursor = ''; });
+    document.querySelectorAll('.exp').forEach(e => e.classList.remove('show'));
+    document.getElementById('progFill').style.width = '0%';
+    document.getElementById('progTxt').textContent = '0 / 7 answered';
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topic 4: Alert Triage & Investigation Workflows</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #07111e;
+    --bg2:     #0b1829;
+    --s1:      #0f2035;
+    --s2:      #132540;
+    --s3:      #1a304f;
+    --border:  #1e3a5f;
+    --border2: #234570;
+    --teal:    #00c9b8;
+    --teal2:   #00f5e1;
+    --teal3:   #80ffe8;
+    --blue:    #3b8fff;
+    --blue2:   #6aaeff;
+    --violet:  #8b5cf6;
+    --gold:    #f0b429;
+    --red:     #f05252;
+    --green:   #10b981;
+    --green2:  #34d399;
+    --text:    #e2f0ff;
+    --dim:     #7a9ec0;
+    --muted:   #3a5a7a;
+    --mono:    'DM Mono', monospace;
+    --sans:    'Lexend', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Radial glow */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -20%; left: -10%;
+    width: 70vw; height: 70vw;
+    background: radial-gradient(ellipse, rgba(0,201,184,0.04) 0%, transparent 65%);
+    pointer-events: none; z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -20%; right: -10%;
+    width: 60vw; height: 60vw;
+    background: radial-gradient(ellipse, rgba(59,143,255,0.04) 0%, transparent 65%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 28px; position: relative; z-index: 1; }
+
+  /* ── HEADER ── */
+  header { padding: 44px 0 0; margin-bottom: 48px; }
+
+  .top-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 32px; flex-wrap: wrap; gap: 16px;
+  }
+
+  .crumb { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+  .crumb .cur { color: var(--teal); }
+
+  .live-badge {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 11px; color: var(--teal);
+    background: rgba(0,201,184,0.08); border: 1px solid rgba(0,201,184,0.2);
+    padding: 6px 14px; letter-spacing: 1px;
+  }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.85)} }
+
+  h1 {
+    font-size: clamp(2.4rem, 5.5vw, 4.2rem);
+    font-weight: 800; line-height: 1.0; letter-spacing: -1px; color: var(--text);
+    margin-bottom: 10px;
+  }
+  h1 .t { color: var(--teal); }
+  .sub { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 2px; margin-bottom: 32px; }
+
+  /* Stat pills */
+  .stat-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 32px; }
+  .stat-pill {
+    background: rgba(255,255,255,0.04); backdrop-filter: blur(10px);
+    border: 1px solid var(--border2); padding: 12px 20px;
+    display: flex; flex-direction: column; gap: 2px; min-width: 110px;
+  }
+  .sp-val { font-family: var(--mono); font-size: 1.5rem; font-weight: 500; }
+  .sp-lbl { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+
+  /* Nav */
+  .topic-nav { display: flex; gap: 6px; flex-wrap: wrap; padding: 16px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .topic-nav a { font-family: var(--mono); font-size: 10px; padding: 5px 13px; text-decoration: none; transition: all 0.15s; border: 1px solid var(--border); color: var(--muted); letter-spacing: 1px; }
+  .topic-nav a.done { color: var(--teal); border-color: rgba(0,201,184,0.3); background: rgba(0,201,184,0.04); }
+  .topic-nav a.active { background: var(--teal); color: var(--bg); border-color: var(--teal); font-weight: 600; }
+  .topic-nav a:hover:not(.active):not(.done) { border-color: var(--teal); color: var(--teal2); }
+
+  /* Progress */
+  .prog-row { display: flex; align-items: center; gap: 14px; margin: 24px 0 52px; }
+  .prog-track { flex: 1; height: 3px; background: var(--border); overflow: hidden; border-radius: 2px; }
+  .prog-fill { height: 100%; background: linear-gradient(90deg, var(--teal), var(--blue)); width: 0%; transition: width 0.5s ease; border-radius: 2px; }
+  .prog-txt { font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+  /* ── SECTIONS ── */
+  .section { margin-bottom: 52px; animation: glideUp 0.4s ease both; }
+  @keyframes glideUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+  .section:nth-child(1){animation-delay:.06s}.section:nth-child(2){animation-delay:.12s}
+  .section:nth-child(3){animation-delay:.18s}.section:nth-child(4){animation-delay:.24s}
+  .section:nth-child(5){animation-delay:.30s}.section:nth-child(6){animation-delay:.36s}
+
+  .sec-hd { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+  .sec-tag { font-family: var(--mono); font-size: 10px; color: var(--teal); border: 1px solid rgba(0,201,184,0.35); background: rgba(0,201,184,0.06); padding: 3px 12px; letter-spacing: 2px; }
+  .sec-title { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.3px; }
+
+  /* Glass card */
+  .card {
+    background: rgba(15,32,53,0.7); backdrop-filter: blur(12px);
+    border: 1px solid var(--border2); padding: 28px 32px; position: relative; overflow: hidden;
+  }
+  .card::before { content:''; position:absolute; top:0;left:0;right:0;height:1px; background:linear-gradient(90deg,var(--teal),transparent); }
+  .card p { font-size: 0.975rem; line-height: 1.8; color: var(--dim); margin-bottom: 14px; font-weight: 300; }
+  .card p:last-child { margin-bottom: 0; }
+  strong { color: var(--text); font-weight: 600; }
+
+  /* ── TRIAGE WORKFLOW ── */
+  .workflow {
+    display: flex; align-items: flex-start; gap: 0;
+    margin: 28px 0; position: relative; flex-wrap: wrap;
+  }
+  .workflow::before {
+    content:''; position:absolute; top:32px; left:32px; right:32px; height:2px;
+    background: linear-gradient(90deg, var(--teal), var(--blue), var(--violet));
+    z-index: 0;
+  }
+
+  .wf-step {
+    flex: 1; min-width: 100px; display: flex; flex-direction: column;
+    align-items: center; text-align: center; position: relative; z-index: 1;
+    padding: 0 8px; cursor: default;
+  }
+  .wf-num {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: var(--s2); border: 2px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 1.1rem; font-weight: 500;
+    color: var(--teal); transition: all 0.25s; margin-bottom: 12px;
+  }
+  .wf-step:hover .wf-num { background: var(--teal); color: var(--bg); border-color: var(--teal); transform: scale(1.1); }
+  .wf-label { font-family: var(--mono); font-size: 10px; font-weight: 500; color: var(--dim); letter-spacing: 1px; text-transform: uppercase; line-height: 1.4; }
+  .wf-step:hover .wf-label { color: var(--teal2); }
+
+  /* ── ALERT STATUS SIMULATOR ── */
+  .sim-container { background: var(--s1); border: 1px solid var(--border2); padding: 0; overflow: hidden; margin: 20px 0; }
+
+  .sim-header {
+    background: var(--s2); border-bottom: 1px solid var(--border2);
+    padding: 12px 20px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .sim-title { font-family: var(--mono); font-size: 11px; color: var(--teal); letter-spacing: 2px; text-transform: uppercase; }
+
+  .alert-row {
+    display: flex; align-items: center; gap: 0;
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px; gap: 16px; cursor: pointer;
+    transition: background 0.15s; flex-wrap: wrap;
+  }
+  .alert-row:last-child { border-bottom: none; }
+  .alert-row:hover { background: rgba(0,201,184,0.04); }
+  .alert-row.selected { background: rgba(0,201,184,0.07); border-left: 3px solid var(--teal); }
+
+  .ar-sev { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .ar-sev.critical { background: var(--red); box-shadow: 0 0 8px var(--red); }
+  .ar-sev.high     { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
+  .ar-sev.medium   { background: var(--blue); box-shadow: 0 0 8px var(--blue); }
+  .ar-sev.low      { background: var(--green); }
+
+  .ar-name { flex: 1; font-family: var(--mono); font-size: 12px; color: var(--text); min-width: 200px; }
+  .ar-host { font-family: var(--mono); font-size: 11px; color: var(--muted); width: 120px; }
+  .ar-time { font-family: var(--mono); font-size: 11px; color: var(--muted); width: 80px; text-align: right; }
+
+  .ar-status {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 1px;
+    padding: 3px 10px; border-radius: 2px; width: 100px; text-align: center; flex-shrink: 0;
+  }
+  .ar-status.open          { background: rgba(240,82,82,0.15);   color: var(--red);    border: 1px solid rgba(240,82,82,0.3); }
+  .ar-status.acknowledged  { background: rgba(240,180,41,0.15);  color: var(--gold);   border: 1px solid rgba(240,180,41,0.3); }
+  .ar-status.in-progress   { background: rgba(59,143,255,0.15);  color: var(--blue2);  border: 1px solid rgba(59,143,255,0.3); }
+  .ar-status.closed        { background: rgba(16,185,129,0.15);  color: var(--green2); border: 1px solid rgba(16,185,129,0.3); }
+
+  .ar-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .ar-btn {
+    font-family: var(--mono); font-size: 10px; padding: 4px 10px;
+    border: 1px solid var(--border2); background: none; color: var(--dim);
+    cursor: pointer; transition: all 0.15s; letter-spacing: 1px;
+  }
+  .ar-btn:hover { border-color: var(--teal); color: var(--teal); }
+  .ar-btn.primary { border-color: var(--teal); color: var(--teal); background: rgba(0,201,184,0.07); }
+
+  /* Alert detail panel */
+  .alert-detail {
+    background: var(--bg2); border-top: 1px solid var(--border2);
+    padding: 20px 24px; font-family: var(--mono); font-size: 12px;
+    display: none; animation: panelOpen 0.2s ease;
+  }
+  @keyframes panelOpen { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+  .alert-detail.show { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media(max-width:640px){ .alert-detail.show { grid-template-columns: 1fr; } }
+  .ad-col h4 { font-size: 10px; color: var(--teal); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+  .ad-field { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 5px 0; border-bottom: 1px solid rgba(30,58,95,0.5); }
+  .ad-field:last-child { border-bottom: none; }
+  .ad-key { color: var(--muted); font-size: 11px; }
+  .ad-val { color: var(--text); font-size: 11px; text-align: right; max-width: 60%; word-break: break-all; }
+  .ad-val.teal { color: var(--teal2); }
+  .ad-val.red  { color: var(--red); }
+  .ad-val.gold { color: var(--gold); }
+  .ad-val.green{ color: var(--green2); }
+
+  /* ── STATUS TABLE ── */
+  .status-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; margin: 20px 0; }
+  .status-table th { background: var(--s2); color: var(--teal); padding: 11px 16px; text-align: left; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; border: 1px solid var(--border2); }
+  .status-table td { padding: 11px 16px; border: 1px solid var(--border); color: var(--dim); vertical-align: top; line-height: 1.6; }
+  .status-table tr:hover td { background: rgba(0,201,184,0.03); color: var(--text); }
+  .status-table td.label { color: var(--text); font-weight: 500; }
+  .tag { font-family: var(--mono); font-size: 10px; padding: 2px 9px; border-radius: 2px; display: inline-block; }
+  .tag.open  { background: rgba(240,82,82,0.12);  color: var(--red);    border: 1px solid rgba(240,82,82,0.25); }
+  .tag.ack   { background: rgba(240,180,41,0.12); color: var(--gold);   border: 1px solid rgba(240,180,41,0.25); }
+  .tag.ip    { background: rgba(59,143,255,0.12); color: var(--blue2);  border: 1px solid rgba(59,143,255,0.25); }
+  .tag.cls   { background: rgba(16,185,129,0.12); color: var(--green2); border: 1px solid rgba(16,185,129,0.25); }
+
+  /* ── TIMELINE ── */
+  .timeline { position: relative; margin: 24px 0; }
+  .timeline::before { content:''; position:absolute; left:20px; top:0; bottom:0; width:2px; background: linear-gradient(180deg, var(--teal), transparent); }
+
+  .tl-item {
+    display: flex; gap: 16px; margin-bottom: 20px; position: relative;
+    animation: tl-appear 0.4s ease both;
+  }
+  @keyframes tl-appear { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
+  .tl-item:nth-child(1){animation-delay:.1s}.tl-item:nth-child(2){animation-delay:.2s}
+  .tl-item:nth-child(3){animation-delay:.3s}.tl-item:nth-child(4){animation-delay:.4s}
+  .tl-item:nth-child(5){animation-delay:.5s}
+
+  .tl-dot {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--s2); border: 2px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0; position: relative; z-index: 1;
+    transition: all 0.2s;
+  }
+  .tl-item:hover .tl-dot { border-color: var(--teal); background: var(--s3); }
+
+  .tl-content { flex: 1; padding-top: 6px; }
+  .tl-title { font-weight: 600; font-size: 0.95rem; color: var(--text); margin-bottom: 4px; }
+  .tl-desc { font-size: 0.875rem; color: var(--dim); line-height: 1.65; font-weight: 300; }
+  .tl-step { font-family: var(--mono); font-size: 10px; color: var(--teal); letter-spacing: 1px; margin-bottom: 4px; text-transform: uppercase; }
+
+  /* Code */
+  .codeblock {
+    background: rgba(4,10,20,0.8); border: 1px solid var(--border);
+    border-left: 3px solid var(--teal); font-family: var(--mono);
+    font-size: 12px; line-height: 1.85; overflow-x: auto; padding: 18px 22px; margin: 16px 0;
+  }
+  .ck { color: var(--teal2); } .cv { color: var(--green2); } .cs { color: #a8d4ff; }
+  .cc { color: #2a4a6a; } .cn { color: var(--gold); } .co { color: var(--dim); }
+
+  /* Note */
+  .note {
+    border-left: 3px solid var(--teal); background: rgba(0,201,184,0.05);
+    padding: 13px 18px; margin: 14px 0; font-family: var(--mono);
+    font-size: 12px; line-height: 1.7; color: var(--dim);
+  }
+  .note.gold { border-left-color: var(--gold); background: rgba(240,180,41,0.05); }
+  .note.red  { border-left-color: var(--red);  background: rgba(240,82,82,0.05); }
+  .note strong { color: var(--teal2); }
+  .note.gold strong { color: var(--gold); }
+  .note.red strong  { color: var(--red); }
+
+  /* Two-col */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+  @media(max-width:640px){ .two-col { grid-template-columns: 1fr; } }
+  .mini { background: var(--s2); border: 1px solid var(--border2); padding: 18px 20px; }
+  .mini .ml { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+  .mini .mv { font-family: var(--mono); font-size: 12px; color: var(--text); line-height: 1.75; }
+  .mv .t { color: var(--teal2); } .mv .g { color: var(--green2); } .mv .y { color: var(--gold); } .mv .r { color: var(--red); } .mv .b { color: var(--blue2); }
+
+  /* Verdict picker */
+  .verdict-lab {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap: 12px; margin: 20px 0;
+  }
+  .vcard {
+    background: var(--s2); border: 1px solid var(--border2); padding: 16px;
+    cursor: pointer; transition: all 0.2s; text-align: center;
+  }
+  .vcard:hover { border-color: var(--teal); transform: translateY(-2px); }
+  .vcard.selected { border-color: var(--teal); background: rgba(0,201,184,0.08); box-shadow: 0 0 16px rgba(0,201,184,0.1); }
+  .vc-icon { font-size: 1.8rem; margin-bottom: 8px; }
+  .vc-name { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--text); margin-bottom: 4px; letter-spacing: 1px; text-transform: uppercase; }
+  .vc-desc { font-family: var(--mono); font-size: 10px; color: var(--muted); line-height: 1.5; }
+  .verdict-output {
+    background: rgba(4,10,20,0.8); border: 1px solid var(--border); border-left: 3px solid var(--teal);
+    padding: 16px 20px; font-family: var(--mono); font-size: 12px;
+    color: var(--dim); line-height: 1.85; min-height: 80px; transition: all 0.3s;
+  }
+
+  /* ── QUIZ ── */
+  .quiz {
+    background: rgba(11,24,41,0.9); border: 1px solid var(--border2);
+    backdrop-filter: blur(16px); padding: 36px 32px; margin-top: 52px; position: relative; overflow: hidden;
+  }
+  .quiz::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background: linear-gradient(90deg, var(--teal), var(--blue), var(--violet));
+  }
+
+  .quiz-title { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.3px; margin-bottom: 32px; padding-top: 8px; }
+  .quiz-title span { color: var(--teal); }
+
+  .qb { margin-bottom: 36px; padding-bottom: 36px; border-bottom: 1px solid var(--border); }
+  .qb:last-of-type { border-bottom:none; margin-bottom:0; padding-bottom:0; }
+  .q-n { font-family: var(--mono); font-size: 10px; color: var(--teal); letter-spacing: 2px; margin-bottom: 8px; }
+  .q-t { font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 16px; line-height: 1.5; }
+
+  .opts { display: flex; flex-direction: column; gap: 9px; }
+  .opt {
+    display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px;
+    border: 1px solid var(--border); background: var(--s2); color: var(--dim);
+    font-family: var(--mono); font-size: 12px; cursor: pointer; transition: all 0.15s;
+    text-align: left; width: 100%; line-height: 1.55;
+  }
+  .opt:hover:not(.locked) { border-color: var(--teal); color: var(--text); background: rgba(0,201,184,0.05); }
+  .opt .ol { color: var(--teal); font-weight: 600; min-width: 16px; }
+  .opt.correct { border-color: var(--green);  background: rgba(16,185,129,0.08);  color: var(--green2); }
+  .opt.wrong   { border-color: var(--red);    background: rgba(240,82,82,0.08);   color: var(--red); }
+  .opt.revealc { border-color: var(--green);  background: rgba(16,185,129,0.04);  color: var(--green); opacity:0.6; }
+
+  .exp {
+    display: none; margin-top: 12px; padding: 13px 16px;
+    background: rgba(0,201,184,0.04); border: 1px solid rgba(0,201,184,0.15);
+    font-family: var(--mono); font-size: 11px; color: var(--dim); line-height: 1.8;
+  }
+  .exp.show { display: block; }
+  .exp strong { color: var(--teal2); }
+
+  .scorebox { display:none; margin-top:28px; padding:28px; background:var(--s1); border:1px solid var(--border2); text-align:center; }
+  .scorebox.show { display:block; }
+  .score-big { font-family: var(--mono); font-size: 4rem; font-weight: 500; color: var(--teal); letter-spacing: 4px; }
+  .score-sub { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 2px; margin: 4px 0 12px; }
+  .score-msg { font-size: 1rem; font-weight: 300; color: var(--dim); }
+  .btn-reset {
+    margin-top: 18px; background: none; border: 1px solid var(--teal); color: var(--teal);
+    font-family: var(--mono); font-size: 11px; padding: 10px 28px; cursor: pointer;
+    letter-spacing: 2px; text-transform: uppercase; transition: all 0.2s;
+  }
+  .btn-reset:hover { background: var(--teal); color: var(--bg); }
+
+  footer { margin-top: 80px; padding: 32px 0; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+  .ft { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+  .nav-btns { display: flex; gap: 10px; }
+  .nbtn { font-family: var(--mono); font-size: 11px; padding: 10px 20px; border: 1px solid var(--border2); color: var(--muted); background: none; cursor: pointer; letter-spacing: 1px; text-decoration: none; transition: all 0.2s; }
+  .nbtn:hover { border-color: var(--teal); color: var(--teal2); }
+  .nbtn.primary { background: var(--teal); color: var(--bg); border-color: var(--teal); font-weight: 600; }
+  .nbtn.primary:hover { background: var(--teal2); border-color: var(--teal2); transform: translateX(2px); }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── HEADER ── -->
+  <header>
+    <div class="top-bar">
+      <div class="crumb">ECSA › Study Guide › <span class="cur">TOPIC 04</span></div>
+      <div class="live-badge"><div class="live-dot"></div>SOC ANALYST MODE</div>
+    </div>
+
+    <h1>Alert Triage &<br><span class="t">Investigation</span></h1>
+    <p class="sub">// ALERT STATES · TRIAGE WORKFLOW · TIMELINES · ANALYZER · CORRELATIONS</p>
+
+    <div class="stat-row">
+      <div class="stat-pill"><span class="sp-val" style="color:var(--red)">4</span><span class="sp-lbl">Alert States</span></div>
+      <div class="stat-pill"><span class="sp-val" style="color:var(--teal)">5</span><span class="sp-lbl">Workflow Steps</span></div>
+      <div class="stat-pill"><span class="sp-val" style="color:var(--gold)">7</span><span class="sp-lbl">Quiz Questions</span></div>
+      <div class="stat-pill"><span class="sp-val" style="color:var(--green2)">4</span><span class="sp-lbl">Topics Done</span></div>
+    </div>
+
+    <nav class="topic-nav">
+      <a href="#" class="done">01 · Fundamentals</a>
+      <a href="#" class="done">02 · Data Ingestion</a>
+      <a href="#" class="done">03 · Detection Engine</a>
+      <a href="#" class="active">04 · Alert Triage</a>
+      <a href="#">05 · Threat Hunting</a>
+      <a href="#">06 · Cases</a>
+      <a href="#">07 · RBAC & Admin</a>
+      <a href="#">08 · Visualization</a>
+    </nav>
+  </header>
+
+  <div class="prog-row">
+    <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+    <span class="prog-txt" id="progTxt">0 / 7 answered</span>
+  </div>
+
+  <!-- ════════════════════════════════
+       SECTION 1 — OVERVIEW
+  ═════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">04.01</span><h2 class="sec-title">Alert Triage Overview</h2></div>
+    <div class="card">
+      <p>Alert triage is the systematic process of reviewing, prioritizing, and classifying security alerts. In Elastic Security, the <strong>Alerts page</strong> (Security → Alerts) is the primary workspace for SOC analysts. Effective triage separates signal from noise and ensures high-severity threats receive immediate attention.</p>
+      <p>The triage workflow follows a structured sequence — from initial receipt through investigation to final disposition. Understanding this flow is fundamental to the ECSA exam.</p>
+
+      <div class="workflow">
+        <div class="wf-step">
+          <div class="wf-num">01</div>
+          <div class="wf-label">Receive &<br>Filter</div>
+        </div>
+        <div class="wf-step">
+          <div class="wf-num">02</div>
+          <div class="wf-label">Prioritize<br>by Risk</div>
+        </div>
+        <div class="wf-step">
+          <div class="wf-num">03</div>
+          <div class="wf-label">Investigate<br>Context</div>
+        </div>
+        <div class="wf-step">
+          <div class="wf-num">04</div>
+          <div class="wf-label">Correlate<br>Events</div>
+        </div>
+        <div class="wf-step">
+          <div class="wf-num">05</div>
+          <div class="wf-label">Assign<br>Verdict</div>
+        </div>
+      </div>
+
+      <div class="note">
+        <p><strong>Where alerts live:</strong> Alerts are stored in <code style="color:var(--teal2)">.alerts-security.alerts-default</code> (or space-specific variant). They are NOT the same as the original event data. The alert document contains a copy of key event fields plus rule metadata, status, and analyst notes.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       SECTION 2 — ALERT STATUSES
+  ═════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">04.02</span><h2 class="sec-title">Alert Statuses & Workflow States</h2></div>
+    <div class="card">
+      <p>Every alert in Elastic Security has a <strong>status</strong> that tracks where it is in the triage lifecycle. Understanding the four statuses — and when to use each — is a frequent exam topic.</p>
+
+      <table class="status-table">
+        <thead>
+          <tr><th>Status</th><th>Meaning</th><th>When to Use</th><th>Who Acts</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="tag open">OPEN</span></td>
+            <td class="label">New, unreviewed alert</td>
+            <td>Default state when alert fires. Needs triage.</td>
+            <td>System (auto)</td>
+          </tr>
+          <tr>
+            <td><span class="tag ack">ACKNOWLEDGED</span></td>
+            <td class="label">Seen, under review</td>
+            <td>Analyst has seen it but investigation is not complete.</td>
+            <td>Analyst</td>
+          </tr>
+          <tr>
+            <td><span class="tag ip">IN PROGRESS</span></td>
+            <td class="label">Actively being worked</td>
+            <td>Investigation is active. Analyst is building a timeline or case.</td>
+            <td>Analyst</td>
+          </tr>
+          <tr>
+            <td><span class="tag cls">CLOSED</span></td>
+            <td class="label">Resolved with verdict</td>
+            <td>Fully triaged. Must select a closing reason (see below).</td>
+            <td>Analyst / Lead</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p style="margin-top:16px">When <strong>closing</strong> an alert, analysts must select a <em>closing reason</em> that documents the verdict:</p>
+
+      <div class="verdict-lab" id="verdictLab">
+        <div class="vcard" onclick="showVerdict(this,'tp')">
+          <div class="vc-icon">🚨</div>
+          <div class="vc-name">True Positive</div>
+          <div class="vc-desc">Confirmed malicious activity. Escalate or contain.</div>
+        </div>
+        <div class="vcard" onclick="showVerdict(this,'fp')">
+          <div class="vc-icon">✅</div>
+          <div class="vc-name">False Positive</div>
+          <div class="vc-desc">Alert fired but activity is legitimate. Rule tuning may be needed.</div>
+        </div>
+        <div class="vcard" onclick="showVerdict(this,'btp')">
+          <div class="vc-icon">⚠️</div>
+          <div class="vc-name">Benign True Positive</div>
+          <div class="vc-desc">Real behavior the rule caught, but not malicious in this context.</div>
+        </div>
+        <div class="vcard" onclick="showVerdict(this,'ind')">
+          <div class="vc-icon">❓</div>
+          <div class="vc-name">Indeterminate</div>
+          <div class="vc-desc">Insufficient data to make a verdict. Needs more investigation.</div>
+        </div>
+      </div>
+      <div class="verdict-output" id="verdictOut"><span style="color:var(--muted)">← Click a verdict card above to see exam notes and recommended next actions</span></div>
+
+      <div class="note gold">
+        <p><strong>Exam trap:</strong> "Benign True Positive" (BTP) is different from "False Positive." A BTP is when the rule correctly detected the behavior, but that behavior is <em>acceptable</em> in this environment (e.g., a sysadmin running mimikatz during an authorized pen test). A FP is when the rule fired on activity that doesn't match the intended detection at all.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       SECTION 3 — INTERACTIVE ALERT SIM
+  ═════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">04.03</span><h2 class="sec-title">Alert Queue Simulator</h2></div>
+    <div class="card">
+      <p>Practice triaging alerts by clicking on any alert row to expand its details. Use the status buttons to practice the workflow. The exam often presents scenarios with a queue of alerts and asks which to prioritize first.</p>
+
+      <div class="sim-container">
+        <div class="sim-header">
+          <span class="sim-title">Security → Alerts (simulated queue)</span>
+          <span style="font-family:var(--mono);font-size:10px;color:var(--muted)">5 OPEN · 1 ACK · 1 IN PROGRESS</span>
+        </div>
+
+        <!-- Alert rows -->
+        <div class="alert-row" id="ar1" onclick="toggleAlert('ar1','dp1')">
+          <div class="ar-sev critical"></div>
+          <div class="ar-name">Credential Dumping via LSASS Access</div>
+          <div class="ar-host">WIN-DC-01</div>
+          <div class="ar-time">2m ago</div>
+          <div class="ar-status open" id="st1">OPEN</div>
+          <div class="ar-actions">
+            <button class="ar-btn" onclick="setStatus(event,'st1','ACKNOWLEDGED','acknowledged')">ACK</button>
+            <button class="ar-btn primary" onclick="setStatus(event,'st1','IN PROGRESS','in-progress')">TRIAGE</button>
+          </div>
+        </div>
+        <div class="alert-detail" id="dp1">
+          <div class="ad-col">
+            <h4>Event Details</h4>
+            <div class="ad-field"><span class="ad-key">process.name</span><span class="ad-val teal">mimikatz.exe</span></div>
+            <div class="ad-field"><span class="ad-key">process.parent.name</span><span class="ad-val">cmd.exe</span></div>
+            <div class="ad-field"><span class="ad-key">user.name</span><span class="ad-val red">Administrator</span></div>
+            <div class="ad-field"><span class="ad-key">host.name</span><span class="ad-val">WIN-DC-01</span></div>
+            <div class="ad-field"><span class="ad-key">event.action</span><span class="ad-val">ProcessAccess</span></div>
+            <div class="ad-field"><span class="ad-key">target.process.name</span><span class="ad-val red">lsass.exe</span></div>
+          </div>
+          <div class="ad-col">
+            <h4>Rule Metadata</h4>
+            <div class="ad-field"><span class="ad-key">rule.name</span><span class="ad-val teal">Credential Dumping - LSASS</span></div>
+            <div class="ad-field"><span class="ad-key">severity</span><span class="ad-val red">CRITICAL</span></div>
+            <div class="ad-field"><span class="ad-key">risk_score</span><span class="ad-val red">99</span></div>
+            <div class="ad-field"><span class="ad-key">mitre.tactic</span><span class="ad-val">TA0006 · Credential Access</span></div>
+            <div class="ad-field"><span class="ad-key">mitre.technique</span><span class="ad-val">T1003.001 · LSASS Memory</span></div>
+            <div class="ad-field"><span class="ad-key">Recommended</span><span class="ad-val green">Isolate host. Escalate to IR.</span></div>
+          </div>
+        </div>
+
+        <div class="alert-row" id="ar2" onclick="toggleAlert('ar2','dp2')">
+          <div class="ar-sev high"></div>
+          <div class="ar-name">Suspicious PowerShell Encoded Command</div>
+          <div class="ar-host">WORKSTATION-42</div>
+          <div class="ar-time">8m ago</div>
+          <div class="ar-status open" id="st2">OPEN</div>
+          <div class="ar-actions">
+            <button class="ar-btn" onclick="setStatus(event,'st2','ACKNOWLEDGED','acknowledged')">ACK</button>
+            <button class="ar-btn primary" onclick="setStatus(event,'st2','IN PROGRESS','in-progress')">TRIAGE</button>
+          </div>
+        </div>
+        <div class="alert-detail" id="dp2">
+          <div class="ad-col">
+            <h4>Event Details</h4>
+            <div class="ad-field"><span class="ad-key">process.name</span><span class="ad-val teal">powershell.exe</span></div>
+            <div class="ad-field"><span class="ad-key">process.args</span><span class="ad-val red">-EncodedCommand JAB...</span></div>
+            <div class="ad-field"><span class="ad-key">process.parent.name</span><span class="ad-val">WINWORD.EXE</span></div>
+            <div class="ad-field"><span class="ad-key">user.name</span><span class="ad-val">jsmith</span></div>
+            <div class="ad-field"><span class="ad-key">host.name</span><span class="ad-val">WORKSTATION-42</span></div>
+          </div>
+          <div class="ad-col">
+            <h4>Rule Metadata</h4>
+            <div class="ad-field"><span class="ad-key">severity</span><span class="ad-val gold">HIGH</span></div>
+            <div class="ad-field"><span class="ad-key">risk_score</span><span class="ad-val gold">73</span></div>
+            <div class="ad-field"><span class="ad-key">mitre.tactic</span><span class="ad-val">TA0002 · Execution</span></div>
+            <div class="ad-field"><span class="ad-key">mitre.technique</span><span class="ad-val">T1059.001 · PowerShell</span></div>
+            <div class="ad-field"><span class="ad-key">Recommended</span><span class="ad-val">Check parent process (Word macro?). Correlate network.</span></div>
+          </div>
+        </div>
+
+        <div class="alert-row" id="ar3" onclick="toggleAlert('ar3','dp3')">
+          <div class="ar-sev high"></div>
+          <div class="ar-name">New Login Country: RU for user jdoe</div>
+          <div class="ar-host">AUTH-SERVER</div>
+          <div class="ar-time">15m ago</div>
+          <div class="ar-status acknowledged" id="st3">ACKNOWLEDGED</div>
+          <div class="ar-actions">
+            <button class="ar-btn primary" onclick="setStatus(event,'st3','IN PROGRESS','in-progress')">TRIAGE</button>
+            <button class="ar-btn" onclick="setStatus(event,'st3','CLOSED — FP','closed')">CLOSE</button>
+          </div>
+        </div>
+        <div class="alert-detail" id="dp3">
+          <div class="ad-col">
+            <h4>Event Details</h4>
+            <div class="ad-field"><span class="ad-key">user.name</span><span class="ad-val teal">jdoe</span></div>
+            <div class="ad-field"><span class="ad-key">source.ip</span><span class="ad-val">185.234.x.x</span></div>
+            <div class="ad-field"><span class="ad-key">source.geo.country</span><span class="ad-val red">Russia (RU)</span></div>
+            <div class="ad-field"><span class="ad-key">event.outcome</span><span class="ad-val green">success</span></div>
+            <div class="ad-field"><span class="ad-key">event.category</span><span class="ad-val">authentication</span></div>
+          </div>
+          <div class="ad-col">
+            <h4>Rule Metadata</h4>
+            <div class="ad-field"><span class="ad-key">rule.type</span><span class="ad-val teal">new_terms</span></div>
+            <div class="ad-field"><span class="ad-key">severity</span><span class="ad-val gold">HIGH</span></div>
+            <div class="ad-field"><span class="ad-key">risk_score</span><span class="ad-val gold">75</span></div>
+            <div class="ad-field"><span class="ad-key">mitre.tactic</span><span class="ad-val">TA0001 · Initial Access</span></div>
+            <div class="ad-field"><span class="ad-key">Recommended</span><span class="ad-val">Contact jdoe. Check for concurrent sessions. VPN travel?</span></div>
+          </div>
+        </div>
+
+        <div class="alert-row" id="ar4" onclick="toggleAlert('ar4','dp4')">
+          <div class="ar-sev medium"></div>
+          <div class="ar-name">Failed Login Threshold Exceeded (27 times)</div>
+          <div class="ar-host">LDAP-01</div>
+          <div class="ar-time">22m ago</div>
+          <div class="ar-status in-progress" id="st4">IN PROGRESS</div>
+          <div class="ar-actions">
+            <button class="ar-btn" onclick="setStatus(event,'st4','CLOSED — TP','closed')">CLOSE TP</button>
+            <button class="ar-btn" onclick="setStatus(event,'st4','CLOSED — FP','closed')">CLOSE FP</button>
+          </div>
+        </div>
+        <div class="alert-detail" id="dp4">
+          <div class="ad-col">
+            <h4>Event Details</h4>
+            <div class="ad-field"><span class="ad-key">user.name</span><span class="ad-val teal">svc-backup</span></div>
+            <div class="ad-field"><span class="ad-key">source.ip</span><span class="ad-val">10.10.5.22</span></div>
+            <div class="ad-field"><span class="ad-key">event.outcome</span><span class="ad-val red">failure × 27</span></div>
+            <div class="ad-field"><span class="ad-key">rule.type</span><span class="ad-val">threshold</span></div>
+          </div>
+          <div class="ad-col">
+            <h4>Rule Metadata</h4>
+            <div class="ad-field"><span class="ad-key">severity</span><span class="ad-val" style="color:var(--blue2)">MEDIUM</span></div>
+            <div class="ad-field"><span class="ad-key">risk_score</span><span class="ad-val" style="color:var(--blue2)">47</span></div>
+            <div class="ad-field"><span class="ad-key">mitre.tactic</span><span class="ad-val">TA0006 · Credential Access</span></div>
+            <div class="ad-field"><span class="ad-key">Recommended</span><span class="ad-val">Check if svc-backup password expired. Verify 10.10.5.22.</span></div>
+          </div>
+        </div>
+
+        <div class="alert-row" id="ar5" onclick="toggleAlert('ar5','dp5')">
+          <div class="ar-sev low"></div>
+          <div class="ar-name">USB Device Connected</div>
+          <div class="ar-host">FINANCE-PC-03</div>
+          <div class="ar-time">45m ago</div>
+          <div class="ar-status open" id="st5">OPEN</div>
+          <div class="ar-actions">
+            <button class="ar-btn" onclick="setStatus(event,'st5','CLOSED — BTP','closed')">CLOSE BTP</button>
+            <button class="ar-btn" onclick="setStatus(event,'st5','CLOSED — FP','closed')">CLOSE FP</button>
+          </div>
+        </div>
+        <div class="alert-detail" id="dp5">
+          <div class="ad-col">
+            <h4>Event Details</h4>
+            <div class="ad-field"><span class="ad-key">user.name</span><span class="ad-val teal">mlee</span></div>
+            <div class="ad-field"><span class="ad-key">host.name</span><span class="ad-val">FINANCE-PC-03</span></div>
+            <div class="ad-field"><span class="ad-key">device.vendor</span><span class="ad-val">Kingston Technology</span></div>
+            <div class="ad-field"><span class="ad-key">file.name</span><span class="ad-val">Q3_Report_final.xlsx</span></div>
+          </div>
+          <div class="ad-col">
+            <h4>Rule Metadata</h4>
+            <div class="ad-field"><span class="ad-key">severity</span><span class="ad-val green">LOW</span></div>
+            <div class="ad-field"><span class="ad-key">risk_score</span><span class="ad-val green">21</span></div>
+            <div class="ad-field"><span class="ad-key">mitre.tactic</span><span class="ad-val">TA0010 · Exfiltration</span></div>
+            <div class="ad-field"><span class="ad-key">Recommended</span><span class="ad-val">Verify if USB policy exception applies. Check file contents.</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="note">
+        <p><strong>Triage prioritization rule:</strong> Always triage alerts by <strong>severity + recency + asset criticality</strong>. A Critical alert on a Domain Controller (WIN-DC-01) takes absolute priority over Medium alerts on standard workstations. Risk score helps quantify this — sort the alert queue by risk score descending as a starting point.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       SECTION 4 — INVESTIGATION
+  ═════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">04.04</span><h2 class="sec-title">Investigation Tools & Workflows</h2></div>
+    <div class="card">
+      <p>Once an alert is selected for investigation, Elastic Security provides several interconnected tools to build context, correlate events, and document findings.</p>
+
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot">🔍</div>
+          <div class="tl-content">
+            <div class="tl-step">Step 1</div>
+            <div class="tl-title">Expand the Alert — Analyzer & Details</div>
+            <div class="tl-desc">Click any alert to open the alert details flyout. Review the triggering event fields, the rule that fired, and the MITRE ATT&CK context. The <strong>Analyzer</strong> tab shows the process tree graphically — parent/child process relationships rendered as a visual graph. Essential for understanding lateral movement and process injection.</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot">📋</div>
+          <div class="tl-content">
+            <div class="tl-step">Step 2</div>
+            <div class="tl-title">Review Host & User Context</div>
+            <div class="tl-desc">The <strong>Host Risk Score</strong> and <strong>User Risk Score</strong> panels (Security → Entity Analytics) show historical risk levels. A host that has been involved in multiple alerts recently gets a higher risk score. This helps prioritize which alerts from a busy host truly need attention versus routine noise.</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot">⏱️</div>
+          <div class="tl-content">
+            <div class="tl-step">Step 3</div>
+            <div class="tl-title">Build a Timeline</div>
+            <div class="tl-desc">Click <strong>"Investigate in Timeline"</strong> from an alert to automatically create a timeline pre-populated with the alert's event. Timelines are saved investigation notebooks — analysts add more events, write notes using the ECS-aware query bar, and pin important events. Timelines can be attached to Cases for documentation.</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot">🔗</div>
+          <div class="tl-content">
+            <div class="tl-step">Step 4</div>
+            <div class="tl-title">Correlate Related Events</div>
+            <div class="tl-desc">From the alert flyout, use <strong>"View related events"</strong> to search Discover for events from the same host within a time window. Use KQL/EQL in Discover to pivot on IOCs — search for other hosts communicating with the same IP, other users running the same process, or other events from the same user within the incident window.</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot">📁</div>
+          <div class="tl-content">
+            <div class="tl-step">Step 5</div>
+            <div class="tl-title">Create / Attach to a Case</div>
+            <div class="tl-desc">Once the alert is confirmed True Positive, click <strong>"Add to existing case"</strong> or <strong>"Create new case"</strong>. The alert and any attached timelines become part of the case. Cases support collaborators, tags, connectors (JIRA, ServiceNow), and status tracking. Covered fully in Topic 6.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="mini">
+          <div class="ml">Analyzer View</div>
+          <div class="mv">
+            The <span class="t">Process Analyzer</span> renders a<br>
+            visual process tree from ECS data.<br><br>
+            <span class="g">Green nodes</span> = safe processes<br>
+            <span class="r">Red nodes</span> = suspicious/flagged<br>
+            <span class="y">Yellow nodes</span> = needs review<br><br>
+            Nodes show: pid, name, user, args.<br>
+            Click any node to see full event.
+          </div>
+        </div>
+        <div class="mini">
+          <div class="ml">Host Isolation</div>
+          <div class="mv">
+            For <span class="r">Critical / True Positive</span> alerts,<br>
+            analysts can <span class="t">isolate the host</span><br>
+            directly from the alert flyout.<br><br>
+            Isolation requires: <span class="y">Elastic Defend</span><br>
+            installed on the endpoint.<br><br>
+            Isolated host: blocks all network<br>
+            except Elastic Agent comms.
+          </div>
+        </div>
+      </div>
+
+      <div class="codeblock">
+<span class="cc">// KQL — Common pivot queries during investigation</span>
+
+<span class="cc">// 1. Find all events from same host in incident window</span>
+<span class="ck">host.name</span>: <span class="cs">"WIN-DC-01"</span> <span class="co">and</span> <span class="ck">@timestamp</span>: [<span class="cs">"2024-03-15T08:00:00"</span> <span class="co">to</span> <span class="cs">"2024-03-15T09:00:00"</span>]
+
+<span class="cc">// 2. Find all processes spawned by the same parent</span>
+<span class="ck">process.parent.name</span>: <span class="cs">"WINWORD.EXE"</span> <span class="co">and</span> <span class="ck">host.name</span>: <span class="cs">"WORKSTATION-42"</span>
+
+<span class="cc">// 3. Find other hosts that contacted the same C2 IP</span>
+<span class="ck">destination.ip</span>: <span class="cs">"185.234.x.x"</span> <span class="co">and</span> <span class="ck">event.category</span>: <span class="cs">"network"</span>
+
+<span class="cc">// 4. Find all auth events for a user across all hosts</span>
+<span class="ck">user.name</span>: <span class="cs">"jdoe"</span> <span class="co">and</span> <span class="ck">event.category</span>: <span class="cs">"authentication"</span>
+
+<span class="cc">// 5. Find file writes by a suspicious process hash</span>
+<span class="ck">process.hash.sha256</span>: <span class="cs">"abc123..."</span> <span class="co">and</span> <span class="ck">event.category</span>: <span class="cs">"file"</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       SECTION 5 — ENTITY ANALYTICS
+  ═════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">04.05</span><h2 class="sec-title">Entity Analytics & Risk Scoring</h2></div>
+    <div class="card">
+      <p>Elastic Security's <strong>Entity Analytics</strong> section (Security → Entity Analytics) provides aggregated risk views for hosts and users. It uses alert history and ML signals to build risk scores that persist over time, helping analysts identify high-risk entities even when individual alerts are low-severity.</p>
+
+      <div class="two-col">
+        <div class="mini">
+          <div class="ml">Host Risk Score</div>
+          <div class="mv">
+            Aggregated score based on:<br>
+            <span class="t">• Alert severity history</span><br>
+            <span class="t">• Number of unique rules fired</span><br>
+            <span class="t">• ML anomaly contributions</span><br><br>
+            Score ranges: <span class="g">Low</span> · <span class="y">Medium</span> ·<br>
+            <span class="r">High</span> · <span class="r">Critical</span><br><br>
+            Updated on each new alert event.
+          </div>
+        </div>
+        <div class="mini">
+          <div class="ml">User Risk Score</div>
+          <div class="mv">
+            Same model as host, but scoped<br>
+            to <span class="t">user.name</span> across all systems.<br><br>
+            A user who triggered alerts on<br>
+            5 different hosts in 24 hours<br>
+            gets a much <span class="r">higher risk score</span><br>
+            than their individual alerts suggest.<br><br>
+            Used for <span class="y">insider threat</span> detection.
+          </div>
+        </div>
+      </div>
+
+      <div class="note gold">
+        <p><strong>Exam scenario:</strong> An analyst sees 20 low-severity alerts from various systems. Individually, none are alarming. But Entity Analytics shows one user has a Critical risk score because they triggered alerts on 8 different hosts. This is a strong lateral movement indicator — the Entity Analytics view surfaced the threat that individual alert triage would have missed.</p>
+      </div>
+
+      <div class="codeblock">
+<span class="cc">// Entity Risk Scoring — Understand the data model</span>
+
+<span class="cc">// Host risk scores live in:</span>
+<span class="ck">risk-score.risk-score-*</span>   <span class="cc">// Entity risk score index</span>
+<span class="ck">ml_host_risk_score_*</span>      <span class="cc">// ML-computed host scores</span>
+
+<span class="cc">// Key fields in risk score documents</span>
+<span class="ck">host.name</span>                 → <span class="cs">"WIN-DC-01"</span>
+<span class="ck">risk.calculated_score</span>    → <span class="cn">89.4</span>       <span class="cc">// numeric 0–100</span>
+<span class="ck">risk.calculated_level</span>    → <span class="cs">"High"</span>
+<span class="ck">risk.inputs</span>              → <span class="cc">// array of contributing alerts</span>
+<span class="ck">@timestamp</span>               → <span class="cs">"2024-03-15T09:00:00Z"</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════
+       SECTION 6 — ALERT FILTERING
+  ═════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-hd"><span class="sec-tag">04.06</span><h2 class="sec-title">Alert Filtering, Sorting & Bulk Actions</h2></div>
+    <div class="card">
+      <p>The Alerts page provides powerful filtering to help analysts manage high-volume alert queues. Knowing which filters to apply in which scenario is a key exam skill.</p>
+
+      <div class="codeblock">
+<span class="cc">// Alerts Page — Filter & Sort Options</span>
+
+<span class="cc">// Filter by status (most common starting filter)</span>
+<span class="ck">kibana.alert.workflow_status</span>: <span class="cs">"open"</span>
+
+<span class="cc">// Filter by severity</span>
+<span class="ck">kibana.alert.severity</span>: <span class="cs">"critical"</span> <span class="co">OR</span> <span class="ck">kibana.alert.severity</span>: <span class="cs">"high"</span>
+
+<span class="cc">// Filter by MITRE tactic</span>
+<span class="ck">threat.tactic.name</span>: <span class="cs">"Credential Access"</span>
+
+<span class="cc">// Filter by host</span>
+<span class="ck">host.name</span>: <span class="cs">"WIN-DC-01"</span>
+
+<span class="cc">// Filter by rule name</span>
+<span class="ck">kibana.alert.rule.name</span>: <span class="cs">"Credential Dumping*"</span>
+
+<span class="cc">// Bulk actions (select multiple alerts)</span>
+<span class="ck">→</span> <span class="cv">Change status</span> (Open / Acknowledged / Closed)
+<span class="ck">→</span> <span class="cv">Add tags</span>
+<span class="ck">→</span> <span class="cv">Add to case</span>
+<span class="ck">→</span> <span class="cv">Override severity / risk score</span>
+      </div>
+
+      <div class="two-col">
+        <div class="mini">
+          <div class="ml">Alert Tags</div>
+          <div class="mv">
+            Tags are free-form labels analysts<br>
+            add to alerts for tracking.<br><br>
+            Examples:<br>
+            <span class="t">• "incident-2024-042"</span><br>
+            <span class="t">• "pending-approval"</span><br>
+            <span class="t">• "false-positive-candidate"</span><br>
+            <span class="t">• "IR-team"</span>
+          </div>
+        </div>
+        <div class="mini">
+          <div class="ml">Alert Grouping</div>
+          <div class="mv">
+            Group alerts by field to see<br>
+            patterns in the queue:<br><br>
+            <span class="g">Group by host.name</span> → see which hosts have most alerts<br>
+            <span class="g">Group by rule.name</span> → see noisiest rules<br>
+            <span class="g">Group by user.name</span> → see user activity patterns
+          </div>
+        </div>
+      </div>
+
+      <div class="note">
+        <p><strong>Key exam concept:</strong> The Alerts page searches <code style="color:var(--teal2)">.alerts-security.alerts-*</code>, which is separate from raw event indices. Alert fields use the <code style="color:var(--teal2)">kibana.alert.*</code> namespace for Kibana-added metadata, while the original event fields (like <code style="color:var(--teal2)">process.name</code>) are copied directly from the source event into the alert document.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ QUIZ ═══════════ -->
+  <div class="quiz">
+    <div class="quiz-title">Topic 4 · <span>Practice Questions</span></div>
+
+    <!-- Q1 -->
+    <div class="qb" id="q1">
+      <div class="q-n">QUESTION 01</div>
+      <div class="q-t">An analyst receives an alert for a known IT administration tool (psexec.exe) running on a server where it is regularly used by the IT team. The rule correctly detected psexec, but the activity is authorized. What is the correct closing reason?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q1','A','C')"><span class="ol">A</span>False Positive — the rule should not have fired</button>
+        <button class="opt" onclick="ans(this,'q1','B','C')"><span class="ol">B</span>True Positive — escalate to IR immediately</button>
+        <button class="opt" onclick="ans(this,'q1','C','C')"><span class="ol">C</span>Benign True Positive — activity is authorized and known</button>
+        <button class="opt" onclick="ans(this,'q1','D','C')"><span class="ol">D</span>Indeterminate — insufficient data to decide</button>
+      </div>
+      <div class="exp" id="e-q1"><strong>Correct: Benign True Positive (BTP).</strong> BTP means the rule correctly detected the behavior it was designed to detect, but in this specific context the behavior is legitimate. The rule fired correctly on psexec.exe — it's working as intended. A False Positive would mean the rule fired on something that isn't actually psexec-like behavior at all. After closing as BTP, the analyst should add an exception to reduce future noise for this specific authorized scenario.</div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="qb" id="q2">
+      <div class="q-n">QUESTION 02</div>
+      <div class="q-t">An analyst wants to visually see the parent-child process relationships for a suspicious process that triggered a Critical alert. Which Elastic Security feature provides this graphical view?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q2','A','B')"><span class="ol">A</span>The Timeline query bar with EQL sequence view</button>
+        <button class="opt" onclick="ans(this,'q2','B','B')"><span class="ol">B</span>The Analyzer tab in the alert details flyout</button>
+        <button class="opt" onclick="ans(this,'q2','C','B')"><span class="ol">C</span>The Entity Analytics host risk score view</button>
+        <button class="opt" onclick="ans(this,'q2','D','B')"><span class="ol">D</span>A custom Kibana Lens dashboard</button>
+      </div>
+      <div class="exp" id="e-q2"><strong>Correct: The Analyzer tab.</strong> When you open an alert's detail flyout, the Analyzer tab renders a graphical process tree showing the entire process lineage — from the root process down through all child processes. Nodes are color-coded by suspiciousness and clicking any node shows its full ECS event data. This is invaluable for understanding attack chains like macro → cmd → powershell → network.</div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="qb" id="q3">
+      <div class="q-n">QUESTION 03</div>
+      <div class="q-t">What is the correct sequence of alert workflow states in Elastic Security from initial detection to resolution?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q3','A','C')"><span class="ol">A</span>New → Triaged → Escalated → Resolved</button>
+        <button class="opt" onclick="ans(this,'q3','B','C')"><span class="ol">B</span>Pending → Active → Investigating → Closed</button>
+        <button class="opt" onclick="ans(this,'q3','C','C')"><span class="ol">C</span>Open → Acknowledged → In Progress → Closed</button>
+        <button class="opt" onclick="ans(this,'q3','D','C')"><span class="ol">D</span>Open → Assigned → Resolved → Archived</button>
+      </div>
+      <div class="exp" id="e-q3"><strong>Correct: Open → Acknowledged → In Progress → Closed.</strong> These are the four official Elastic Security alert statuses. Open (new/unreviewed) → Acknowledged (seen, review pending) → In Progress (actively investigating) → Closed (resolved with a closing reason: True Positive, False Positive, Benign True Positive, or Indeterminate). Memorize these exact terms.</div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="qb" id="q4">
+      <div class="q-n">QUESTION 04</div>
+      <div class="q-t">An analyst confirms a Critical alert on a Windows host is a True Positive ransomware infection. The endpoint has Elastic Defend installed. What is the immediate containment action available directly from the Elastic Security UI?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q4','A','B')"><span class="ol">A</span>Run a remote PowerShell script to kill the malicious process</button>
+        <button class="opt" onclick="ans(this,'q4','B','B')"><span class="ol">B</span>Isolate the host from the alert flyout using Elastic Defend</button>
+        <button class="opt" onclick="ans(this,'q4','C','B')"><span class="ol">C</span>Delete the alert and open a firewall rule to block the source IP</button>
+        <button class="opt" onclick="ans(this,'q4','D','B')"><span class="ol">D</span>Disable the detection rule to stop further alerts from the same host</button>
+      </div>
+      <div class="exp" id="e-q4"><strong>Correct: Isolate the host via Elastic Defend.</strong> When Elastic Defend is installed on an endpoint, analysts can trigger host isolation directly from the alert flyout in Kibana. Isolation cuts all network connectivity except for the Elastic Agent management channel, containing the threat while preserving forensic state. This requires the analyst to have the appropriate Elastic Security role with endpoint response capabilities.</div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="qb" id="q5">
+      <div class="q-n">QUESTION 05</div>
+      <div class="q-t">An analyst is pivoting during an investigation and wants to find all other hosts that made network connections to the same destination IP as the alert. Which approach is correct in Elastic Security?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q5','A','C')"><span class="ol">A</span>Search the alert queue filtered by the destination IP field</button>
+        <button class="opt" onclick="ans(this,'q5','B','C')"><span class="ol">B</span>Use the MITRE ATT&CK matrix to find related technique alerts</button>
+        <button class="opt" onclick="ans(this,'q5','C','C')"><span class="ol">C</span>Pivot to Discover or Timeline and query all log indices with destination.ip: "x.x.x.x"</span></button>
+        <button class="opt" onclick="ans(this,'q5','D','C')"><span class="ol">D</span>Check Entity Analytics for the host's risk score history</button>
+      </div>
+      <div class="exp" id="e-q5"><strong>Correct: Pivot to Discover or Timeline and query raw event data.</strong> Alerts only contain the events that triggered a rule. To find ALL hosts that communicated with a specific IP — including hosts that haven't triggered any rule — you need to search the underlying event indices (logs-endpoint*, logs-network*, etc.) using <code style="color:var(--teal2)">destination.ip: "x.x.x.x"</code> in Discover or a Timeline. The alert queue only shows alerted events, not the full picture.</div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="qb" id="q6">
+      <div class="q-n">QUESTION 06</div>
+      <div class="q-t">An analyst needs to document an investigation by collecting multiple related alerts, query results, and analyst notes into a single trackable record. Which feature should they use?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q6','A','C')"><span class="ol">A</span>Create a custom KQL saved search in Discover</button>
+        <button class="opt" onclick="ans(this,'q6','B','C')"><span class="ol">B</span>Add tags to all related alerts with the same incident ID</button>
+        <button class="opt" onclick="ans(this,'q6','C','C')"><span class="ol">C</span>Create a Case in Security → Cases and attach the alerts and timelines</button>
+        <button class="opt" onclick="ans(this,'q6','D','C')"><span class="ol">D</span>Export alerts to CSV and track in an external spreadsheet</button>
+      </div>
+      <div class="exp" id="e-q6"><strong>Correct: Create a Case.</strong> Cases (Security → Cases) are the dedicated incident management feature in Elastic Security. They support attaching multiple alerts, timelines, comments, assignees, tags, and external ticketing system connectors (Jira, ServiceNow). This is the official workflow for incident documentation — not tags or CSV exports. Full coverage in Topic 6.</div>
+    </div>
+
+    <!-- Q7 -->
+    <div class="qb" id="q7">
+      <div class="q-n">QUESTION 07</div>
+      <div class="q-t">An analyst sees 15 low-severity alerts from different hosts over the past hour. Individually, none are alarming. What Elastic Security feature would help identify if these alerts indicate a coordinated attack campaign by a single user?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q7','A','D')"><span class="ol">A</span>Alert Suppression — reduce duplicate alerts per host</button>
+        <button class="opt" onclick="ans(this,'q7','B','D')"><span class="ol">B</span>Detection Rules Coverage view — check MITRE tactic coverage</button>
+        <button class="opt" onclick="ans(this,'q7','C','D')"><span class="ol">C</span>Timeline — manually correlate events using EQL sequence queries</button>
+        <button class="opt" onclick="ans(this,'q7','D','D')"><span class="ol">D</span>Entity Analytics — User Risk Score showing aggregated risk across all hosts</button>
+      </div>
+      <div class="exp" id="e-q7"><strong>Correct: Entity Analytics — User Risk Score.</strong> Entity Analytics aggregates all alert activity across every host for each user and calculates a cumulative risk score. A user who triggered 15 low-severity alerts across 8 different hosts in one hour would have a very high User Risk Score, flagging them as a high-priority investigation target. This aggregated view is what makes Entity Analytics powerful — it sees the campaign pattern that individual alert triage would miss.</div>
+    </div>
+
+    <div class="scorebox" id="scorebox">
+      <div class="score-big" id="score-num">0/7</div>
+      <div class="score-sub">QUESTIONS CORRECT</div>
+      <div class="score-msg" id="score-msg"></div>
+      <button class="btn-reset" onclick="resetQuiz()">↺ RETRY</button>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="ft">ECSA · TOPIC 04 · ALERT TRIAGE & INVESTIGATION</div>
+    <div class="nav-btns">
+      <a href="#" class="nbtn">← Topic 3</a>
+      <button class="nbtn primary" onclick="alert('Topic 5: Threat Hunting (KQL, EQL, ES|QL) — coming next!')">Topic 5: Threat Hunting →</button>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  // ── Alert simulator ──
+  const openAlerts = new Set();
+
+  function toggleAlert(rowId, detailId) {
+    const detail = document.getElementById(detailId);
+    const row    = document.getElementById(rowId);
+    if (openAlerts.has(detailId)) {
+      detail.classList.remove('show');
+      row.classList.remove('selected');
+      openAlerts.delete(detailId);
+    } else {
+      detail.classList.add('show');
+      row.classList.add('selected');
+      openAlerts.add(detailId);
+    }
+  }
+
+  function setStatus(e, stId, label, cls) {
+    e.stopPropagation();
+    const el = document.getElementById(stId);
+    el.className = 'ar-status ' + cls;
+    el.textContent = label;
+  }
+
+  // ── Verdict cards ──
+  const verdictInfo = {
+    tp:  { color: 'var(--red)',    text: `<span style="color:var(--red);font-weight:700">TRUE POSITIVE</span> — Confirmed malicious activity.\n\nNext actions:\n  ▸ Change alert status to "In Progress"\n  ▸ Create a Case and attach the alert\n  ▸ Isolate host if Elastic Defend is present\n  ▸ Add tags (e.g., "incident-2024-042")\n  ▸ Escalate to Incident Response team\n  ▸ Preserve evidence — do NOT delete the original events\n\nExam tip: TP + Critical severity = immediate containment. TP + Low severity = document and monitor.` },
+    fp:  { color: 'var(--green2)', text: `<span style="color:var(--green2);font-weight:700">FALSE POSITIVE</span> — Alert fired on legitimate activity the rule was not intended to catch.\n\nNext actions:\n  ▸ Close the alert with "False Positive" reason\n  ▸ Add a rule exception to prevent recurrence\n  ▸ Consider a shared exception list if affects multiple rules\n  ▸ Document the FP pattern for future reference\n\nExam tip: FP = the rule logic itself is flawed or too broad. Fix the rule or add an exception.` },
+    btp: { color: 'var(--gold)',   text: `<span style="color:var(--gold);font-weight:700">BENIGN TRUE POSITIVE</span> — Rule fired correctly, but the behavior is authorized in this context.\n\nNext actions:\n  ▸ Close the alert with "Benign True Positive" reason\n  ▸ Add a scoped exception (specific user + host) — not a blanket rule exception\n  ▸ Document WHY this activity is authorized\n  ▸ Review whether an approved software list needs updating\n\nExam tip: BTP ≠ FP. The rule is correct. The specific instance is authorized. Keep the rule, scope the exception.` },
+    ind: { color: 'var(--blue2)',  text: `<span style="color:var(--blue2);font-weight:700">INDETERMINATE</span> — Insufficient context to make a verdict.\n\nNext actions:\n  ▸ Keep alert "In Progress" — do not close yet\n  ▸ Gather more context: contact the asset owner\n  ▸ Look for corroborating events in Discover/Timeline\n  ▸ Check threat intelligence for IOC matches\n  ▸ Escalate for a second opinion if still unclear\n\nExam tip: Indeterminate is a valid close reason when evidence is genuinely ambiguous after a thorough investigation — not as a shortcut.` }
+  };
+
+  function showVerdict(el, key) {
+    document.querySelectorAll('.vcard').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    const info = verdictInfo[key];
+    document.getElementById('verdictOut').innerHTML = `<pre style="font-family:var(--mono);font-size:11px;white-space:pre-wrap;line-height:1.8;color:var(--dim)">${info.text}</pre>`;
+    document.getElementById('verdictOut').style.borderLeftColor = info.color;
+  }
+
+  // ── Quiz ──
+  const correct = { q1:'C', q2:'B', q3:'C', q4:'B', q5:'C', q6:'C', q7:'D' };
+  const answered = {};
+  let score = 0;
+
+  function ans(btn, qId, chosen) {
+    if (answered[qId]) return;
+    answered[qId] = true;
+    const isRight = chosen === correct[qId];
+    if (isRight) score++;
+    const block = document.getElementById(qId);
+    const opts = block.querySelectorAll('.opt');
+    const letters = ['A','B','C','D'];
+    opts.forEach((o, i) => {
+      o.classList.add('locked'); o.style.cursor = 'default';
+      if (letters[i] === correct[qId]) o.classList.add(isRight && o===btn ? 'correct' : 'revealc');
+    });
+    if (!isRight) { btn.classList.remove('revealc'); btn.classList.add('wrong'); }
+    else { btn.classList.remove('revealc'); btn.classList.add('correct'); }
+    document.getElementById('e-' + qId).classList.add('show');
+    updateProgress();
+    if (Object.keys(answered).length === 7) setTimeout(showScore, 500);
+  }
+
+  function updateProgress() {
+    const n = Object.keys(answered).length;
+    document.getElementById('progFill').style.width = (n / 7 * 100) + '%';
+    document.getElementById('progTxt').textContent = n + ' / 7 answered';
+  }
+
+  function showScore() {
+    document.getElementById('score-num').textContent = score + '/7';
+    const p = score / 7 * 100;
+    document.getElementById('score-msg').textContent =
+      p === 100 ? '🎯 Perfect score. You think like a SOC analyst.' :
+      p >= 85   ? '✅ Strong. You understand alert triage workflows well.' :
+      p >= 57   ? '📚 Good effort. Review alert statuses and investigation tools.' :
+                  '🔄 Keep practicing. Focus on TP/FP/BTP differences and investigation steps.';
+    document.getElementById('scorebox').classList.add('show');
+  }
+
+  function resetQuiz() {
+    Object.keys(answered).forEach(k => delete answered[k]);
+    score = 0;
+    document.getElementById('scorebox').classList.remove('show');
+    document.querySelectorAll('.opt').forEach(o => { o.classList.remove('correct','wrong','revealc','locked'); o.style.cursor=''; });
+    document.querySelectorAll('.exp').forEach(e => e.classList.remove('show'));
+    document.getElementById('progFill').style.width = '0%';
+    document.getElementById('progTxt').textContent = '0 / 7 answered';
+  }
+</script>
+</body>
+</html>

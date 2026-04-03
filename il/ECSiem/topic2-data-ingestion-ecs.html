@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topic 2: Data Ingestion & ECS Normalization</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Fraunces:ital,wght@0,400;0,700;0,900;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f08;
+    --surface: #131507;
+    --surface2: #1c1f0d;
+    --surface3: #242708;
+    --border: #2e3410;
+    --border2: #3d4218;
+    --amber: #f5a623;
+    --amber2: #ffcc44;
+    --green: #7ab648;
+    --green2: #a8d672;
+    --red: #e05252;
+    --text: #e8e4d4;
+    --text-muted: #6b7040;
+    --text-dim: #a8a882;
+    --mono: 'IBM Plex Mono', monospace;
+    --serif: 'Fraunces', serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--serif);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scan-line overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  /* Noise texture bg */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 28px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    padding: 44px 0 0;
+    margin-bottom: 52px;
+    position: relative;
+  }
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    letter-spacing: 1px;
+  }
+
+  .breadcrumb .sep { color: var(--border2); }
+  .breadcrumb .current { color: var(--amber); }
+
+  .topic-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .topic-label::before {
+    content: '';
+    display: inline-block;
+    width: 28px;
+    height: 1px;
+    background: var(--green);
+  }
+
+  h1 {
+    font-size: clamp(2.4rem, 6vw, 4rem);
+    font-weight: 900;
+    line-height: 1.05;
+    margin-bottom: 14px;
+    color: var(--text);
+    font-style: italic;
+  }
+
+  h1 em {
+    color: var(--amber);
+    font-style: italic;
+  }
+
+  .subtitle {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 36px;
+  }
+
+  /* Topic nav pills */
+  .topic-nav {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 20px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .topic-nav a {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 5px 14px;
+    border-radius: 2px;
+    text-decoration: none;
+    transition: all 0.15s;
+    border: 1px solid var(--border2);
+    color: var(--text-muted);
+    letter-spacing: 1px;
+  }
+
+  .topic-nav a.done {
+    background: rgba(122,182,72,0.1);
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  .topic-nav a.active {
+    background: var(--amber);
+    color: var(--bg);
+    border-color: var(--amber);
+    font-weight: 700;
+  }
+
+  .topic-nav a:hover:not(.active):not(.done) {
+    border-color: var(--amber2);
+    color: var(--amber2);
+  }
+
+  /* Progress */
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 28px 0 52px;
+  }
+
+  .progress-track {
+    flex: 1;
+    height: 2px;
+    background: var(--border);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green), var(--amber));
+    width: 0%;
+    transition: width 0.6s ease;
+    border-radius: 1px;
+  }
+
+  .progress-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  /* ─── SECTIONS ─── */
+  .section {
+    margin-bottom: 48px;
+    animation: slideIn 0.5s ease both;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-16px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  .section:nth-child(1) { animation-delay: 0.05s; }
+  .section:nth-child(2) { animation-delay: 0.12s; }
+  .section:nth-child(3) { animation-delay: 0.19s; }
+  .section:nth-child(4) { animation-delay: 0.26s; }
+  .section:nth-child(5) { animation-delay: 0.33s; }
+  .section:nth-child(6) { animation-delay: 0.40s; }
+
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .sec-code {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--amber);
+    border: 1px solid var(--amber);
+    padding: 3px 10px;
+    border-radius: 2px;
+    letter-spacing: 2px;
+  }
+
+  .sec-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 28px 32px;
+    position: relative;
+  }
+
+  .card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--amber), transparent);
+    opacity: 0.3;
+  }
+
+  .card p {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: var(--text-dim);
+    margin-bottom: 14px;
+    font-family: var(--serif);
+  }
+
+  .card p:last-child { margin-bottom: 0; }
+
+  /* Pipeline diagram */
+  .pipeline {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin: 28px 0;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+
+  .pipe-stage {
+    flex: 1;
+    min-width: 110px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    padding: 18px 14px;
+    text-align: center;
+    position: relative;
+    transition: all 0.25s;
+    cursor: default;
+  }
+
+  .pipe-stage:hover {
+    background: var(--surface3);
+    border-color: var(--amber);
+    z-index: 2;
+    transform: scaleY(1.03);
+  }
+
+  .pipe-stage + .pipe-stage { border-left: none; }
+
+  .pipe-arrow {
+    display: flex;
+    align-items: center;
+    color: var(--amber);
+    font-size: 1rem;
+    padding: 0 4px;
+    opacity: 0.5;
+    flex-shrink: 0;
+    align-self: center;
+  }
+
+  .pipe-stage .ps-icon {
+    font-size: 1.6rem;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .pipe-stage .ps-name {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--amber);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+
+  .pipe-stage .ps-desc {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* Code terminal */
+  .terminal {
+    background: #060802;
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 20px 0;
+    font-family: var(--mono);
+  }
+
+  .terminal-bar {
+    background: var(--surface3);
+    border-bottom: 1px solid var(--border2);
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .t-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .t-dot.r { background: #e05252; }
+  .t-dot.y { background: var(--amber); }
+  .t-dot.g { background: var(--green); }
+
+  .t-title {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-left: 8px;
+    letter-spacing: 1px;
+  }
+
+  .terminal-body {
+    padding: 20px 24px;
+    font-size: 13px;
+    line-height: 1.85;
+    overflow-x: auto;
+  }
+
+  .t-comment { color: #3d4a1a; }
+  .t-key     { color: var(--amber2); }
+  .t-val     { color: var(--green2); }
+  .t-str     { color: #b8d490; }
+  .t-op      { color: var(--amber); }
+  .t-dim     { color: var(--text-muted); }
+  .t-prompt  { color: var(--green); }
+  .t-white   { color: var(--text); }
+
+  /* Comparison table */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 12px;
+    margin: 20px 0;
+  }
+
+  .compare-table th {
+    background: var(--surface3);
+    color: var(--amber);
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 700;
+    letter-spacing: 1px;
+    border: 1px solid var(--border2);
+    font-size: 11px;
+    text-transform: uppercase;
+  }
+
+  .compare-table td {
+    padding: 11px 16px;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    vertical-align: top;
+    line-height: 1.6;
+  }
+
+  .compare-table tr:hover td {
+    background: var(--surface2);
+    color: var(--text);
+  }
+
+  .compare-table td.highlight {
+    color: var(--green2);
+    font-weight: 600;
+  }
+
+  /* Note boxes */
+  .note {
+    border-left: 3px solid var(--amber);
+    background: rgba(245,166,35,0.06);
+    padding: 14px 20px;
+    margin: 16px 0;
+    border-radius: 0 4px 4px 0;
+  }
+
+  .note.green {
+    border-left-color: var(--green);
+    background: rgba(122,182,72,0.06);
+  }
+
+  .note.red {
+    border-left-color: var(--red);
+    background: rgba(224,82,82,0.06);
+  }
+
+  .note p {
+    margin: 0 !important;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text-dim) !important;
+  }
+
+  .note strong { color: var(--amber); }
+  .note.green strong { color: var(--green2); }
+  .note.red strong { color: var(--red); }
+
+  /* Integration grid */
+  .int-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    margin: 20px 0;
+  }
+
+  .int-card {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 14px 16px;
+    transition: all 0.2s;
+    cursor: default;
+  }
+
+  .int-card:hover {
+    border-color: var(--green);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(122,182,72,0.1);
+  }
+
+  .int-card .i-type {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .int-card .i-name {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--green2);
+    margin-bottom: 4px;
+  }
+
+  .int-card .i-desc {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* Ingest pipeline builder (interactive) */
+  .pipeline-builder {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 24px;
+    margin: 20px 0;
+  }
+
+  .pb-title {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--amber);
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+  }
+
+  .processor-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .processor-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+
+  .processor-item.active {
+    border-color: var(--amber);
+    color: var(--text);
+    background: rgba(245,166,35,0.06);
+  }
+
+  .processor-item .pi-name {
+    color: var(--amber2);
+    font-weight: 700;
+    min-width: 80px;
+  }
+
+  .processor-item .pi-desc {
+    color: var(--text-muted);
+    font-size: 11px;
+  }
+
+  .processor-item .pi-tag {
+    margin-left: auto;
+    font-size: 9px;
+    padding: 2px 8px;
+    border-radius: 2px;
+    letter-spacing: 1px;
+    background: var(--surface3);
+    color: var(--text-muted);
+    border: 1px solid var(--border2);
+  }
+
+  .processor-item.active .pi-tag {
+    background: rgba(245,166,35,0.15);
+    color: var(--amber);
+    border-color: var(--amber);
+  }
+
+  .processor-output {
+    background: #060802;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 16px 20px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--green2);
+    line-height: 1.8;
+    min-height: 100px;
+    transition: all 0.3s;
+  }
+
+  /* ─── QUIZ ─── */
+  .quiz-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 32px;
+    margin-top: 48px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .quiz-wrap::before {
+    content: 'KNOWLEDGE CHECK';
+    position: absolute;
+    top: -1px; right: 24px;
+    background: var(--amber);
+    color: var(--bg);
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 14px;
+    letter-spacing: 2px;
+    border-radius: 0 0 4px 4px;
+  }
+
+  .quiz-intro {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 28px;
+    padding-top: 8px;
+  }
+
+  .q-block {
+    margin-bottom: 32px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .q-block:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .q-num {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--amber);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  .q-text {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 16px;
+    line-height: 1.55;
+  }
+
+  .opts {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    cursor: pointer;
+    background: var(--surface2);
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.5;
+    transition: all 0.15s;
+    text-align: left;
+    width: 100%;
+  }
+
+  .opt:hover:not(.locked) {
+    border-color: var(--amber2);
+    color: var(--text);
+    background: rgba(245,166,35,0.05);
+  }
+
+  .opt .ol { font-weight: 700; color: var(--amber); min-width: 16px; }
+
+  .opt.correct  { border-color: var(--green);  background: rgba(122,182,72,0.08);  color: var(--green2); }
+  .opt.wrong    { border-color: var(--red);     background: rgba(224,82,82,0.08);    color: var(--red); }
+  .opt.show-c   { border-color: var(--green);  background: rgba(122,182,72,0.04);  color: var(--green); opacity: 0.65; }
+
+  .q-exp {
+    display: none;
+    margin-top: 12px;
+    padding: 12px 16px;
+    background: rgba(122,182,72,0.05);
+    border: 1px solid rgba(122,182,72,0.2);
+    border-radius: 3px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.75;
+  }
+
+  .q-exp.show { display: block; }
+  .q-exp strong { color: var(--green2); }
+
+  .score-box {
+    display: none;
+    margin-top: 24px;
+    padding: 24px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    text-align: center;
+  }
+
+  .score-box.show { display: block; }
+
+  .score-big {
+    font-family: var(--mono);
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: var(--amber);
+  }
+
+  .score-sub { font-family: var(--mono); font-size: 12px; color: var(--text-muted); margin: 4px 0 12px; }
+  .score-msg { font-size: 1rem; color: var(--text-dim); }
+
+  .btn-reset {
+    margin-top: 18px;
+    background: none;
+    border: 1px solid var(--amber);
+    color: var(--amber);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 10px 28px;
+    border-radius: 3px;
+    cursor: pointer;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+
+  .btn-reset:hover { background: var(--amber); color: var(--bg); }
+
+  /* ─── FOOTER ─── */
+  footer {
+    margin-top: 80px;
+    padding: 32px 0;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .ft { font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+
+  .nav-btns { display: flex; gap: 10px; }
+
+  .nav-btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 10px 22px;
+    border-radius: 3px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    text-decoration: none;
+    border: 1px solid var(--border2);
+    color: var(--text-muted);
+    background: none;
+  }
+
+  .nav-btn:hover { border-color: var(--amber); color: var(--amber); }
+
+  .nav-btn.primary {
+    background: var(--amber);
+    color: var(--bg);
+    border-color: var(--amber);
+    font-weight: 700;
+  }
+
+  .nav-btn.primary:hover {
+    background: var(--amber2);
+    border-color: var(--amber2);
+    transform: translateX(2px);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  @media (max-width: 640px) {
+    .pipeline { flex-direction: column; }
+    .pipe-arrow { transform: rotate(90deg); align-self: flex-start; margin-left: 48px; }
+    footer { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <div class="breadcrumb">
+      <span>ECSA</span><span class="sep">›</span>
+      <span>Study Guide</span><span class="sep">›</span>
+      <span class="current">Topic 02</span>
+    </div>
+    <div class="topic-label">Topic 2 of 8</div>
+    <h1>Data Ingestion &<br><em>ECS Normalization</em></h1>
+    <p class="subtitle">// Integrations · Beats · Logstash · Ingest Pipelines · Index Management</p>
+
+    <nav class="topic-nav">
+      <a href="#" class="done">01 · Fundamentals ✓</a>
+      <a href="#" class="active">02 · Data Ingestion</a>
+      <a href="#">03 · Detection Engine</a>
+      <a href="#">04 · Alert Triage</a>
+      <a href="#">05 · Threat Hunting</a>
+      <a href="#">06 · Cases</a>
+      <a href="#">07 · RBAC & Admin</a>
+      <a href="#">08 · Visualization</a>
+    </nav>
+  </header>
+
+  <div class="progress-row">
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <span class="progress-label" id="progressLabel">0 / 6 answered</span>
+  </div>
+
+  <!-- ══════════════ SECTION 1: INGESTION OVERVIEW ══════════════ -->
+  <div class="section">
+    <div class="section-label">
+      <span class="sec-code">02.01</span>
+      <h2 class="sec-title">The Data Ingestion Pipeline</h2>
+    </div>
+    <div class="card">
+      <p>Before any detection or investigation can occur, data must flow from its source into Elasticsearch. Understanding <em>how</em> that data is collected, transformed, and stored is foundational for a SIEM analyst — especially when data is missing, malformed, or normalized incorrectly.</p>
+
+      <div class="pipeline">
+        <div class="pipe-stage">
+          <span class="ps-icon">💻</span>
+          <div class="ps-name">SOURCE</div>
+          <div class="ps-desc">OS · App · Network · Cloud · Identity</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-stage">
+          <span class="ps-icon">🔌</span>
+          <div class="ps-name">COLLECTOR</div>
+          <div class="ps-desc">Elastic Agent · Beats · API · Syslog</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-stage">
+          <span class="ps-icon">⚙️</span>
+          <div class="ps-name">TRANSFORM</div>
+          <div class="ps-desc">Ingest Pipeline · Logstash · Processor</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-stage">
+          <span class="ps-icon">🗄️</span>
+          <div class="ps-name">STORE</div>
+          <div class="ps-desc">Elasticsearch Index (ECS-normalized)</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-stage">
+          <span class="ps-icon">🔍</span>
+          <div class="ps-name">ANALYZE</div>
+          <div class="ps-desc">Kibana · Alerts · Hunting · Cases</div>
+        </div>
+      </div>
+
+      <div class="note">
+        <p><strong>Key exam concept:</strong> Data can be ingested via Elastic Agent (preferred), standalone Beats, Logstash pipelines, or direct API calls. The preferred modern approach is <strong>Elastic Agent + integrations managed by Fleet</strong>, which handles normalization to ECS automatically.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ SECTION 2: COLLECTION METHODS ══════════════ -->
+  <div class="section">
+    <div class="section-label">
+      <span class="sec-code">02.02</span>
+      <h2 class="sec-title">Collection Methods Compared</h2>
+    </div>
+    <div class="card">
+      <p>Knowing <em>when</em> to use each collection method is a common exam scenario. Use this comparison as your reference.</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Best For</th>
+            <th>Managed By</th>
+            <th>ECS Auto-Norm</th>
+            <th>Transformation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="highlight">Elastic Agent</td>
+            <td>Endpoints, cloud, most modern data sources</td>
+            <td>Fleet (Kibana)</td>
+            <td style="color:var(--green2)">Yes ✓</td>
+            <td>Via integrations</td>
+          </tr>
+          <tr>
+            <td class="highlight">Filebeat</td>
+            <td>Log files, syslog, specific modules</td>
+            <td>Manual config files</td>
+            <td style="color:var(--green2)">Yes (modules)</td>
+            <td>Ingest pipelines</td>
+          </tr>
+          <tr>
+            <td class="highlight">Winlogbeat</td>
+            <td>Windows Event Logs exclusively</td>
+            <td>Manual config files</td>
+            <td style="color:var(--green2)">Yes ✓</td>
+            <td>Built-in mapping</td>
+          </tr>
+          <tr>
+            <td class="highlight">Packetbeat</td>
+            <td>Network protocol analysis (DNS, HTTP, TLS)</td>
+            <td>Manual config files</td>
+            <td style="color:var(--green2)">Yes ✓</td>
+            <td>Protocol parsers</td>
+          </tr>
+          <tr>
+            <td class="highlight">Metricbeat</td>
+            <td>System & service metrics</td>
+            <td>Manual config files</td>
+            <td style="color:var(--green2)">Yes ✓</td>
+            <td>Modules</td>
+          </tr>
+          <tr>
+            <td class="highlight">Logstash</td>
+            <td>Complex transformations, legacy data, fan-out</td>
+            <td>Logstash config (.conf)</td>
+            <td style="color:var(--red)">Manual</td>
+            <td>Full pipeline (filter)</td>
+          </tr>
+          <tr>
+            <td class="highlight">Direct API</td>
+            <td>Custom apps, serverless, Lambda</td>
+            <td>Application code</td>
+            <td style="color:var(--red)">Manual</td>
+            <td>Application-side</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="note red">
+        <p><strong>Watch out:</strong> Beats are still widely deployed but are considered <em>legacy</em>. The exam may present scenarios where you must identify the better approach. For new deployments, Elastic Agent + Fleet is always preferred unless you have a compelling reason (e.g., Logstash for complex multi-step transformations).</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ SECTION 3: INTEGRATIONS ══════════════ -->
+  <div class="section">
+    <div class="section-label">
+      <span class="sec-code">02.03</span>
+      <h2 class="sec-title">Elastic Integrations for Security</h2>
+    </div>
+    <div class="card">
+      <p>Integrations are pre-built packages that configure Elastic Agent to collect from a specific source. They handle normalization to ECS, ship detection rules, dashboards, and index templates automatically.</p>
+
+      <div class="int-grid">
+        <div class="int-card">
+          <div class="i-type">Endpoint</div>
+          <div class="i-name">Elastic Defend</div>
+          <div class="i-desc">EDR: process, file, network, registry events + malware prevention</div>
+        </div>
+        <div class="int-card">
+          <div class="i-type">OS</div>
+          <div class="i-name">Windows</div>
+          <div class="i-desc">Windows Event Logs, Sysmon, PowerShell, WMI</div>
+        </div>
+        <div class="int-card">
+          <div class="i-type">OS</div>
+          <div class="i-name">Linux Auditd</div>
+          <div class="i-desc">Linux audit framework: syscall events, file access, user activity</div>
+        </div>
+        <div class="int-card">
+          <div class="i-type">Network</div>
+          <div class="i-name">Zeek</div>
+          <div class="i-desc">Network metadata: conn, dns, http, ssl, files logs</div>
+        </div>
+        <div class="int-card">
+          <div class="i-type">Network</div>
+          <div class="i-name">Suricata</div>
+          <div class="i-desc">IDS/IPS alerts and network events</div>
+        </div>
+        <div class="int-card">
+          <div class="i-type">Cloud</div>
+          <div class="i-name">AWS CloudTrail</div>
+          <div class="i-desc">AWS API calls, auth events, service activity</div>
+        </div>
+        <div class="int-card">
+          <div class="i-type">Cloud</div>
+          <div class="i-name">Azure Activity</div>
+          <div class="i-desc">Azure management operations and sign-in events</div>
+        </div>
+        <div class="int-card">
+          <div class="i-type">Identity</div>
+          <div class="i-name">Okta</div>
+          <div class="i-desc">SSO authentication, MFA events, policy changes</div>
+        </div>
+        <div class="int-card">
+          <div class="i-type">Firewall</div>
+          <div class="i-name">Palo Alto</div>
+          <div class="i-desc">Firewall traffic, threat, and URL filtering logs</div>
+        </div>
+      </div>
+
+      <div class="note green">
+        <p><strong>Exam tip:</strong> When you add an integration to an agent policy, Elastic automatically creates the necessary <strong>index templates</strong>, <strong>ingest pipelines</strong>, and <strong>data streams</strong>. You do not need to manually configure ECS mapping for supported integrations.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ SECTION 4: INGEST PIPELINES ══════════════ -->
+  <div class="section">
+    <div class="section-label">
+      <span class="sec-code">02.04</span>
+      <h2 class="sec-title">Ingest Pipelines & Processors</h2>
+    </div>
+    <div class="card">
+      <p>An <strong>Ingest Pipeline</strong> is a sequence of processors that transform documents <em>before</em> they are stored in Elasticsearch. They live inside Elasticsearch itself (not Logstash). They are used to parse, enrich, rename, remove, and add fields.</p>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="t-dot r"></div><div class="t-dot y"></div><div class="t-dot g"></div>
+          <span class="t-title">PUT _ingest/pipeline/my-security-pipeline</span>
+        </div>
+        <div class="terminal-body">
+<span class="t-dim">{</span>
+  <span class="t-key">"description"</span><span class="t-dim">:</span> <span class="t-str">"Normalize Windows auth events to ECS"</span><span class="t-dim">,</span>
+  <span class="t-key">"processors"</span><span class="t-dim">: [</span>
+    <span class="t-dim">{</span>
+      <span class="t-key">"grok"</span><span class="t-dim">:</span> <span class="t-dim">{</span>
+        <span class="t-key">"field"</span><span class="t-dim">:</span> <span class="t-str">"message"</span><span class="t-dim">,</span>
+        <span class="t-key">"patterns"</span><span class="t-dim">:</span> <span class="t-dim">[</span><span class="t-str">"%{TIMESTAMP_ISO8601:@timestamp} %{GREEDYDATA:event.action}"</span><span class="t-dim">]</span>
+      <span class="t-dim">}</span>
+    <span class="t-dim">},</span>
+    <span class="t-dim">{</span>
+      <span class="t-key">"rename"</span><span class="t-dim">:</span> <span class="t-dim">{</span>
+        <span class="t-key">"field"</span><span class="t-dim">:</span> <span class="t-str">"winlog.event_data.SubjectUserName"</span><span class="t-dim">,</span>
+        <span class="t-key">"target_field"</span><span class="t-dim">:</span> <span class="t-str">"user.name"</span>
+      <span class="t-dim">}</span>
+    <span class="t-dim">},</span>
+    <span class="t-dim">{</span>
+      <span class="t-key">"geoip"</span><span class="t-dim">:</span> <span class="t-dim">{</span>
+        <span class="t-key">"field"</span><span class="t-dim">:</span> <span class="t-str">"source.ip"</span><span class="t-dim">,</span>
+        <span class="t-key">"target_field"</span><span class="t-dim">:</span> <span class="t-str">"source.geo"</span>
+      <span class="t-dim">}</span>
+    <span class="t-dim">},</span>
+    <span class="t-dim">{</span>
+      <span class="t-key">"set"</span><span class="t-dim">:</span> <span class="t-dim">{</span>
+        <span class="t-key">"field"</span><span class="t-dim">:</span> <span class="t-str">"event.category"</span><span class="t-dim">,</span>
+        <span class="t-key">"value"</span><span class="t-dim">:</span> <span class="t-str">"authentication"</span>
+      <span class="t-dim">}</span>
+    <span class="t-dim">}</span>
+  <span class="t-dim">]</span>
+<span class="t-dim">}</span>
+        </div>
+      </div>
+
+      <!-- Interactive processor explorer -->
+      <div class="pipeline-builder">
+        <div class="pb-title">// Processor Reference — Click to explore</div>
+        <div class="processor-list" id="processorList">
+          <div class="processor-item active" onclick="showProcessor(this,'grok')" data-proc="grok">
+            <span class="pi-name">grok</span>
+            <span class="pi-desc">Parse unstructured text using named regex patterns</span>
+            <span class="pi-tag">PARSE</span>
+          </div>
+          <div class="processor-item" onclick="showProcessor(this,'rename')" data-proc="rename">
+            <span class="pi-name">rename</span>
+            <span class="pi-desc">Rename a field (e.g., normalize vendor field to ECS)</span>
+            <span class="pi-tag">MAP</span>
+          </div>
+          <div class="processor-item" onclick="showProcessor(this,'geoip')" data-proc="geoip">
+            <span class="pi-name">geoip</span>
+            <span class="pi-desc">Add geo location data from an IP address field</span>
+            <span class="pi-tag">ENRICH</span>
+          </div>
+          <div class="processor-item" onclick="showProcessor(this,'set')" data-proc="set">
+            <span class="pi-name">set</span>
+            <span class="pi-desc">Set a field to a static or dynamic value</span>
+            <span class="pi-tag">WRITE</span>
+          </div>
+          <div class="processor-item" onclick="showProcessor(this,'remove')" data-proc="remove">
+            <span class="pi-name">remove</span>
+            <span class="pi-desc">Delete a field from the document</span>
+            <span class="pi-tag">CLEAN</span>
+          </div>
+          <div class="processor-item" onclick="showProcessor(this,'convert')" data-proc="convert">
+            <span class="pi-name">convert</span>
+            <span class="pi-desc">Change a field's data type (string → integer, etc.)</span>
+            <span class="pi-tag">TYPE</span>
+          </div>
+          <div class="processor-item" onclick="showProcessor(this,'date')" data-proc="date">
+            <span class="pi-name">date</span>
+            <span class="pi-desc">Parse a date string and set @timestamp</span>
+            <span class="pi-tag">TIME</span>
+          </div>
+          <div class="processor-item" onclick="showProcessor(this,'script')" data-proc="script">
+            <span class="pi-name">script</span>
+            <span class="pi-desc">Run a Painless script for complex logic</span>
+            <span class="pi-tag">LOGIC</span>
+          </div>
+        </div>
+        <div class="processor-output" id="processorOutput">
+<span style="color:var(--amber2)">// grok processor</span>
+<span style="color:var(--text-muted)">Use case:</span> Parse raw syslog or unstructured log lines into named fields.
+
+<span style="color:var(--green2)">"grok": {
+  "field": "message",
+  "patterns": ["%{SYSLOGTIMESTAMP:syslog.timestamp} %{IPORHOST:source.ip}"]
+}</span>
+
+<span style="color:var(--text-muted)">Result:</span> <span style="color:var(--text)">message</span> field is parsed → <span style="color:var(--green2)">syslog.timestamp</span> and <span style="color:var(--green2)">source.ip</span> created.
+<span style="color:var(--amber)">Exam tip:</span> Grok uses Oniguruma regex. Common patterns: %{IP}, %{NUMBER}, %{WORD}, %{GREEDYDATA}.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ SECTION 5: DATA STREAMS & ILM ══════════════ -->
+  <div class="section">
+    <div class="section-label">
+      <span class="sec-code">02.05</span>
+      <h2 class="sec-title">Data Streams, Index Templates & ILM</h2>
+    </div>
+    <div class="card">
+      <p>Elastic Security uses <strong>data streams</strong> to manage time-series security event data. They provide automatic rollover and lifecycle management, keeping your cluster healthy and your storage costs predictable.</p>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="t-dot r"></div><div class="t-dot y"></div><div class="t-dot g"></div>
+          <span class="t-title">Data Stream Naming Convention</span>
+        </div>
+        <div class="terminal-body">
+<span class="t-comment"># Format: {type}-{dataset}-{namespace}</span>
+
+<span class="t-key">logs</span><span class="t-dim">-</span><span class="t-val">endpoint.alerts</span><span class="t-dim">-</span><span class="t-str">default</span>    <span class="t-comment"># Elastic Defend alerts</span>
+<span class="t-key">logs</span><span class="t-dim">-</span><span class="t-val">windows.sysmon_operational</span><span class="t-dim">-</span><span class="t-str">default</span>  <span class="t-comment"># Sysmon events</span>
+<span class="t-key">logs</span><span class="t-dim">-</span><span class="t-val">aws.cloudtrail</span><span class="t-dim">-</span><span class="t-str">default</span>    <span class="t-comment"># AWS CloudTrail</span>
+<span class="t-key">metrics</span><span class="t-dim">-</span><span class="t-val">system.cpu</span><span class="t-dim">-</span><span class="t-str">default</span>      <span class="t-comment"># CPU metrics</span>
+
+<span class="t-comment"># Backing indices (auto-created by data stream)</span>
+<span class="t-dim">.</span><span class="t-key">ds-logs-endpoint.alerts-default-2024.01.01-000001</span>
+<span class="t-dim">.</span><span class="t-key">ds-logs-endpoint.alerts-default-2024.02.01-000002</span>
+        </div>
+      </div>
+
+      <p>The <strong>Index Lifecycle Management (ILM)</strong> policy moves data through phases automatically:</p>
+
+      <div class="pipeline" style="margin-top:16px">
+        <div class="pipe-stage" style="border-color:rgba(245,166,35,0.5)">
+          <span class="ps-icon">🔥</span>
+          <div class="ps-name" style="color:var(--amber)">HOT</div>
+          <div class="ps-desc">Active writes + fast reads. SSD storage. Recent data.</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-stage" style="border-color:rgba(168,214,114,0.5)">
+          <span class="ps-icon">🌡️</span>
+          <div class="ps-name" style="color:var(--green2)">WARM</div>
+          <div class="ps-desc">Read-only, less frequent queries. Can use cheaper storage.</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-stage">
+          <span class="ps-icon">❄️</span>
+          <div class="ps-name">COLD</div>
+          <div class="ps-desc">Rarely accessed. Object storage. Searchable but slow.</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-stage">
+          <span class="ps-icon">🧊</span>
+          <div class="ps-name">FROZEN</div>
+          <div class="ps-desc">Long-term archive. Cached on demand. Cheapest tier.</div>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-stage" style="border-color:rgba(224,82,82,0.5)">
+          <span class="ps-icon">🗑️</span>
+          <div class="ps-name" style="color:var(--red)">DELETE</div>
+          <div class="ps-desc">Data purged per retention policy.</div>
+        </div>
+      </div>
+
+      <div class="note green">
+        <p><strong>SIEM analyst relevance:</strong> Analysts must understand ILM because older events may be in COLD or FROZEN tiers, requiring async searches. If an alert references old data, it may not appear in standard searches — you need to expand the search tier in Discover settings.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ SECTION 6: ECS NORMALIZATION ══════════════ -->
+  <div class="section">
+    <div class="section-label">
+      <span class="sec-code">02.06</span>
+      <h2 class="sec-title">ECS Normalization in Practice</h2>
+    </div>
+    <div class="card">
+      <p>ECS normalization is the process of mapping vendor-specific field names to the standard ECS field schema. This is what allows a detection rule written once to work across Windows events, Linux audit logs, and cloud logs simultaneously.</p>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="t-dot r"></div><div class="t-dot y"></div><div class="t-dot g"></div>
+          <span class="t-title">Before vs After ECS Normalization</span>
+        </div>
+        <div class="terminal-body">
+<span class="t-comment">// RAW Windows Security Event Log (before normalization)</span>
+<span class="t-dim">{</span>
+  <span class="t-key">"EventID"</span><span class="t-dim">:</span> <span class="t-str">"4624"</span><span class="t-dim">,</span>
+  <span class="t-key">"SubjectUserName"</span><span class="t-dim">:</span> <span class="t-str">"SYSTEM"</span><span class="t-dim">,</span>
+  <span class="t-key">"TargetUserName"</span><span class="t-dim">:</span> <span class="t-str">"jdoe"</span><span class="t-dim">,</span>
+  <span class="t-key">"IpAddress"</span><span class="t-dim">:</span> <span class="t-str">"192.168.1.50"</span><span class="t-dim">,</span>
+  <span class="t-key">"LogonType"</span><span class="t-dim">:</span> <span class="t-str">"3"</span>
+<span class="t-dim">}</span>
+
+<span class="t-comment">// AFTER ECS normalization (stored in Elasticsearch)</span>
+<span class="t-dim">{</span>
+  <span class="t-key">"@timestamp"</span><span class="t-dim">:</span> <span class="t-str">"2024-03-15T08:42:11.000Z"</span><span class="t-dim">,</span>
+  <span class="t-key">"event.category"</span><span class="t-dim">:</span> <span class="t-val">["authentication"]</span><span class="t-dim">,</span>
+  <span class="t-key">"event.type"</span><span class="t-dim">:</span> <span class="t-val">["start"]</span><span class="t-dim">,</span>
+  <span class="t-key">"event.outcome"</span><span class="t-dim">:</span> <span class="t-str">"success"</span><span class="t-dim">,</span>
+  <span class="t-key">"user.name"</span><span class="t-dim">:</span> <span class="t-str">"jdoe"</span><span class="t-dim">,</span>
+  <span class="t-key">"source.ip"</span><span class="t-dim">:</span> <span class="t-str">"192.168.1.50"</span><span class="t-dim">,</span>
+  <span class="t-key">"winlog.logon.type"</span><span class="t-dim">:</span> <span class="t-str">"Network"</span><span class="t-dim">,</span>
+  <span class="t-key">"winlog.event_id"</span><span class="t-dim">:</span> <span class="t-val">4624</span>
+<span class="t-dim">}</span>
+        </div>
+      </div>
+
+      <p>Notice how the normalized document uses standard ECS fields (<code style="font-family:var(--mono);color:var(--amber2)">user.name</code>, <code style="font-family:var(--mono);color:var(--amber2)">source.ip</code>, <code style="font-family:var(--mono);color:var(--amber2)">event.outcome</code>) while the vendor-specific fields (<code style="font-family:var(--mono);color:var(--text-muted)">winlog.*</code>) are preserved for extra context. This means a detection rule checking <code style="font-family:var(--mono);color:var(--amber2)">event.outcome: "failure"</code> works across Windows, Linux, and cloud authentication logs.</p>
+
+      <div class="note">
+        <p><strong>Important ECS multi-value fields:</strong> <code style="color:var(--amber2)">event.category</code> and <code style="color:var(--amber2)">event.type</code> are <em>arrays</em> in ECS. A single event can belong to multiple categories (e.g., <code>["authentication", "session"]</code>). Always check with <strong>is one of</strong> operators in KQL, not strict equality.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ QUIZ ══════════════ -->
+  <div class="quiz-wrap">
+    <div class="quiz-intro">Topic 2 · Practice Questions</div>
+
+    <!-- Q1 -->
+    <div class="q-block" id="q1">
+      <div class="q-num">QUESTION 01</div>
+      <div class="q-text">An analyst needs to ingest Palo Alto firewall logs that require complex multi-step transformations including conditional field logic that varies by log type. Which ingestion tool is MOST appropriate?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q1','A','D')"><span class="ol">A</span> Elastic Agent with the Palo Alto integration</button>
+        <button class="opt" onclick="ans(this,'q1','B','D')"><span class="ol">B</span> Filebeat with a custom module</button>
+        <button class="opt" onclick="ans(this,'q1','C','D')"><span class="ol">C</span> An Elasticsearch ingest pipeline with grok processors</button>
+        <button class="opt" onclick="ans(this,'q1','D','D')"><span class="ol">D</span> Logstash with conditional filter logic</button>
+      </div>
+      <div class="q-exp" id="e-q1">
+        <strong>Correct: Logstash</strong> is the right choice for <em>complex, conditional multi-step transformations</em>. While Elastic Agent and ingest pipelines handle most cases, Logstash's full Ruby-based conditionals, multiple filter plugins, and fan-out routing capabilities make it the best tool for complex transformation logic that varies by log type.
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="q-block" id="q2">
+      <div class="q-num">QUESTION 02</div>
+      <div class="q-text">In an ECS-normalized document, a Windows 4624 logon event sets <code style="font-family:IBM Plex Mono,monospace;color:var(--amber2)">event.category</code> to <code style="font-family:IBM Plex Mono,monospace;color:var(--amber2)">["authentication"]</code>. An analyst writing a KQL query wants to match this. Which KQL syntax is correct?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q2','A','A')"><span class="ol">A</span> event.category: "authentication"</button>
+        <button class="opt" onclick="ans(this,'q2','B','A')"><span class="ol">B</span> event.category == ["authentication"]</button>
+        <button class="opt" onclick="ans(this,'q2','C','A')"><span class="ol">C</span> event.category: ["authentication"]</button>
+        <button class="opt" onclick="ans(this,'q2','D','A')"><span class="ol">D</span> event.category.contains("authentication")</button>
+      </div>
+      <div class="q-exp" id="e-q2">
+        <strong>Correct: <code style="color:var(--green2)">event.category: "authentication"</code></strong> — KQL uses colon syntax for field matching, and even though <code>event.category</code> is an array field, KQL automatically searches within the array. You do NOT need to use array bracket syntax. Option C would also match but is not standard KQL syntax.
+      </div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="q-block" id="q3">
+      <div class="q-num">QUESTION 03</div>
+      <div class="q-text">A new Elastic Agent policy needs to collect endpoint security events AND normalize them to ECS automatically. What must be added to the agent policy to enable this?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q3','A','C')"><span class="ol">A</span> A Logstash output configuration</button>
+        <button class="opt" onclick="ans(this,'q3','B','C')"><span class="ol">B</span> A custom ingest pipeline with rename processors</button>
+        <button class="opt" onclick="ans(this,'q3','C','C')"><span class="ol">C</span> The Elastic Defend integration</button>
+        <button class="opt" onclick="ans(this,'q3','D','C')"><span class="ol">D</span> Winlogbeat installed alongside Elastic Agent</button>
+      </div>
+      <div class="q-exp" id="e-q3">
+        <strong>Correct: The Elastic Defend integration</strong> — Adding this integration to an agent policy enables EDR-level endpoint telemetry (process, file, network, registry events) and automatically normalizes everything to ECS. There is no need for Logstash, custom pipelines, or additional Beats.
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="q-block" id="q4">
+      <div class="q-num">QUESTION 04</div>
+      <div class="q-text">An analyst investigates an alert but cannot find events older than 7 days in Discover. The cluster uses ILM. What is the most likely reason?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q4','A','B')"><span class="ol">A</span> The events were deleted by a cleanup script</button>
+        <button class="opt" onclick="ans(this,'q4','B','B')"><span class="ol">B</span> Older data has moved to COLD or FROZEN tier; standard search only queries HOT/WARM by default</button>
+        <button class="opt" onclick="ans(this,'q4','C','B')"><span class="ol">C</span> The index pattern does not cover older indices</button>
+        <button class="opt" onclick="ans(this,'q4','D','B')"><span class="ol">D</span> Elasticsearch automatically deduplicates events older than one week</button>
+      </div>
+      <div class="q-exp" id="e-q4">
+        <strong>Correct: Cold/Frozen tier limitation.</strong> ILM moves older data to COLD and FROZEN tiers where data is on object storage. Standard searches don't automatically include these tiers. To search older data, analysts need to run async searches and ensure the search settings include cold/frozen tier data. Elasticsearch does NOT deduplicate events automatically.
+      </div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="q-block" id="q5">
+      <div class="q-num">QUESTION 05</div>
+      <div class="q-text">Which ingest processor would you use to enrich a security event with geographic location information based on a source IP address?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q5','A','C')"><span class="ol">A</span> rename</button>
+        <button class="opt" onclick="ans(this,'q5','B','C')"><span class="ol">B</span> set</button>
+        <button class="opt" onclick="ans(this,'q5','C','C')"><span class="ol">C</span> geoip</button>
+        <button class="opt" onclick="ans(this,'q5','D','C')"><span class="ol">D</span> grok</button>
+      </div>
+      <div class="q-exp" id="e-q5">
+        <strong>Correct: geoip</strong> — The geoip processor looks up an IP address against the MaxMind GeoIP database bundled with Elasticsearch and adds geographic fields like <code style="color:var(--green2)">source.geo.country_name</code>, <code style="color:var(--green2)">source.geo.city_name</code>, and coordinates. This is used extensively in SIEM to enrich authentication and network events with location context.
+      </div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="q-block" id="q6">
+      <div class="q-num">QUESTION 06</div>
+      <div class="q-text">What is the correct data stream naming convention for security logs collected by the Windows integration, in the "production" namespace?</div>
+      <div class="opts">
+        <button class="opt" onclick="ans(this,'q6','A','B')"><span class="ol">A</span> security-windows.events-production</button>
+        <button class="opt" onclick="ans(this,'q6','B','B')"><span class="ol">B</span> logs-windows.security-production</button>
+        <button class="opt" onclick="ans(this,'q6','C','B')"><span class="ol">C</span> elastic-logs-windows-prod</button>
+        <button class="opt" onclick="ans(this,'q6','D','B')"><span class="ol">D</span> windows.logs.security.production</button>
+      </div>
+      <div class="q-exp" id="e-q6">
+        <strong>Correct: logs-windows.security-production</strong> — Elastic data stream names follow the format <code style="color:var(--green2)">{type}-{dataset}-{namespace}</code>. Type is always <code>logs</code>, <code>metrics</code>, or <code>traces</code>. Dataset is <code>integration_name.log_type</code>. Namespace is user-defined (commonly "default" or environment name like "production").
+      </div>
+    </div>
+
+    <div class="score-box" id="scorebox">
+      <div class="score-big" id="score-num">0/6</div>
+      <div class="score-sub">questions correct</div>
+      <div class="score-msg" id="score-msg"></div>
+      <button class="btn-reset" onclick="resetQuiz()">↺ RETRY</button>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="ft">ECSA Study Guide · Topic 2: Data Ingestion & ECS Normalization</div>
+    <div class="nav-btns">
+      <a href="#" class="nav-btn">← Topic 1</a>
+      <button class="nav-btn primary" onclick="alert('Topic 3: Detection Engine & Rule Creation — coming next!')">Topic 3: Detection Engine →</button>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  // ── Processor explorer ──
+  const procData = {
+    grok:    { tag:'PARSE',  color:'#ffcc44', body:`<span style="color:var(--amber2)">// grok processor</span>\n<span style="color:var(--text-muted)">Use case:</span> Parse raw unstructured log lines into named ECS fields.\n\n<span style="color:var(--green2)">"grok": {\n  "field": "message",\n  "patterns": ["%{SYSLOGTIMESTAMP:@timestamp} %{IP:source.ip} %{GREEDYDATA:event.action}"]\n}</span>\n\n<span style="color:var(--text-muted)">Result:</span> <span style="color:var(--text)">message</span> → creates <span style="color:var(--green2)">@timestamp</span>, <span style="color:var(--green2)">source.ip</span>, <span style="color:var(--green2)">event.action</span>.\n<span style="color:var(--amber)">Exam tip:</span> Common built-in patterns: %{IP}, %{NUMBER}, %{WORD}, %{GREEDYDATA}, %{HOSTNAME}.` },
+    rename:  { tag:'MAP',    color:'#7ab648', body:`<span style="color:var(--amber2)">// rename processor</span>\n<span style="color:var(--text-muted)">Use case:</span> Map vendor-specific fields to ECS standard field names.\n\n<span style="color:var(--green2)">"rename": {\n  "field": "winlog.event_data.SubjectUserName",\n  "target_field": "user.name",\n  "ignore_missing": true\n}</span>\n\n<span style="color:var(--text-muted)">Result:</span> Old field is removed, new ECS field is created.\n<span style="color:var(--amber)">Exam tip:</span> Use <span style="color:var(--amber2)">"ignore_missing": true</span> to prevent pipeline failure if field is absent.` },
+    geoip:   { tag:'ENRICH', color:'#a8d672', body:`<span style="color:var(--amber2)">// geoip processor</span>\n<span style="color:var(--text-muted)">Use case:</span> Enrich IP addresses with geographic location and ASN info.\n\n<span style="color:var(--green2)">"geoip": {\n  "field": "source.ip",\n  "target_field": "source.geo",\n  "properties": ["country_name", "city_name", "location"]\n}</span>\n\n<span style="color:var(--text-muted)">Adds:</span> <span style="color:var(--green2)">source.geo.country_name</span>, <span style="color:var(--green2)">source.geo.location</span> (lat/lon).\n<span style="color:var(--amber)">Exam tip:</span> Used to power map visualizations and country-based detection rules.` },
+    set:     { tag:'WRITE',  color:'#f5a623', body:`<span style="color:var(--amber2)">// set processor</span>\n<span style="color:var(--text-muted)">Use case:</span> Add a static value or copy a value from another field.\n\n<span style="color:var(--green2)">"set": {\n  "field": "event.category",\n  "value": "authentication"\n}</span>\n\n<span style="color:var(--text-muted)">Also supports dynamic values:</span>\n<span style="color:var(--green2)">"set": { "field": "labels.env", "value": "production" }</span>\n<span style="color:var(--amber)">Exam tip:</span> Commonly used to stamp ECS <span style="color:var(--amber2)">event.category</span> and <span style="color:var(--amber2)">event.type</span> on normalized events.` },
+    remove:  { tag:'CLEAN',  color:'#e05252', body:`<span style="color:var(--amber2)">// remove processor</span>\n<span style="color:var(--text-muted)">Use case:</span> Remove fields you don't want stored (saves space, removes PII).\n\n<span style="color:var(--green2)">"remove": {\n  "field": ["message", "temp_field", "raw_log"],\n  "ignore_missing": true\n}</span>\n\n<span style="color:var(--text-muted)">Result:</span> Listed fields are deleted from the document before indexing.\n<span style="color:var(--amber)">Exam tip:</span> Often used after grok parsing — remove the raw <span style="color:var(--amber2)">message</span> field once it's been parsed into structured fields.` },
+    convert: { tag:'TYPE',   color:'#ffcc44', body:`<span style="color:var(--amber2)">// convert processor</span>\n<span style="color:var(--text-muted)">Use case:</span> Change a field's data type for correct ECS mapping.\n\n<span style="color:var(--green2)">"convert": {\n  "field": "destination.port",\n  "type": "integer"\n}</span>\n\n<span style="color:var(--text-muted)">Types:</span> integer, long, float, boolean, string, ip, auto.\n<span style="color:var(--amber)">Exam tip:</span> Port numbers must be integers in ECS (<span style="color:var(--amber2)">source.port</span>, <span style="color:var(--amber2)">destination.port</span>). String ports won't match numeric queries.` },
+    date:    { tag:'TIME',   color:'#7ab648', body:`<span style="color:var(--amber2)">// date processor</span>\n<span style="color:var(--text-muted)">Use case:</span> Parse a string timestamp and set the ECS @timestamp field.\n\n<span style="color:var(--green2)">"date": {\n  "field": "syslog.timestamp",\n  "formats": ["MMM d HH:mm:ss", "ISO8601"],\n  "target_field": "@timestamp",\n  "timezone": "UTC"\n}</span>\n\n<span style="color:var(--amber)">Exam tip:</span> <span style="color:var(--amber2)">@timestamp</span> must be set correctly — it's what drives all time-based queries, visualizations, and retention policies.` },
+    script:  { tag:'LOGIC',  color:'#a8d672', body:`<span style="color:var(--amber2)">// script processor (Painless)</span>\n<span style="color:var(--text-muted)">Use case:</span> Complex logic that can't be done with simpler processors.\n\n<span style="color:var(--green2)">"script": {\n  "lang": "painless",\n  "source": "if (ctx.event?.outcome == 'failure') { ctx.risk_score = 70; } else { ctx.risk_score = 10; }"\n}</span>\n\n<span style="color:var(--amber)">Exam tip:</span> Painless scripts are powerful but impact ingest performance. Use simpler processors first; reserve scripts for cases where conditionals are unavoidable.` }
+  };
+
+  function showProcessor(el, name) {
+    document.querySelectorAll('.processor-item').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('processorOutput').innerHTML = procData[name].body;
+  }
+
+  // ── Quiz ──
+  const correct = { q1:'D', q2:'A', q3:'C', q4:'B', q5:'C', q6:'B' };
+  const answered = {};
+  let score = 0;
+
+  function ans(btn, qId, chosen, _) {
+    if (answered[qId]) return;
+    answered[qId] = true;
+    const isRight = chosen === correct[qId];
+    if (isRight) score++;
+
+    const block = document.getElementById(qId);
+    const opts = block.querySelectorAll('.opt');
+    const letters = ['A','B','C','D'];
+
+    opts.forEach((o, i) => {
+      o.classList.add('locked');
+      o.style.cursor = 'default';
+      if (letters[i] === correct[qId]) o.classList.add(isRight ? (o === btn ? 'correct' : 'show-c') : 'show-c');
+    });
+
+    if (!isRight) btn.classList.add('wrong');
+    else btn.classList.remove('show-c'), btn.classList.add('correct');
+
+    document.getElementById('e-' + qId).classList.add('show');
+    updateProgress();
+    if (Object.keys(answered).length === 6) setTimeout(showScore, 500);
+  }
+
+  function updateProgress() {
+    const n = Object.keys(answered).length;
+    document.getElementById('progressFill').style.width = (n / 6 * 100) + '%';
+    document.getElementById('progressLabel').textContent = n + ' / 6 answered';
+  }
+
+  function showScore() {
+    document.getElementById('score-num').textContent = score + '/6';
+    const pct = score / 6 * 100;
+    document.getElementById('score-msg').textContent =
+      pct === 100 ? '🎯 Flawless. You have mastered data ingestion concepts.' :
+      pct >= 80   ? '✅ Strong performance. Review any missed questions.' :
+      pct >= 60   ? '📚 Decent — revisit ILM tiers and ECS normalization sections.' :
+                    '🔄 Keep reviewing. Focus on collection methods and ingest processors.';
+    document.getElementById('scorebox').classList.add('show');
+  }
+
+  function resetQuiz() {
+    Object.keys(answered).forEach(k => delete answered[k]);
+    score = 0;
+    document.getElementById('scorebox').classList.remove('show');
+    document.querySelectorAll('.opt').forEach(o => {
+      o.classList.remove('correct','wrong','show-c','locked');
+      o.style.cursor = '';
+    });
+    document.querySelectorAll('.q-exp').forEach(e => e.classList.remove('show'));
+    document.getElementById('progressFill').style.width = '0%';
+    document.getElementById('progressLabel').textContent = '0 / 6 answered';
+  }
+</script>
+</body>
+</html>
