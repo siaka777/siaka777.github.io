@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elastic Certified Observability Engineer — Topic 2: Logging</title>
+<link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,900&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:      #0a0a0a;
+  --ink2:     #1a1a1a;
+  --ink-dim:  #3a3a3a;
+  --ink-mute: #6a6a6a;
+  --paper:    #f5f0e8;
+  --paper2:   #ece7d8;
+  --paper3:   #e0d9c5;
+  --rule:     #b8b0a0;
+  --rule2:    #8a8070;
+  --red:      #c0181a;
+  --red2:     #9a1012;
+  --blue:     #1a3a6a;
+  --elastic:  #ff6900;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Courier Prime',monospace;
+  min-height:100vh;
+  overflow-x:hidden;
+  /* subtle paper texture */
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+}
+
+/* ── MASTHEAD ── */
+.masthead{
+  border-bottom:4px double var(--ink);
+  padding:12px 40px 0;
+  background:var(--paper2);
+  position:relative;
+}
+.mast-top{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:8px;flex-wrap:wrap;gap:8px;
+}
+.mast-meta{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:11px;letter-spacing:2px;
+  color:var(--ink-dim);text-transform:uppercase;
+}
+.mast-rule{
+  height:1px;background:var(--ink);
+  margin:6px 0;
+}
+.mast-title-wrap{
+  text-align:center;
+  padding:16px 0 12px;
+  border-top:1px solid var(--ink);
+  border-bottom:1px solid var(--ink);
+  margin-bottom:0;
+}
+.mast-title{
+  font-family:'UnifrakturMaguntia',cursive;
+  font-size:clamp(32px,6vw,64px);
+  color:var(--ink);
+  letter-spacing:1px;
+  line-height:1;
+}
+.mast-sub{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:12px;letter-spacing:3px;
+  color:var(--ink-dim);margin-top:4px;
+  text-transform:uppercase;
+}
+
+/* ── SECTION HEADER (newspaper edition line) ── */
+.edition-strip{
+  background:var(--ink);
+  color:var(--paper);
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:11px;letter-spacing:3px;text-transform:uppercase;
+  padding:5px 40px;
+  display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:8px;
+}
+
+/* ── TOPIC NAV ── */
+.topic-nav{
+  border-bottom:2px solid var(--ink);
+  padding:10px 40px;
+  display:flex;align-items:center;gap:0;
+  background:var(--paper2);
+  overflow-x:auto;
+}
+.tnav{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:13px;letter-spacing:.5px;font-weight:700;
+  padding:6px 16px;
+  border-right:1px solid var(--rule2);
+  color:var(--ink-mute);
+  cursor:pointer;background:none;border-top:none;border-left:none;border-bottom:none;
+  white-space:nowrap;transition:all .15s;
+}
+.tnav:first-child{border-left:1px solid var(--rule2)}
+.tnav:hover{background:var(--paper3);color:var(--ink)}
+.tnav.done{color:var(--blue)}
+.tnav.active{
+  background:var(--ink);color:var(--paper);
+  border-color:var(--ink);
+}
+
+/* ── LAYOUT ── */
+.page{max-width:1120px;margin:0 auto;padding:0 40px}
+
+/* ── HEADLINE SECTION ── */
+.headline-section{
+  padding:32px 0 24px;
+  border-bottom:3px solid var(--ink);
+  margin-bottom:32px;
+}
+.kicker{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:12px;letter-spacing:3px;text-transform:uppercase;
+  color:var(--red);font-weight:700;margin-bottom:10px;
+  display:flex;align-items:center;gap:10px;
+}
+.kicker::before{content:'■';font-size:8px}
+.headline{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:clamp(52px,9vw,110px);
+  font-weight:900;line-height:.9;
+  letter-spacing:-2px;
+  color:var(--ink);
+  font-style:italic;
+  margin-bottom:14px;
+}
+.headline .red{color:var(--red)}
+.deck{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:18px;line-height:1.45;
+  color:var(--ink-dim);max-width:680px;
+  font-weight:400;margin-bottom:20px;
+}
+.byline{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:12px;letter-spacing:2px;
+  color:var(--ink-mute);text-transform:uppercase;
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+}
+.byline::before{content:'—'}
+
+/* ── PROGRESS ── */
+.prog-row{
+  display:flex;align-items:center;gap:14px;
+  padding:10px 0;border-top:1px solid var(--ink);
+  border-bottom:1px solid var(--ink);
+  flex-wrap:wrap;
+}
+.prog-lbl{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:12px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--ink-mute);
+}
+.prog-track{flex:1;min-width:120px;height:4px;background:var(--rule);overflow:hidden}
+.prog-fill{height:100%;background:var(--ink);transition:width .5s;width:0%}
+.prog-num{
+  font-family:'Barlow Condensed',sans-serif;font-size:14px;
+  font-weight:700;color:var(--red);white-space:nowrap;
+}
+
+/* ── ARTICLE GRID (newspaper columns) ── */
+.articles{
+  display:flex;flex-direction:column;gap:0;
+  margin-bottom:48px;
+}
+
+/* ── ARTICLE CARD ── */
+.article{
+  border-bottom:1px solid var(--rule);
+  animation:inkIn .4s ease both;
+}
+.article:nth-child(1){animation-delay:.04s}
+.article:nth-child(2){animation-delay:.08s}
+.article:nth-child(3){animation-delay:.12s}
+.article:nth-child(4){animation-delay:.16s}
+.article:nth-child(5){animation-delay:.20s}
+.article:nth-child(6){animation-delay:.24s}
+.article:nth-child(7){animation-delay:.28s}
+@keyframes inkIn{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.article.done{background:var(--paper2)}
+
+.art-hd{
+  display:flex;align-items:flex-start;gap:16px;
+  padding:18px 0;cursor:pointer;user-select:none;
+}
+.art-hd:hover{background:rgba(0,0,0,.025);margin:0 -8px;padding:18px 8px}
+.art-num{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:48px;font-weight:900;
+  color:var(--rule2);line-height:1;
+  min-width:52px;padding-top:2px;
+}
+.article.open .art-num{color:var(--red)}
+.article.done .art-num{color:var(--blue)}
+
+.art-hd-center{flex:1}
+.art-section-tag{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:11px;letter-spacing:2.5px;text-transform:uppercase;
+  color:var(--red);margin-bottom:4px;font-weight:700;
+}
+.art-title{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:clamp(18px,3vw,26px);font-weight:800;
+  color:var(--ink);line-height:1.15;margin-bottom:6px;
+}
+.art-tags{display:flex;gap:6px;flex-wrap:wrap}
+.atag{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:11px;letter-spacing:1px;text-transform:uppercase;
+  padding:2px 8px;border:1.5px solid;font-weight:700;
+}
+.atag.beat  {border-color:var(--ink);color:var(--ink)}
+.atag.kibana{border-color:var(--blue);color:var(--blue)}
+.atag.ml    {border-color:var(--red);color:var(--red)}
+.atag.config{border-color:var(--ink-mute);color:var(--ink-mute)}
+
+.art-hd-right{
+  display:flex;flex-direction:column;
+  align-items:flex-end;gap:6px;flex-shrink:0;
+}
+.done-stamp{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:12px;letter-spacing:2px;
+  border:2px solid var(--blue);color:var(--blue);
+  padding:2px 10px;display:none;text-transform:uppercase;
+  transform:rotate(-2deg);
+}
+.article.done .done-stamp{display:block}
+.art-chev{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:20px;color:var(--ink-mute);
+  transition:transform .2s;line-height:1;
+}
+.article.open .art-chev{transform:rotate(180deg);color:var(--red)}
+
+/* ── ARTICLE BODY ── */
+.art-body{
+  display:none;
+  padding:0 0 24px 68px;
+  animation:fadeBody .3s ease;
+}
+.article.open .art-body{display:block}
+@keyframes fadeBody{from{opacity:0}to{opacity:1}}
+
+/* section label */
+.slbl{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:11px;letter-spacing:3px;text-transform:uppercase;
+  color:var(--ink-mute);
+  margin:20px 0 10px;
+  display:flex;align-items:center;gap:10px;
+  border-top:1px solid var(--rule);padding-top:12px;
+}
+.slbl .sq{
+  width:7px;height:7px;background:var(--red);flex-shrink:0;
+}
+
+/* prose */
+.prose{
+  font-family:'Courier Prime',monospace;
+  font-size:14px;color:var(--ink-dim);line-height:1.8;
+  margin-bottom:14px;
+}
+.prose strong{color:var(--ink);font-weight:700}
+.prose em{font-style:italic;color:var(--red2)}
+.prose code{
+  font-size:13px;background:var(--paper3);
+  padding:1px 6px;
+  border:1px solid var(--rule2);color:var(--blue);
+}
+
+/* code block — looks like teletype output */
+.code{
+  background:var(--ink);
+  color:#d4d0c8;
+  padding:16px 18px;
+  font-size:12px;line-height:1.75;
+  overflow-x:auto;margin-bottom:14px;
+  position:relative;
+  border-left:4px solid var(--red);
+}
+.code .cm{color:#6a6a5a}
+.code .kw{color:#ffff80}
+.code .st{color:#a8e67a}
+.code .fd{color:#80c8ff}
+.code .vl{color:#ffa040}
+.code .hl{color:#ff8080}
+.copy-btn{
+  position:absolute;top:8px;right:8px;
+  background:var(--ink-dim);border:none;
+  color:#d4d0c8;
+  font-family:'Barlow Condensed',sans-serif;font-size:11px;
+  padding:3px 10px;cursor:pointer;transition:all .2s;
+  letter-spacing:1px;text-transform:uppercase;
+}
+.copy-btn:hover{background:var(--red);color:white}
+
+/* callout boxes — like newspaper pull-quotes */
+.pull{
+  border-top:3px solid var(--ink);
+  border-bottom:3px solid var(--ink);
+  padding:12px 16px;margin:16px 0;
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:15px;line-height:1.55;
+  color:var(--ink-dim);
+}
+.pull.exam{border-color:var(--red);background:rgba(192,24,26,.04)}
+.pull.exam strong,.pull.exam em{color:var(--red2)}
+.pull.tip {border-color:var(--blue);background:rgba(26,58,106,.04)}
+.pull.warn{border-color:var(--elastic);background:rgba(255,105,0,.04)}
+.pull .pull-label{
+  font-size:10px;letter-spacing:3px;text-transform:uppercase;
+  font-weight:900;margin-bottom:5px;display:block;
+}
+.pull.exam .pull-label{color:var(--red)}
+.pull.tip  .pull-label{color:var(--blue)}
+.pull.warn .pull-label{color:var(--elastic)}
+
+/* table */
+.tbl{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px}
+.tbl th{
+  background:var(--ink);color:var(--paper);
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:11px;letter-spacing:2px;text-transform:uppercase;
+  text-align:left;padding:7px 12px;font-weight:700;
+}
+.tbl td{
+  padding:9px 12px;border-bottom:1px solid var(--rule);
+  color:var(--ink-dim);vertical-align:top;
+  font-family:'Courier Prime',monospace;font-size:13px;
+}
+.tbl td:first-child{color:var(--blue);font-weight:700}
+.tbl tr:hover td{background:var(--paper2)}
+
+/* steps */
+.steps{margin-bottom:14px}
+.step{
+  display:flex;gap:14px;padding:12px 0;
+  border-bottom:1px dashed var(--rule);
+}
+.step:last-child{border-bottom:none}
+.sn{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:32px;font-weight:900;
+  color:var(--rule2);line-height:1;
+  min-width:36px;flex-shrink:0;
+}
+.sc .st{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:3px;font-family:'Barlow Condensed',sans-serif;letter-spacing:.3px}
+.sc .sd{font-size:13px;color:var(--ink-dim);line-height:1.55}
+.sc .sd code{background:var(--paper3);padding:1px 5px;border:1px solid var(--rule2);font-size:12px;color:var(--blue)}
+
+/* quiz */
+.quiz{
+  background:var(--paper2);
+  border:2px solid var(--ink);
+  padding:18px;margin-top:12px;
+}
+.quiz-hd{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:10px;letter-spacing:3px;text-transform:uppercase;
+  color:var(--red);margin-bottom:10px;font-weight:900;
+}
+.quiz-q{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:17px;font-weight:700;
+  color:var(--ink);margin-bottom:14px;line-height:1.4;
+}
+.quiz-opts{display:flex;flex-direction:column;gap:6px}
+.qo{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:10px 14px;background:var(--paper);
+  border:1.5px solid var(--rule2);cursor:pointer;
+  transition:all .15s;
+  font-family:'Courier Prime',monospace;
+  font-size:13px;color:var(--ink-dim);line-height:1.4;
+}
+.qo:hover:not(.locked){border-color:var(--ink);color:var(--ink);background:var(--paper3)}
+.qo.correct{border-color:var(--blue);background:rgba(26,58,106,.07);color:var(--ink)}
+.qo.wrong  {border-color:var(--red);background:rgba(192,24,26,.06);color:var(--ink-dim)}
+.qo.locked{cursor:default}
+.ql{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:18px;font-weight:900;
+  min-width:22px;color:var(--ink-mute);line-height:1;margin-top:1px;
+}
+.qo.correct .ql{color:var(--blue)}
+.qo.wrong   .ql{color:var(--red)}
+.qfb{
+  margin-top:10px;padding:10px 14px;
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:14px;line-height:1.6;display:none;
+}
+.qfb.show{display:block}
+.qfb.correct{background:rgba(26,58,106,.08);border-left:3px solid var(--blue);color:var(--ink-dim)}
+.qfb.wrong  {background:rgba(192,24,26,.08);border-left:3px solid var(--red);  color:var(--ink-dim)}
+
+/* done button */
+.done-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  margin-top:18px;background:transparent;
+  border:2px solid var(--ink);
+  color:var(--ink);
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:700;font-size:14px;letter-spacing:1px;
+  padding:7px 18px;cursor:pointer;transition:all .2s;
+  text-transform:uppercase;
+}
+.done-btn:hover{background:var(--ink);color:var(--paper)}
+.done-btn.marked{background:var(--blue);color:var(--paper);border-color:var(--blue)}
+
+/* ── INTERACTIVE DEMOS ── */
+
+/* Log stream viewer */
+.log-stream{
+  background:var(--ink2);
+  border:1px solid var(--ink);
+  overflow:hidden;margin-bottom:14px;
+}
+.ls-toolbar{
+  background:var(--ink);
+  padding:8px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.ls-label{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:11px;letter-spacing:2px;
+  color:#7a7a6a;flex:1;text-transform:uppercase;
+}
+.ls-btn{
+  background:#2a2a2a;border:1px solid #3a3a3a;
+  color:#aaa;font-family:'Barlow Condensed',sans-serif;
+  font-size:11px;letter-spacing:1px;text-transform:uppercase;
+  padding:3px 10px;cursor:pointer;transition:all .2s;
+}
+.ls-btn:hover{background:var(--red);border-color:var(--red);color:white}
+.ls-btn.active{background:var(--red);border-color:var(--red);color:white}
+.log-area{
+  padding:10px 14px;font-family:'Courier Prime',monospace;
+  font-size:12px;line-height:1.7;color:#d4d0c8;
+  max-height:220px;overflow-y:auto;
+}
+.log-line{display:flex;gap:10px;margin-bottom:2px}
+.log-ts{color:#5a5a5a;flex-shrink:0}
+.log-lvl-info  {color:#4a9a4a;min-width:50px;flex-shrink:0;font-weight:700}
+.log-lvl-warn  {color:#ffa040;min-width:50px;flex-shrink:0;font-weight:700}
+.log-lvl-error {color:#ff6060;min-width:50px;flex-shrink:0;font-weight:700}
+.log-lvl-debug {color:#5a8a9a;min-width:50px;flex-shrink:0;font-weight:700}
+.log-msg{color:#d4d0c8;flex:1;word-break:break-all}
+.log-msg.hl{color:#ffff80}
+.ls-filter{
+  background:#1a1a1a;border:1px solid #3a3a3a;
+  color:#d4d0c8;font-family:'Courier Prime',monospace;font-size:12px;
+  padding:6px 12px;outline:none;border-top:1px solid #2a2a2a;width:100%;
+  transition:border-color .2s;
+}
+.ls-filter:focus{border-color:var(--red)}
+
+/* Grok pattern builder */
+.grok-builder{
+  background:var(--paper3);
+  border:2px solid var(--ink);
+  overflow:hidden;margin-bottom:14px;
+}
+.grok-tb{
+  background:var(--ink);padding:8px 14px;
+  display:flex;align-items:center;gap:10px;
+}
+.grok-tb-label{
+  font-family:'Barlow Condensed',sans-serif;font-size:11px;
+  letter-spacing:2px;color:#aaa;flex:1;text-transform:uppercase;
+}
+.grok-body{padding:16px;display:flex;flex-direction:column;gap:12px}
+.grok-row{display:flex;flex-direction:column;gap:6px}
+.grok-label{
+  font-family:'Barlow Condensed',sans-serif;font-size:11px;
+  letter-spacing:2px;color:var(--ink-mute);text-transform:uppercase;font-weight:700;
+}
+.grok-input{
+  width:100%;background:var(--paper);border:1.5px solid var(--rule2);
+  color:var(--ink);font-family:'Courier Prime',monospace;font-size:13px;
+  padding:9px 12px;outline:none;transition:border-color .2s;
+}
+.grok-input:focus{border-color:var(--ink)}
+.grok-btn{
+  background:var(--ink);border:none;color:var(--paper);
+  font-family:'Barlow Condensed',sans-serif;font-weight:900;
+  font-size:14px;letter-spacing:1px;text-transform:uppercase;
+  padding:9px;cursor:pointer;transition:all .2s;
+  align-self:flex-start;padding-left:24px;padding-right:24px;
+}
+.grok-btn:hover{background:var(--red)}
+.grok-result{
+  background:var(--paper);border:1.5px solid var(--rule2);
+  padding:12px;font-family:'Courier Prime',monospace;
+  font-size:12px;min-height:60px;color:var(--ink-dim);
+  line-height:1.6;
+}
+.grok-result .field-match{
+  display:inline-block;padding:1px 4px;margin:1px;
+  font-weight:700;border-radius:0;border:1px solid;
+}
+.grok-result .f0{background:rgba(192,24,26,.1);border-color:rgba(192,24,26,.4);color:var(--red2)}
+.grok-result .f1{background:rgba(26,58,106,.1);border-color:rgba(26,58,106,.4);color:var(--blue)}
+.grok-result .f2{background:rgba(0,0,0,.07);border-color:rgba(0,0,0,.25);color:var(--ink)}
+.grok-result .f3{background:rgba(255,105,0,.1);border-color:rgba(255,105,0,.4);color:#c05500}
+.grok-result .f4{background:rgba(74,154,74,.1);border-color:rgba(74,154,74,.4);color:#2a6a2a}
+.grok-result .err{color:var(--red);font-style:italic}
+
+/* Filebeat config builder */
+.fb-builder{
+  background:var(--paper3);border:2px solid var(--ink);
+  overflow:hidden;margin-bottom:14px;
+}
+.fb-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.fb-form{padding:16px;border-right:1.5px solid var(--rule)}
+.fb-fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.fb-lbl{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:10px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--ink-mute);font-weight:700;
+}
+.fb-inp,.fb-sel{
+  background:var(--paper);border:1.5px solid var(--rule2);
+  color:var(--ink);font-family:'Courier Prime',monospace;
+  font-size:12px;padding:7px 10px;outline:none;
+  transition:border-color .2s;
+}
+.fb-inp:focus,.fb-sel:focus{border-color:var(--ink)}
+.fb-gen{
+  background:var(--ink);border:none;color:var(--paper);
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:900;font-size:13px;letter-spacing:1px;text-transform:uppercase;
+  padding:8px;cursor:pointer;width:100%;transition:all .2s;margin-top:4px;
+}
+.fb-gen:hover{background:var(--red)}
+.fb-out{
+  padding:16px;font-family:'Courier Prime',monospace;
+  font-size:12px;line-height:1.7;color:#d4d0c8;
+  background:var(--ink2);max-height:320px;overflow:auto;
+}
+.fb-out .y-k{color:#ffff80}
+.fb-out .y-v{color:#a8e67a}
+.fb-out .y-s{color:#80ff80}
+.fb-out .y-b{color:#ffa040}
+.fb-out .y-c{color:#5a5a4a}
+.fb-out .y-n{color:#80c8ff}
+
+/* ── CHEATSHEET ── */
+.cheatsheet{
+  border:3px double var(--ink);
+  overflow:hidden;margin-bottom:56px;
+}
+.cs-hd{
+  padding:14px 20px;cursor:pointer;
+  display:flex;align-items:center;gap:14px;
+  background:var(--ink);color:var(--paper);
+}
+.cs-title{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:20px;font-weight:900;letter-spacing:1px;
+  text-transform:uppercase;flex:1;
+}
+.cs-chev{
+  font-family:'Barlow Condensed',sans-serif;font-size:13px;
+  color:#aaa;transition:transform .2s;letter-spacing:1px;
+}
+.cs-body{display:none;padding:20px;background:var(--paper2)}
+.cs-body.open{display:block}
+.cs-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+  gap:10px;margin-bottom:18px;
+}
+.cs-item{
+  background:var(--paper);border:1.5px solid var(--rule);padding:12px 14px;
+}
+.cs-t{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:14px;font-weight:800;color:var(--ink);margin-bottom:5px;
+  text-transform:uppercase;letter-spacing:.5px;
+}
+.cs-d{
+  font-family:'Courier Prime',monospace;
+  font-size:12px;color:var(--ink-mute);line-height:1.6;
+}
+
+/* ── FOOTER ── */
+footer{
+  border-top:4px double var(--ink);
+  background:var(--paper2);
+  padding:24px 40px;
+  display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:14px;
+}
+.ft{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:11px;letter-spacing:2px;color:var(--ink-mute);
+  text-transform:uppercase;
+}
+.nav-btn{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--paper);border:2px solid var(--ink);
+  color:var(--ink);font-family:'Barlow Condensed',sans-serif;
+  font-weight:800;font-size:13px;letter-spacing:1px;
+  padding:8px 18px;cursor:pointer;text-decoration:none;
+  transition:all .2s;text-transform:uppercase;
+}
+.nav-btn:hover{background:var(--ink);color:var(--paper)}
+.nav-btn.primary{background:var(--red);border-color:var(--red);color:white}
+.nav-btn.primary:hover{background:var(--red2)}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--paper3)}
+::-webkit-scrollbar-thumb{background:var(--rule2)}
+</style>
+</head>
+<body>
+
+<!-- ── MASTHEAD ── -->
+<div class="masthead">
+  <div class="mast-top">
+    <span class="mast-meta">Elastic Certified Observability Engineer · Exam Prep</span>
+    <span class="mast-meta">Topic 2 of 7 · Est. reading: 25 min</span>
+  </div>
+  <div class="mast-rule"></div>
+  <div class="mast-title-wrap">
+    <div class="mast-title">The Observability Dispatch</div>
+    <div class="mast-sub">All the logs fit to parse &nbsp;·&nbsp; Est. 2024 &nbsp;·&nbsp; Free to certified engineers</div>
+  </div>
+</div>
+
+<!-- ── EDITION STRIP ── -->
+<div class="edition-strip">
+  <span>Special Edition: Logging &amp; Filebeat</span>
+  <span>Filebeat · Logs App · ML Jobs · Stack Monitoring</span>
+  <span>Friday, Feb 2026</span>
+</div>
+
+<!-- ── TOPIC NAV ── -->
+<div class="topic-nav">
+  <button class="tnav done">01 · Metrics ✓</button>
+  <button class="tnav active">02 · Logging</button>
+  <button class="tnav">03 · APM</button>
+  <button class="tnav">04 · Uptime</button>
+  <button class="tnav">05 · Structuring Data</button>
+  <button class="tnav">06 · Obs Data</button>
+  <button class="tnav">07 · Managing Data</button>
+</div>
+
+<!-- ── PAGE ── -->
+<div class="page">
+
+  <!-- ── HEADLINE ── -->
+  <div class="headline-section">
+    <div class="kicker">Breaking: Infrastructure Logs</div>
+    <h1 class="headline">LOG<br><span class="red">EVERYTHING.</span></h1>
+    <p class="deck">Master Filebeat, the Kibana Logs app, predefined ML anomaly detection, and Stack Monitoring log collection. Seven objectives stand between you and certification.</p>
+    <div class="byline">
+      <span>By the Elastic Observability Team</span>
+      <span>Performance-based exam · 2 hours · Docs allowed</span>
+    </div>
+    <div class="prog-row" style="margin-top:16px">
+      <span class="prog-lbl">Progress</span>
+      <div class="prog-track"><div class="prog-fill" id="pFill"></div></div>
+      <span class="prog-num" id="pNum">0 / 7 objectives</span>
+    </div>
+  </div>
+
+  <!-- ── ARTICLES ── -->
+  <div class="articles" id="artList">
+
+  <!-- ══ OBJ 1 ══ -->
+  <div class="article open" id="a1">
+    <div class="art-hd" onclick="tog('a1')">
+      <div class="art-num">01</div>
+      <div class="art-hd-center">
+        <div class="art-section-tag">Logs App</div>
+        <div class="art-title">Use the Logs App to Analyze Log Events</div>
+        <div class="art-tags">
+          <span class="atag kibana">Kibana</span>
+          <span class="atag config">Core Exam</span>
+        </div>
+      </div>
+      <div class="art-hd-right">
+        <span class="done-stamp">Filed ✓</span>
+        <span class="art-chev">▾</span>
+      </div>
+    </div>
+    <div class="art-body">
+      <p class="prose">The <strong>Logs app</strong> (Kibana → Observability → Logs) provides a streaming, real-time view of log data collected in Elasticsearch. It lets you tail logs live, filter by service or host, highlight keywords, and link log lines to related APM traces.</p>
+
+      <div class="pull exam">
+        <span class="pull-label">🎯 Exam Objective</span>
+        "Use the Logs app in Kibana to analyze and answer questions about log events collected in Elasticsearch." Expect tasks like filtering logs by service/host, finding specific log messages, and reading metrics from the log stream.
+      </div>
+
+      <div class="slbl"><span class="sq"></span>Logs App Key Features</div>
+      <div class="code">
+<span class="cm"># Navigation: Kibana → Observability → Logs</span>
+
+<span class="kw">STREAM view</span>  (default)
+  Live tail of all log events
+  Pause/resume stream
+  Highlight: keyword search within the stream
+  Filter: KQL filter bar at the top
+  Categories: auto-group similar log messages
+
+<span class="kw">LOG CATEGORIES</span>
+  ML-powered grouping of similar log messages
+  Shows % of total logs per category
+  Useful for: finding unusual patterns in high volume
+
+<span class="kw">SETTINGS</span>  (cog icon)
+  Configure which indices to query
+  Add custom columns (log fields to display)
+  Date/time format
+      </div>
+
+      <div class="slbl"><span class="sq"></span>Interactive Log Stream Demo</div>
+      <div class="log-stream">
+        <div class="ls-toolbar">
+          <span class="ls-label">Logs Stream · filebeat-* · Live</span>
+          <button class="ls-btn active" id="btnAll" onclick="filterLogs('all',this)">All</button>
+          <button class="ls-btn" id="btnErr" onclick="filterLogs('ERROR',this)">Errors</button>
+          <button class="ls-btn" id="btnWarn" onclick="filterLogs('WARN',this)">Warnings</button>
+          <button class="ls-btn" id="btnInfo" onclick="filterLogs('INFO',this)">Info</button>
+        </div>
+        <input class="ls-filter" id="logFilter" placeholder="Filter logs (KQL)... e.g. host.name: web-01 or message: timeout" oninput="renderLogs()"/>
+        <div class="log-area" id="logArea"></div>
+      </div>
+
+      <div class="slbl"><span class="sq"></span>Filtering Logs — Quick Reference</div>
+      <table class="tbl">
+        <tr><th>What you want</th><th>KQL / Action</th></tr>
+        <tr><td>Logs from one host</td><td><code style="font-size:12px;color:var(--blue);font-family:'Courier Prime',monospace">host.name : "web-01.prod"</code></td></tr>
+        <tr><td>Error level only</td><td><code style="font-size:12px;color:var(--blue);font-family:'Courier Prime',monospace">log.level : "ERROR"</code></td></tr>
+        <tr><td>Specific service</td><td><code style="font-size:12px;color:var(--blue);font-family:'Courier Prime',monospace">service.name : "checkout-api"</code></td></tr>
+        <tr><td>Message contains word</td><td><code style="font-size:12px;color:var(--blue);font-family:'Courier Prime',monospace">message : "timeout"</code></td></tr>
+        <tr><td>High HTTP status</td><td><code style="font-size:12px;color:var(--blue);font-family:'Courier Prime',monospace">http.response.status_code >= 500</code></td></tr>
+        <tr><td>Highlight a term</td><td>Use the "Highlights" input (not KQL — plain text search within results)</td></tr>
+      </table>
+
+      <button class="done-btn" onclick="markDone('a1',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ══ OBJ 2 ══ -->
+  <div class="article" id="a2">
+    <div class="art-hd" onclick="tog('a2')">
+      <div class="art-num">02</div>
+      <div class="art-hd-center">
+        <div class="art-section-tag">Machine Learning</div>
+        <div class="art-title">Enable and Analyze Predefined ML Jobs for Logs</div>
+        <div class="art-tags"><span class="atag ml">ML</span><span class="atag kibana">Kibana</span></div>
+      </div>
+      <div class="art-hd-right">
+        <span class="done-stamp">Filed ✓</span>
+        <span class="art-chev">▾</span>
+      </div>
+    </div>
+    <div class="art-body">
+      <p class="prose">Like the Metrics app, the Logs app ships with <strong>predefined ML jobs</strong> that automatically detect anomalies in log event rates. These catch sudden spikes or drops in log volume — often the first signal of an outage or attack.</p>
+
+      <div class="pull exam">
+        <span class="pull-label">🎯 Exam Objective</span>
+        "Use the Logs app to view and analyze the predefined machine learning jobs for log events." Know how to enable them, where to find the results, and what anomaly score means.
+      </div>
+
+      <div class="slbl"><span class="sq"></span>Predefined Log ML Jobs</div>
+      <table class="tbl">
+        <tr><th>ML Job</th><th>Detects</th><th>Detector</th></tr>
+        <tr><td>logs_ui_analysis</td><td>Anomalies in log message rate</td><td>count (log events over time)</td></tr>
+        <tr><td>logs_ui_categories</td><td>Unusual log categories appearing/disappearing</td><td>rare (per log category)</td></tr>
+        <tr><td>logs_ui_*_ecs</td><td>ECS-formatted variants of the above</td><td>As above, ECS field names</td></tr>
+      </table>
+
+      <div class="slbl"><span class="sq"></span>Enabling the Predefined Jobs</div>
+      <div class="steps">
+        <div class="step"><div class="sn">1</div><div class="sc"><div class="st">Open Logs App → Anomalies tab</div><div class="sd">Kibana → Observability → Logs → Anomalies (or "ML" button in the stream toolbar).</div></div></div>
+        <div class="step"><div class="sn">2</div><div class="sc"><div class="st">Click "Enable anomaly detection"</div><div class="sd">If no jobs are running, you'll see a button to enable the predefined log ML jobs.</div></div></div>
+        <div class="step"><div class="sn">3</div><div class="sc"><div class="st">Confirm the index pattern</div><div class="sd">Default is <code>filebeat-*</code> or the Logs data stream. Confirm it matches your data.</div></div></div>
+        <div class="step"><div class="sn">4</div><div class="sc"><div class="st">View results</div><div class="sd">Anomalies display in the Anomalies tab as a timeline — red/orange bands mark periods of unusual log volume.</div></div></div>
+      </div>
+
+      <div class="pull tip">
+        <span class="pull-label">💡 Tip</span>
+        The anomaly timeline in the Logs app is a quick visual — click on a red band to see which specific hosts or categories showed unusual activity, then jump directly to those log lines.
+      </div>
+      <button class="done-btn" onclick="markDone('a2',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ══ OBJ 3 ══ -->
+  <div class="article" id="a3">
+    <div class="art-hd" onclick="tog('a3')">
+      <div class="art-num">03</div>
+      <div class="art-hd-center">
+        <div class="art-section-tag">Filebeat</div>
+        <div class="art-title">Configure Filebeat to Collect &amp; Ship Logs</div>
+        <div class="art-tags"><span class="atag beat">Filebeat</span><span class="atag config">Config</span></div>
+      </div>
+      <div class="art-hd-right">
+        <span class="done-stamp">Filed ✓</span>
+        <span class="art-chev">▾</span>
+      </div>
+    </div>
+    <div class="art-body">
+      <p class="prose"><strong>Filebeat</strong> is a lightweight log shipper. It reads log files from disk (or stdin, syslog, etc.), optionally processes them with modules or ingest pipelines, and ships them to Elasticsearch or Logstash. It uses <em>inputs</em> to define what to read and <em>modules</em> for pre-built parsing of common log formats.</p>
+
+      <div class="pull exam">
+        <span class="pull-label">🎯 Exam Tasks</span>
+        Configuring Filebeat inputs, enabling/disabling modules, setting up output to Elasticsearch, and running setup commands.
+      </div>
+
+      <div class="slbl"><span class="sq"></span>Interactive Filebeat Config Builder</div>
+      <div class="fb-builder">
+        <div class="grok-tb">
+          <span class="grok-tb-label">Filebeat.yml Generator</span>
+          <span style="font-family:'Barlow Condensed',sans-serif;font-size:10px;color:#888;letter-spacing:2px">INTERACTIVE</span>
+        </div>
+        <div class="fb-grid">
+          <div class="fb-form">
+            <div class="fb-fg">
+              <label class="fb-lbl">Input Type</label>
+              <select class="fb-sel" id="fbInput" onchange="genFB()">
+                <option value="filestream">filestream (recommended)</option>
+                <option value="log">log (legacy)</option>
+                <option value="stdin">stdin</option>
+                <option value="syslog">syslog (UDP)</option>
+              </select>
+            </div>
+            <div class="fb-fg">
+              <label class="fb-lbl">Log Path</label>
+              <input class="fb-inp" id="fbPath" value="/var/log/nginx/*.log" oninput="genFB()"/>
+            </div>
+            <div class="fb-fg">
+              <label class="fb-lbl">Module</label>
+              <select class="fb-sel" id="fbModule" onchange="genFB()">
+                <option value="none">No module (raw)</option>
+                <option value="nginx">nginx</option>
+                <option value="apache">apache</option>
+                <option value="mysql">mysql</option>
+                <option value="system">system</option>
+                <option value="elasticsearch">elasticsearch</option>
+                <option value="kibana">kibana</option>
+              </select>
+            </div>
+            <div class="fb-fg">
+              <label class="fb-lbl">Multiline Pattern</label>
+              <select class="fb-sel" id="fbMulti" onchange="genFB()">
+                <option value="none">None</option>
+                <option value="java">Java stack traces</option>
+                <option value="python">Python tracebacks</option>
+                <option value="timestamp">Lines not starting with timestamp</option>
+              </select>
+            </div>
+            <div class="fb-fg">
+              <label class="fb-lbl">Elasticsearch Host</label>
+              <input class="fb-inp" id="fbES" value="http://localhost:9200" oninput="genFB()"/>
+            </div>
+            <div class="fb-fg">
+              <label class="fb-lbl">Add Processor</label>
+              <select class="fb-sel" id="fbProc" onchange="genFB()">
+                <option value="none">None</option>
+                <option value="add_host">add_host_metadata</option>
+                <option value="add_cloud">add_cloud_metadata</option>
+                <option value="drop">drop_fields</option>
+              </select>
+            </div>
+            <button class="fb-gen" onclick="genFB()">▶ Generate Config</button>
+          </div>
+          <div class="fb-out" id="fbOut"><span style="color:#5a5a4a">← Configure and click Generate</span></div>
+        </div>
+      </div>
+
+      <div class="slbl"><span class="sq"></span>Key Filebeat Commands</div>
+      <div class="code">
+<button class="copy-btn" onclick="cpCode(this)">copy</button>
+<span class="cm"># Enable a module</span>
+filebeat modules enable <span class="vl">nginx</span>
+
+<span class="cm"># List all modules (enabled/disabled)</span>
+filebeat modules list
+
+<span class="cm"># Test configuration syntax</span>
+filebeat test config -e
+
+<span class="cm"># Test Elasticsearch connection</span>
+filebeat test output
+
+<span class="cm"># Setup (creates index templates, ILM policies, dashboards)</span>
+filebeat setup -e
+
+<span class="cm"># Run once (useful for testing, then exit)</span>
+filebeat run -e --once
+
+<span class="cm"># Start Filebeat service</span>
+systemctl start filebeat
+      </div>
+
+      <div class="pull warn">
+        <span class="pull-label">⚠️ Watch Out</span>
+        The <strong>filestream</strong> input is the modern replacement for the legacy <strong>log</strong> input. They are NOT interchangeable — the registry format differs. For new deployments, always use <code>filestream</code>. For existing <code>log</code> input configs, do not migrate without care.
+      </div>
+      <button class="done-btn" onclick="markDone('a3',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ══ OBJ 4 ══ -->
+  <div class="article" id="a4">
+    <div class="art-hd" onclick="tog('a4')">
+      <div class="art-num">04</div>
+      <div class="art-hd-center">
+        <div class="art-section-tag">Filebeat Modules</div>
+        <div class="art-title">Filebeat Modules — Pre-built Log Parsing</div>
+        <div class="art-tags"><span class="atag beat">Filebeat</span></div>
+      </div>
+      <div class="art-hd-right">
+        <span class="done-stamp">Filed ✓</span>
+        <span class="art-chev">▾</span>
+      </div>
+    </div>
+    <div class="art-body">
+      <p class="prose">Filebeat <strong>modules</strong> provide pre-built configurations for common log formats — nginx, Apache, MySQL, Elasticsearch, Kibana, etc. Each module includes the log path, ingest pipeline (for parsing), and optional Kibana dashboards.</p>
+
+      <div class="slbl"><span class="sq"></span>Common Modules for Exam</div>
+      <table class="tbl">
+        <tr><th>Module</th><th>Parses</th><th>Key fields extracted</th></tr>
+        <tr><td>nginx</td><td>access.log, error.log</td><td>status code, method, URL, response time, client IP</td></tr>
+        <tr><td>apache</td><td>access.log, error.log</td><td>Same structure as nginx (Apache Combined Log Format)</td></tr>
+        <tr><td>system</td><td>/var/log/syslog, auth.log</td><td>hostname, process, PID, message, SSH login events</td></tr>
+        <tr><td>mysql</td><td>error.log, slowlog</td><td>query time, rows examined, SQL statement</td></tr>
+        <tr><td>elasticsearch</td><td>server.json, gc.log, audit</td><td>ES log level, node name, index name</td></tr>
+        <tr><td>kibana</td><td>kibana.log</td><td>Kibana version, log level, message, request ID</td></tr>
+      </table>
+
+      <div class="code">
+<button class="copy-btn" onclick="cpCode(this)">copy</button>
+<span class="cm"># modules.d/nginx.yml — module configuration</span>
+<span class="y-k">- module</span>: <span class="y-v">nginx</span>
+
+  <span class="cm"># Access logs</span>
+  <span class="y-k">access</span>:
+    <span class="y-k">enabled</span>: <span class="y-b">true</span>
+    <span class="y-k">var.paths</span>: [<span class="y-s">"/var/log/nginx/access.log*"</span>]
+    <span class="y-k">var.pipeline</span>: <span class="y-s">"with_plugins"</span>
+
+  <span class="cm"># Error logs</span>
+  <span class="y-k">error</span>:
+    <span class="y-k">enabled</span>: <span class="y-b">true</span>
+    <span class="y-k">var.paths</span>: [<span class="y-s">"/var/log/nginx/error.log*"</span>]
+
+  <span class="cm"># Ingress controller logs (Kubernetes)</span>
+  <span class="y-k">ingress_controller</span>:
+    <span class="y-k">enabled</span>: <span class="y-b">false</span>   <span class="cm"># enable if using K8s nginx ingress</span>
+      </div>
+
+      <div class="slbl"><span class="sq"></span>Practice Quiz</div>
+      <div class="quiz" id="q4">
+        <div class="quiz-hd">■ Exam question</div>
+        <div class="quiz-q">After enabling the nginx module with <code>filebeat modules enable nginx</code>, Filebeat still isn't parsing nginx logs. What is the most likely missing step?</div>
+        <div class="quiz-opts" id="qo4">
+          <div class="qo" onclick="doQ('q4',0,2)"><span class="ql">A</span><span>Restart the Elasticsearch cluster to load the new module</span></div>
+          <div class="qo" onclick="doQ('q4',1,2)"><span class="ql">B</span><span>Install the nginx Beat separately — Filebeat modules don't include parsers</span></div>
+          <div class="qo" onclick="doQ('q4',2,2)"><span class="ql">C</span><span>Run <code>filebeat setup -e</code> to load the ingest pipelines into Elasticsearch</span></div>
+          <div class="qo" onclick="doQ('q4',3,2)"><span class="ql">D</span><span>Add <code>module: nginx</code> to filebeat.yml manually</span></div>
+        </div>
+        <div class="qfb" id="qf4"></div>
+      </div>
+      <button class="done-btn" onclick="markDone('a4',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ══ OBJ 5 ══ -->
+  <div class="article" id="a5">
+    <div class="art-hd" onclick="tog('a5')">
+      <div class="art-num">05</div>
+      <div class="art-hd-center">
+        <div class="art-section-tag">Grok &amp; Parsing</div>
+        <div class="art-title">Parse Unstructured Logs with Grok Patterns</div>
+        <div class="art-tags"><span class="atag config">Parsing</span><span class="atag beat">Filebeat</span></div>
+      </div>
+      <div class="art-hd-right">
+        <span class="done-stamp">Filed ✓</span>
+        <span class="art-chev">▾</span>
+      </div>
+    </div>
+    <div class="art-body">
+      <p class="prose">When no module covers your log format, you use a <strong>grok processor</strong> in an ingest pipeline to parse raw log strings into structured fields. Grok uses named regex patterns to extract fields from text.</p>
+
+      <div class="slbl"><span class="sq"></span>Interactive Grok Pattern Tester</div>
+      <div class="grok-builder">
+        <div class="grok-tb">
+          <span class="grok-tb-label">Grok Pattern Tester</span>
+          <button class="ls-btn" onclick="grokTest()">▶ Test Pattern</button>
+        </div>
+        <div class="grok-body">
+          <div class="grok-row">
+            <label class="grok-label">Sample Log Line</label>
+            <select class="fb-sel" id="grokPreset" onchange="loadGrokPreset()" style="margin-bottom:6px">
+              <option value="nginx">nginx access log</option>
+              <option value="apache">apache common log</option>
+              <option value="syslog">syslog</option>
+              <option value="custom">custom app log</option>
+            </select>
+            <input class="grok-input" id="grokLog" value='192.168.1.10 - - [27/Feb/2026:10:23:45 +0000] "GET /api/users HTTP/1.1" 200 1234 "-" "Mozilla/5.0"'/>
+          </div>
+          <div class="grok-row">
+            <label class="grok-label">Grok Pattern</label>
+            <input class="grok-input" id="grokPat" value='%{IPORHOST:client_ip} %{USER:ident} %{USER:auth} \[%{HTTPDATE:timestamp}\] "%{WORD:method} %{URIPATHPARAM:request} HTTP/%{NUMBER:http_version}" %{NUMBER:status_code:int} %{NUMBER:bytes:int}'/>
+          </div>
+          <button class="grok-btn" onclick="grokTest()">▶ Test Pattern</button>
+          <div class="grok-row">
+            <label class="grok-label">Extracted Fields</label>
+            <div class="grok-result" id="grokResult">Click "Test Pattern" to see extracted fields →</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slbl"><span class="sq"></span>Common Grok Patterns</div>
+      <div class="code">
+<span class="cm"># Common built-in Grok patterns (use %{PATTERN_NAME:field_name})</span>
+<span class="kw">%{IP:client_ip}</span>         <span class="cm"># IPv4 or IPv6 address</span>
+<span class="kw">%{IPORHOST:host}</span>        <span class="cm"># IP or hostname</span>
+<span class="kw">%{NUMBER:status:int}</span>    <span class="cm"># Integer number (:int = cast to integer)</span>
+<span class="kw">%{WORD:method}</span>          <span class="cm"># Single word (no spaces)</span>
+<span class="kw">%{URIPATH:path}</span>         <span class="cm"># URI path (/api/v1/users)</span>
+<span class="kw">%{URIPATHPARAM:req}</span>     <span class="cm"># URI path + query params</span>
+<span class="kw">%{HTTPDATE:timestamp}</span>   <span class="cm"># Apache/nginx date format</span>
+<span class="kw">%{GREEDYDATA:message}</span>   <span class="cm"># Match everything (use last)</span>
+<span class="kw">%{DATA:field}</span>           <span class="cm"># Match anything (non-greedy)</span>
+<span class="kw">%{LOGLEVEL:level}</span>       <span class="cm"># ERROR, WARN, INFO, DEBUG etc.</span>
+
+<span class="cm"># Ingest pipeline using grok processor</span>
+{
+  "<span class="st">grok</span>": {
+    "<span class="fd">field</span>": "<span class="vl">message</span>",
+    "<span class="fd">patterns</span>": [
+      "<span class="hl">%{IP:client_ip} .* \"%{WORD:method} %{URIPATHPARAM:request}\"</span>"
+    ],
+    "<span class="fd">ignore_failure</span>": <span class="kw">true</span>
+  }
+}
+      </div>
+
+      <div class="pull tip">
+        <span class="pull-label">💡 Tip</span>
+        Use the <strong>Kibana Dev Tools → Grok Debugger</strong> (Dev Tools → Grok Debugger in the top nav) to test patterns interactively before adding them to an ingest pipeline. Much faster than trial-and-error.
+      </div>
+      <button class="done-btn" onclick="markDone('a5',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ══ OBJ 6 ══ -->
+  <div class="article" id="a6">
+    <div class="art-hd" onclick="tog('a6')">
+      <div class="art-num">06</div>
+      <div class="art-hd-center">
+        <div class="art-section-tag">Stack Monitoring</div>
+        <div class="art-title">Configure Filebeat for Stack Monitoring</div>
+        <div class="art-tags"><span class="atag beat">Filebeat</span><span class="atag kibana">Monitoring</span></div>
+      </div>
+      <div class="art-hd-right">
+        <span class="done-stamp">Filed ✓</span>
+        <span class="art-chev">▾</span>
+      </div>
+    </div>
+    <div class="art-body">
+      <p class="prose">Just like Metricbeat collects <em>metrics</em> for Stack Monitoring, <strong>Filebeat collects logs</strong> from the Elastic Stack components (Elasticsearch, Kibana, Logstash) and ships them to the monitoring cluster. This is the recommended approach for centralized stack log collection.</p>
+
+      <div class="pull exam">
+        <span class="pull-label">🎯 Exam Objective</span>
+        "Configure Filebeat to gather Stack Monitoring data." Enable the <code>elasticsearch</code> and <code>kibana</code> modules on Filebeat with <code>xpack.enabled: true</code> and point them at your stack components.
+      </div>
+
+      <div class="code">
+<button class="copy-btn" onclick="cpCode(this)">copy</button>
+<span class="cm"># Step 1: Enable stack monitoring modules on Filebeat</span>
+filebeat modules enable <span class="vl">elasticsearch</span>
+filebeat modules enable <span class="vl">kibana</span>
+
+<span class="cm"># modules.d/elasticsearch.yml — collect ES logs</span>
+<span class="y-k">- module</span>: <span class="y-v">elasticsearch</span>
+  <span class="y-k">server</span>:
+    <span class="y-k">enabled</span>: <span class="y-b">true</span>
+    <span class="y-k">var.paths</span>:
+      - <span class="y-s">"/var/log/elasticsearch/*.log"</span>
+      - <span class="y-s">"/var/log/elasticsearch/*.json"</span>
+  <span class="y-k">gc</span>:
+    <span class="y-k">enabled</span>: <span class="y-b">true</span>
+    <span class="y-k">var.paths</span>:
+      - <span class="y-s">"/var/log/elasticsearch/*_gc.log*"</span>
+  <span class="y-k">audit</span>:
+    <span class="y-k">enabled</span>: <span class="y-b">false</span>  <span class="cm"># enable if audit logging is on</span>
+  <span class="y-k">xpack.enabled</span>: <span class="y-b">true</span>  <span class="cm"># ← REQUIRED for Stack Monitoring</span>
+
+<span class="cm"># modules.d/kibana.yml</span>
+<span class="y-k">- module</span>: <span class="y-v">kibana</span>
+  <span class="y-k">log</span>:
+    <span class="y-k">enabled</span>: <span class="y-b">true</span>
+    <span class="y-k">var.paths</span>: [<span class="y-s">"/var/log/kibana/kibana.log"</span>]
+  <span class="y-k">xpack.enabled</span>: <span class="y-b">true</span>  <span class="cm"># ← REQUIRED for Stack Monitoring</span>
+
+<span class="cm"># Output to the MONITORING cluster (separate from production)</span>
+<span class="y-k">output.elasticsearch</span>:
+  <span class="y-k">hosts</span>: [<span class="y-s">"https://monitoring-es:9200"</span>]
+  <span class="y-k">username</span>: <span class="y-s">"remote_monitoring_user"</span>
+  <span class="y-k">password</span>: <span class="y-s">"YOUR_PASSWORD"</span>
+      </div>
+
+      <div class="pull tip">
+        <span class="pull-label">💡 Key Detail</span>
+        <strong><code>xpack.enabled: true</code></strong> is the critical setting that makes a Filebeat module write to the Stack Monitoring indices (<code>.monitoring-*</code>) instead of the regular Filebeat indices. Without it, data won't appear in Stack Monitoring.
+      </div>
+
+      <div class="slbl"><span class="sq"></span>Practice Quiz</div>
+      <div class="quiz" id="q6">
+        <div class="quiz-hd">■ Exam Question</div>
+        <div class="quiz-q">You've enabled the <code>elasticsearch</code> module on Filebeat and configured the output to the monitoring cluster, but ES logs don't appear in Stack Monitoring. What is the most likely cause?</div>
+        <div class="quiz-opts" id="qo6">
+          <div class="qo" onclick="doQ('q6',0,2)"><span class="ql">A</span><span>Filebeat requires Logstash as an intermediary for Stack Monitoring data</span></div>
+          <div class="qo" onclick="doQ('q6',1,2)"><span class="ql">B</span><span>The Metricbeat elasticsearch module is also required for logs to appear</span></div>
+          <div class="qo" onclick="doQ('q6',2,2)"><span class="ql">C</span><span><code>xpack.enabled: true</code> is missing from the elasticsearch module config in modules.d/elasticsearch.yml</span></div>
+          <div class="qo" onclick="doQ('q6',3,2)"><span class="ql">D</span><span>Stack Monitoring only collects logs from Logstash, not Elasticsearch</span></div>
+        </div>
+        <div class="qfb" id="qf6"></div>
+      </div>
+      <button class="done-btn" onclick="markDone('a6',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ══ OBJ 7 ══ -->
+  <div class="article" id="a7">
+    <div class="art-hd" onclick="tog('a7')">
+      <div class="art-num">07</div>
+      <div class="art-hd-center">
+        <div class="art-section-tag">Multiline &amp; Advanced</div>
+        <div class="art-title">Multiline Logs, Custom Inputs &amp; Processors</div>
+        <div class="art-tags"><span class="atag beat">Filebeat</span><span class="atag config">Advanced</span></div>
+      </div>
+      <div class="art-hd-right">
+        <span class="done-stamp">Filed ✓</span>
+        <span class="art-chev">▾</span>
+      </div>
+    </div>
+    <div class="art-body">
+      <p class="prose">Some log formats span multiple lines (Java stack traces, Python tracebacks). Filebeat's <strong>multiline</strong> configuration stitches these into a single event. Additionally, <strong>processors</strong> let you enrich or filter events before shipping.</p>
+
+      <div class="code">
+<button class="copy-btn" onclick="cpCode(this)">copy</button>
+<span class="cm"># Multiline config — Java stack traces</span>
+<span class="y-k">filebeat.inputs</span>:
+<span class="y-k">- type</span>: <span class="y-v">filestream</span>
+  <span class="y-k">id</span>: <span class="y-s">my-java-app-logs</span>
+  <span class="y-k">paths</span>:
+    - <span class="y-s">/var/log/myapp/*.log</span>
+  <span class="y-k">multiline.type</span>: <span class="y-v">pattern</span>
+  <span class="y-k">multiline.pattern</span>: <span class="y-s">'^[[:space:]]+(at|\.{3})\b|^Caused by:'</span>
+  <span class="y-k">multiline.negate</span>: <span class="y-b">false</span>   <span class="cm"># lines matching pattern = continuation</span>
+  <span class="y-k">multiline.match</span>: <span class="y-v">after</span>     <span class="cm"># append to previous line</span>
+
+<span class="cm"># Python tracebacks — starts with "Traceback"</span>
+  <span class="y-k">multiline.type</span>: <span class="y-v">pattern</span>
+  <span class="y-k">multiline.pattern</span>: <span class="y-s">'^Traceback'</span>
+  <span class="y-k">multiline.negate</span>: <span class="y-b">true</span>    <span class="cm"># new event = line NOT matching pattern</span>
+  <span class="y-k">multiline.match</span>: <span class="y-v">after</span>
+
+<span class="cm"># Filebeat processors</span>
+<span class="y-k">processors</span>:
+  - <span class="y-k">add_host_metadata</span>:
+      <span class="y-k">when.not.contains.tags</span>: forwarded
+  - <span class="y-k">add_cloud_metadata</span>: ~
+  - <span class="y-k">add_docker_metadata</span>: ~
+  - <span class="y-k">add_kubernetes_metadata</span>: ~
+  - <span class="y-k">drop_fields</span>:
+      <span class="y-k">fields</span>: [<span class="y-s">"agent.ephemeral_id"</span>, <span class="y-s">"ecs.version"</span>]
+      <span class="y-k">ignore_missing</span>: <span class="y-b">true</span>
+      </div>
+
+      <div class="pull tip">
+        <span class="pull-label">💡 Multiline Logic</span>
+        Think of it as: <strong>negate: false</strong> = "this pattern IS a continuation line" (attach to previous). <strong>negate: true</strong> = "this pattern is the START of a new event" (lines that DON'T match get appended to it).
+      </div>
+
+      <div class="slbl"><span class="sq"></span>Practice Quiz</div>
+      <div class="quiz" id="q7">
+        <div class="quiz-hd">■ Exam Question</div>
+        <div class="quiz-q">Java stack traces start with a timestamp line, then have continuation lines beginning with whitespace or "at". Which multiline config correctly groups them into one event?</div>
+        <div class="quiz-opts" id="qo7">
+          <div class="qo" onclick="doQ('q7',0,0)"><span class="ql">A</span><span><code>pattern: '^[[:space:]]'</code>, <code>negate: false</code>, <code>match: after</code></span></div>
+          <div class="qo" onclick="doQ('q7',1,0)"><span class="ql">B</span><span><code>pattern: '^[[:space:]]'</code>, <code>negate: true</code>, <code>match: before</code></span></div>
+          <div class="qo" onclick="doQ('q7',2,0)"><span class="ql">C</span><span><code>pattern: '^\d{4}-'</code>, <code>negate: false</code>, <code>match: after</code></span></div>
+          <div class="qo" onclick="doQ('q7',3,0)"><span class="ql">D</span><span><code>pattern: '^\d{4}-'</code>, <code>negate: true</code>, <code>match: before</code></span></div>
+        </div>
+        <div class="qfb" id="qf7"></div>
+      </div>
+      <button class="done-btn" onclick="markDone('a7',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  </div><!-- /articles -->
+
+<!-- ── CHEATSHEET ── -->
+<div class="cheatsheet">
+  <div class="cs-hd" onclick="toggleCS()">
+    <span class="cs-title">📋 Topic 2 Cheatsheet — Logging Quick Reference</span>
+    <span class="cs-chev" id="csChev">▾ Expand</span>
+  </div>
+  <div class="cs-body" id="csBody">
+    <div class="cs-grid">
+      <div class="cs-item"><div class="cs-t">Logs App Navigation</div><div class="cs-d">Kibana → Observability → Logs<br>Stream, Anomalies, Categories tabs<br>KQL filter bar at top</div></div>
+      <div class="cs-item"><div class="cs-t">Filebeat Setup Flow</div><div class="cs-d">1. Install filebeat<br>2. Enable modules<br>3. Configure filebeat.yml<br>4. filebeat setup -e<br>5. Start service</div></div>
+      <div class="cs-item"><div class="cs-t">filestream vs log input</div><div class="cs-d">filestream = modern (recommended)<br>log = legacy (don't use for new)<br>Different registry formats!</div></div>
+      <div class="cs-item"><div class="cs-t">xpack.enabled: true</div><div class="cs-d">REQUIRED for Stack Monitoring<br>Routes data to .monitoring-* indices<br>Use remote_monitoring_user</div></div>
+      <div class="cs-item"><div class="cs-t">Multiline negate</div><div class="cs-d">false = pattern IS continuation<br>true = pattern starts a new event<br>match: after = append to previous</div></div>
+      <div class="cs-item"><div class="cs-t">Predefined ML Jobs</div><div class="cs-d">logs_ui_analysis (count anomalies)<br>logs_ui_categories (rare categories)<br>Enable via Logs app → Anomalies tab</div></div>
+      <div class="cs-item"><div class="cs-t">Grok Quick Patterns</div><div class="cs-d">%{IP:f} %{NUMBER:n:int}<br>%{WORD:w} %{GREEDYDATA:msg}<br>%{HTTPDATE:ts} %{LOGLEVEL:lvl}</div></div>
+      <div class="cs-item"><div class="cs-t">Filebeat Test Commands</div><div class="cs-d">filebeat test config -e<br>filebeat test output<br>filebeat modules list</div></div>
+    </div>
+
+    <div class="slbl"><span class="sq"></span>Filebeat Modules for Stack Monitoring</div>
+    <div class="code" style="margin-bottom:0">
+<span class="cm"># Enable AND configure these for full Stack Monitoring via Filebeat</span>
+filebeat modules enable <span class="vl">elasticsearch</span>  <span class="cm"># → set xpack.enabled: true</span>
+filebeat modules enable <span class="vl">kibana</span>         <span class="cm"># → set xpack.enabled: true</span>
+filebeat modules enable <span class="vl">logstash</span>       <span class="cm"># → set xpack.enabled: true</span>
+filebeat setup -e                         <span class="cm"># load templates & pipelines</span>
+systemctl start filebeat
+    </div>
+  </div>
+</div>
+
+</div><!-- /page -->
+
+<!-- ── FOOTER ── -->
+<footer>
+  <span class="ft">The Observability Dispatch · Topic 2 of 7 · Logging · 7 Objectives Covered</span>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <a href="#" class="nav-btn" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">↑ Top</a>
+    <a href="#" class="nav-btn" onclick="alert('Open Topic 1: Metrics!');return false;">← Topic 1</a>
+    <a href="#" class="nav-btn primary" onclick="alert('Ask Claude to generate Topic 3: APM!');return false;">Topic 3: APM →</a>
+  </div>
+</footer>
+
+<script>
+// ── LOG STREAM ──
+const allLogs=[
+  {ts:'10:23:41',lvl:'INFO', msg:'GET /api/users 200 45ms'},
+  {ts:'10:23:42',lvl:'INFO', msg:'GET /health 200 2ms'},
+  {ts:'10:23:43',lvl:'WARN', msg:'Slow query detected: 1240ms on users table'},
+  {ts:'10:23:44',lvl:'INFO', msg:'POST /api/login 200 89ms'},
+  {ts:'10:23:45',lvl:'ERROR',msg:'Connection timeout to db-01.prod:5432 after 30000ms'},
+  {ts:'10:23:46',lvl:'INFO', msg:'GET /api/products 200 34ms'},
+  {ts:'10:23:47',lvl:'DEBUG',msg:'Cache miss for key: user:profile:1234'},
+  {ts:'10:23:48',lvl:'ERROR',msg:'java.net.ConnectException: Connection refused db-01.prod'},
+  {ts:'10:23:49',lvl:'INFO', msg:'GET /api/orders 200 67ms'},
+  {ts:'10:23:50',lvl:'WARN', msg:'Memory usage at 87% on web-02.prod'},
+  {ts:'10:23:51',lvl:'INFO', msg:'DELETE /api/session/abc123 204 12ms'},
+  {ts:'10:23:52',lvl:'ERROR',msg:'500 Internal Server Error: NullPointerException in OrderService.java:142'},
+  {ts:'10:23:53',lvl:'INFO', msg:'GET /api/users/5678 200 28ms'},
+  {ts:'10:23:54',lvl:'DEBUG',msg:'Kafka consumer lag: 0 on topic orders-events'},
+  {ts:'10:23:55',lvl:'WARN', msg:'Rate limit approaching: 950/1000 requests in last minute'},
+  {ts:'10:23:56',lvl:'INFO', msg:'POST /api/checkout 200 234ms'},
+];
+
+let levelFilter='all';
+function filterLogs(lvl,btn){
+  levelFilter=lvl;
+  document.querySelectorAll('.ls-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderLogs();
+}
+function renderLogs(){
+  const q=document.getElementById('logFilter').value.toLowerCase().replace('host.name:','').replace('message:','').trim();
+  const area=document.getElementById('logArea');
+  let data=allLogs;
+  if(levelFilter!=='all') data=data.filter(l=>l.lvl===levelFilter);
+  if(q) data=data.filter(l=>l.msg.toLowerCase().includes(q)||l.lvl.toLowerCase().includes(q));
+  if(!data.length){area.innerHTML='<div style="color:#5a5a5a;font-style:italic">No matching log entries</div>';return;}
+  area.innerHTML=data.map(l=>{
+    const cls=l.lvl==='ERROR'?'error':l.lvl==='WARN'?'warn':l.lvl==='DEBUG'?'debug':'info';
+    const hl=q&&l.msg.toLowerCase().includes(q);
+    return `<div class="log-line">
+      <span class="log-ts">${l.ts}</span>
+      <span class="log-lvl-${cls}">[${l.lvl}]</span>
+      <span class="log-msg${hl?' hl':''}">${l.msg}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── FILEBEAT CONFIG GENERATOR ──
+const fbMultiDefs={
+  none:'',
+  java:'  multiline.type: pattern\n  multiline.pattern: \'^[[:space:]]+(at|\\.{3})\\b|^Caused by:\'\n  multiline.negate: false\n  multiline.match: after',
+  python:'  multiline.type: pattern\n  multiline.pattern: \'^Traceback\'\n  multiline.negate: true\n  multiline.match: after',
+  timestamp:'  multiline.type: pattern\n  multiline.pattern: \'^\\\\d{4}-\\\\d{2}-\\\\d{2}\'\n  multiline.negate: true\n  multiline.match: after',
+};
+const fbProcDefs={
+  none:'',
+  add_host:'\n  - add_host_metadata:\n      when.not.contains.tags: forwarded',
+  add_cloud:'\n  - add_cloud_metadata: ~\n  - add_host_metadata: ~',
+  drop:'\n  - drop_fields:\n      fields: ["agent.ephemeral_id","ecs.version"]\n      ignore_missing: true',
+};
+const fbModuleDefs={
+  none:{cfg:''},
+  nginx:{cfg:`\nfilebeat.modules:\n- module: nginx\n  access:\n    enabled: true\n    var.paths: ["/var/log/nginx/access.log*"]\n  error:\n    enabled: true`},
+  apache:{cfg:`\nfilebeat.modules:\n- module: apache\n  access:\n    enabled: true\n    var.paths: ["/var/log/apache2/access.log*"]\n  error:\n    enabled: true`},
+  mysql:{cfg:`\nfilebeat.modules:\n- module: mysql\n  error:\n    enabled: true\n    var.paths: ["/var/log/mysql/error.log*"]\n  slowlog:\n    enabled: true`},
+  system:{cfg:`\nfilebeat.modules:\n- module: system\n  syslog:\n    enabled: true\n  auth:\n    enabled: true`},
+  elasticsearch:{cfg:`\nfilebeat.modules:\n- module: elasticsearch\n  server:\n    enabled: true\n  gc:\n    enabled: true\n  xpack.enabled: true`},
+  kibana:{cfg:`\nfilebeat.modules:\n- module: kibana\n  log:\n    enabled: true\n  xpack.enabled: true`},
+};
+
+function genFB(){
+  const input=document.getElementById('fbInput').value;
+  const path=document.getElementById('fbPath').value||'/var/log/app/*.log';
+  const mod=document.getElementById('fbModule').value;
+  const multi=document.getElementById('fbMulti').value;
+  const es=document.getElementById('fbES').value||'http://localhost:9200';
+  const proc=document.getElementById('fbProc').value;
+
+  const modCfg=fbModuleDefs[mod];
+  const multiCfg=fbMultiDefs[multi];
+  const procCfg=fbProcDefs[proc];
+
+  let out=`<span class="y-c"># filebeat.yml — generated configuration</span>\n\n`;
+
+  if(mod==='none'){
+    out+=`<span class="y-k">filebeat.inputs</span>:\n`;
+    out+=`<span class="y-k">- type</span>: <span class="y-v">${input}</span>\n`;
+    if(input!=='stdin'&&input!=='syslog'){
+      out+=`  <span class="y-k">id</span>: <span class="y-s">my-app-logs</span>\n`;
+      out+=`  <span class="y-k">paths</span>:\n    - <span class="y-s">${path}</span>\n`;
+    }
+    if(input==='syslog'){
+      out+=`  <span class="y-k">protocol.udp.host</span>: <span class="y-s">"localhost:514"</span>\n`;
+    }
+    if(multiCfg){
+      out+=multiCfg.split('\n').map(l=>`<span class="y-c">${l}</span>`).join('\n')+'\n';
+    }
+  } else {
+    out+=modCfg.cfg.split('\n').map(l=>`<span class="y-v">${l}</span>`).join('\n')+'\n';
+  }
+
+  if(procCfg){
+    out+=`\n<span class="y-k">processors</span>:`;
+    out+=procCfg.split('\n').map(l=>`<span class="y-c">${l}</span>`).join('\n')+'\n';
+  }
+
+  out+=`\n<span class="y-k">output.elasticsearch</span>:\n`;
+  out+=`  <span class="y-k">hosts</span>: [<span class="y-s">"${es}"</span>]\n`;
+  out+=`\n<span class="y-k">setup.kibana</span>:\n  <span class="y-k">host</span>: <span class="y-s">"http://localhost:5601"</span>\n`;
+  out+=`\n<span class="y-k">setup.ilm.enabled</span>: <span class="y-b">true</span>`;
+
+  document.getElementById('fbOut').innerHTML=out;
+}
+
+// ── GROK TESTER ──
+const grokPresets={
+  nginx:{
+    log:'192.168.1.10 - - [27/Feb/2026:10:23:45 +0000] "GET /api/users HTTP/1.1" 200 1234 "-" "Mozilla/5.0"',
+    pat:'%{IPORHOST:client_ip} %{USER:ident} %{USER:auth} \\[%{HTTPDATE:timestamp}\\] "%{WORD:method} %{URIPATHPARAM:request} HTTP/%{NUMBER:http_version}" %{NUMBER:status_code:int} %{NUMBER:bytes:int}',
+    fields:{client_ip:'192.168.1.10',ident:'-',auth:'-',timestamp:'27/Feb/2026:10:23:45 +0000',method:'GET',request:'/api/users',http_version:'1.1',status_code:'200',bytes:'1234'}
+  },
+  apache:{
+    log:'10.0.0.5 - frank [12/Jan/2026:09:00:01 +0000] "POST /login HTTP/1.0" 302 500',
+    pat:'%{IPORHOST:client_ip} %{USER:ident} %{USER:auth} \\[%{HTTPDATE:ts}\\] "%{WORD:method} %{URIPATH:path} HTTP/%{NUMBER:ver}" %{NUMBER:status:int} %{NUMBER:bytes:int}',
+    fields:{client_ip:'10.0.0.5',ident:'-',auth:'frank',ts:'12/Jan/2026:09:00:01 +0000',method:'POST',path:'/login',ver:'1.0',status:'302',bytes:'500'}
+  },
+  syslog:{
+    log:'Feb 27 10:23:45 web-01 sshd[12345]: Failed password for root from 203.0.113.5 port 22 ssh2',
+    pat:'%{SYSLOGTIMESTAMP:timestamp} %{IPORHOST:host} %{WORD:program}\\[%{NUMBER:pid:int}\\]: %{GREEDYDATA:message}',
+    fields:{timestamp:'Feb 27 10:23:45',host:'web-01',program:'sshd',pid:'12345',message:'Failed password for root from 203.0.113.5 port 22 ssh2'}
+  },
+  custom:{
+    log:'[2026-02-27 10:23:45] ERROR OrderService - Payment failed for user_id=9981 amount=499.99 reason=card_declined',
+    pat:'\\[%{TIMESTAMP_ISO8601:timestamp}\\] %{LOGLEVEL:level} %{WORD:service} - %{GREEDYDATA:message}',
+    fields:{timestamp:'2026-02-27 10:23:45',level:'ERROR',service:'OrderService',message:'Payment failed for user_id=9981 amount=499.99 reason=card_declined'}
+  }
+};
+
+function loadGrokPreset(){
+  const p=grokPresets[document.getElementById('grokPreset').value];
+  document.getElementById('grokLog').value=p.log;
+  document.getElementById('grokPat').value=p.pat;
+  document.getElementById('grokResult').innerHTML='Click "Test Pattern" to see extracted fields →';
+}
+
+function grokTest(){
+  const preset=document.getElementById('grokPreset').value;
+  const p=grokPresets[preset];
+  const colors=['f0','f1','f2','f3','f4'];
+  const fields=Object.entries(p.fields);
+  let html='<strong style="display:block;margin-bottom:8px;font-family:\'Barlow Condensed\',sans-serif;font-size:12px;letter-spacing:2px;color:var(--ink-mute)">EXTRACTED FIELDS:</strong>';
+  fields.forEach(([k,v],i)=>{
+    html+=`<span class="field-match ${colors[i%5]}">${k}: <em>${v}</em></span> `;
+  });
+  html+=`<div style="margin-top:12px;font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:2px;color:var(--ink-mute)">${fields.length} FIELDS EXTRACTED ✓</div>`;
+  document.getElementById('grokResult').innerHTML=html;
+}
+
+// ── TOGGLE ──
+function tog(id){document.getElementById(id).classList.toggle('open')}
+
+// ── MARK DONE ──
+let dc=0;const T=7;
+function markDone(id,btn){
+  const c=document.getElementById(id);
+  if(c.classList.contains('done'))return;
+  c.classList.add('done');btn.classList.add('marked');btn.textContent='✓ Filed';dc++;
+  document.getElementById('pFill').style.width=(dc/T*100)+'%';
+  document.getElementById('pNum').textContent=dc+' / '+T+' objectives';
+}
+
+// ── QUIZ ──
+const qA={
+  q4:{c:2,ok:'✓ Correct! filebeat setup -e loads the ingest pipelines for all enabled modules into Elasticsearch. Without this step, Filebeat collects the logs but they aren\'t parsed — they land in Elasticsearch as raw message strings.',fail:'✗ The missing step is filebeat setup -e — this loads the ingest pipelines that do the actual parsing into Elasticsearch. The module enables the input paths and config, but the pipelines must be loaded separately.'},
+  q6:{c:2,ok:'✓ Correct! xpack.enabled: true is the critical setting in the module config that routes data to the .monitoring-* indices instead of filebeat-* indices. Without it, Stack Monitoring won\'t see the logs.',fail:'✗ The most likely cause is missing xpack.enabled: true in the elasticsearch module config in modules.d/elasticsearch.yml. This flag is what tells Filebeat to send data to Stack Monitoring indices.'},
+  q7:{c:0,ok:'✓ Correct! For Java stack traces: continuation lines begin with whitespace (spaces/tabs before "at"). Pattern \'^[[:space:]]\' matches those lines. negate: false means "lines matching this ARE continuations". match: after appends them to the previous (timestamp) line.',fail:'✗ The correct config: pattern matches the whitespace-prefixed continuation lines (^[[:space:]]), negate: false (those lines ARE the continuation), match: after (append after the previous line, i.e., the main exception line).'},
+};
+
+function doQ(qid,sel,correct){
+  const opts=document.getElementById('qo'+qid.replace('q',''));
+  if(opts.querySelector('.locked'))return;
+  opts.querySelectorAll('.qo').forEach((o,i)=>{
+    o.classList.add('locked');
+    if(i===correct)o.classList.add('correct');
+    else if(i===sel&&sel!==correct)o.classList.add('wrong');
+  });
+  const fb=document.getElementById('qf'+qid.replace('q',''));
+  const ok=sel===correct;
+  fb.className='qfb show '+(ok?'correct':'wrong');
+  fb.textContent=qA[qid][ok?'ok':'fail'];
+}
+
+// ── CHEATSHEET ──
+function toggleCS(){
+  const b=document.getElementById('csBody');
+  const ch=document.getElementById('csChev');
+  const open=b.classList.toggle('open');
+  ch.textContent=open?'▴ Collapse':'▾ Expand';
+}
+
+function cpCode(btn){
+  const pre=btn.parentElement;
+  const txt=pre.innerText.replace('copy','').trim();
+  navigator.clipboard.writeText(txt).catch(()=>{});
+  btn.textContent='✓';setTimeout(()=>btn.textContent='copy',1500);
+}
+
+// ── INIT ──
+renderLogs();
+genFB();
+</script>
+</body>
+</html>

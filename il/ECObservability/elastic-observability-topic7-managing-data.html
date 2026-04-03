@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elastic Certified Observability Engineer — Topic 7: Managing Data</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400;1,700&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Cinzel:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:     #140a0a;
+  --bg2:    #1c0e0e;
+  --surf:   #231414;
+  --surf2:  #2a1818;
+  --surf3:  #331e1e;
+  --bdr:    #3d2020;
+  --bdr2:   #5c3030;
+  --gold:   #c9a227;
+  --gold2:  #e8be45;
+  --gold3:  #f5d66e;
+  --cream:  #f0e6cc;
+  --text:   #e8d8b4;
+  --dim:    #a08050;
+  --mute:   #5a3a20;
+  --red:    #8b1a1a;
+  --green:  #2d6b2d;
+  --green2: #4caf50;
+  --blue:   #1a4a7a;
+  --blue2:  #5b9bd5;
+  --warm:   #d4843a;
+  --cold:   #3a7fd4;
+  --frozen: #8a5fd4;
+  --code-bg:#0c0606;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;overflow-x:hidden;position:relative;}
+
+/* art deco diamond grid bg */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.06;
+  background-image:url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolygon points='40,4 76,40 40,76 4,40' fill='none' stroke='%23c9a227' stroke-width='0.8'/%3E%3Cpolygon points='40,18 62,40 40,62 18,40' fill='none' stroke='%23c9a227' stroke-width='0.5'/%3E%3C/svg%3E");
+  background-size:80px 80px;
+}
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 30%, rgba(201,162,39,.06) 0%,transparent 55%),
+    radial-gradient(ellipse 50% 60% at 80% 70%, rgba(139,26,26,.08) 0%,transparent 55%);
+}
+
+/* ── TOP ORNAMENT ── */
+.top-ornament{
+  height:8px;
+  background:linear-gradient(90deg,
+    var(--bg) 0%,
+    var(--mute) 15%,
+    var(--gold) 30%,
+    var(--gold2) 45%,
+    var(--gold3) 50%,
+    var(--gold2) 55%,
+    var(--gold) 70%,
+    var(--mute) 85%,
+    var(--bg) 100%);
+  position:relative;z-index:10;
+}
+
+/* ── NAV ── */
+.topnav{
+  background:var(--bg2);border-bottom:1px solid var(--bdr2);
+  padding:0 36px;display:flex;align-items:stretch;
+  position:relative;z-index:5;overflow-x:auto;
+}
+.crumb{
+  font-family:'Cinzel',serif;font-size:9px;letter-spacing:4px;
+  color:var(--gold);text-transform:uppercase;
+  padding:13px 22px 13px 0;margin-right:22px;
+  border-right:1px solid var(--bdr);white-space:nowrap;flex-shrink:0;align-self:center;
+}
+.tabs{display:flex}
+.tab{
+  font-family:'Cinzel',serif;font-size:9px;font-weight:400;
+  letter-spacing:2px;padding:13px 16px;color:var(--mute);
+  background:none;border:none;cursor:pointer;transition:all .2s;
+  white-space:nowrap;text-transform:uppercase;position:relative;
+  border-right:1px solid var(--bdr);
+}
+.tab:hover{color:var(--dim)}
+.tab.done{color:var(--green2)}
+.tab.done::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--green2);}
+.tab.active{color:var(--gold2)}
+.tab.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),var(--gold3),var(--gold));}
+
+/* ── HEADER ── */
+header{padding:60px 0 52px;border-bottom:1px solid var(--bdr2);position:relative;z-index:1;overflow:hidden;}
+
+.wrap{max-width:1100px;margin:0 auto;padding:0 36px;position:relative;z-index:1}
+
+.header-badge{
+  display:inline-flex;align-items:center;gap:12px;margin-bottom:22px;
+}
+.hb-diamond{
+  width:10px;height:10px;background:var(--gold);transform:rotate(45deg);flex-shrink:0;
+  box-shadow:0 0 12px rgba(201,162,39,.4);
+}
+.hb-text{
+  font-family:'Cinzel',serif;font-size:9px;letter-spacing:4px;
+  color:var(--gold);text-transform:uppercase;
+}
+
+h1{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(56px,9vw,108px);
+  line-height:.88;font-weight:900;
+  color:var(--cream);margin-bottom:8px;
+  letter-spacing:-1px;
+}
+.h1-sub{
+  font-family:'Cinzel',serif;font-size:clamp(16px,3vw,28px);
+  font-weight:400;letter-spacing:6px;text-transform:uppercase;
+  color:var(--gold);margin-bottom:20px;
+  background:linear-gradient(90deg,var(--gold),var(--gold3),var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.h-desc{
+  font-family:'Playfair Display',serif;font-style:italic;
+  font-size:15px;color:var(--dim);line-height:1.8;max-width:580px;margin-bottom:28px;
+}
+.prog-wrap{
+  display:flex;align-items:center;gap:14px;max-width:540px;
+  background:var(--surf);border:1px solid var(--bdr2);
+  border-top:2px solid var(--gold);padding:11px 18px;
+}
+.prog-lbl{font-family:'Cinzel',serif;font-size:9px;letter-spacing:3px;color:var(--mute);text-transform:uppercase}
+.prog-tr{flex:1;height:2px;background:var(--bdr2)}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold3));transition:width .5s ease;width:0%;box-shadow:0 0 8px rgba(201,162,39,.4)}
+.prog-ct{font-family:'Cinzel',serif;font-size:11px;color:var(--gold);white-space:nowrap}
+
+/* FINAL BADGE */
+.final-badge{
+  display:inline-flex;align-items:center;gap:10px;margin-top:16px;
+  background:linear-gradient(135deg,var(--gold),var(--gold3));
+  padding:8px 20px;
+  font-family:'Cinzel',serif;font-size:10px;letter-spacing:3px;font-weight:700;
+  color:var(--bg);text-transform:uppercase;
+}
+
+/* ── CARDS ── */
+.cards{display:flex;flex-direction:column;gap:2px;margin-bottom:56px}
+.card{
+  background:var(--surf);border:1px solid var(--bdr);
+  border-left:3px solid transparent;transition:all .2s;
+  animation:gilded .4s ease both;
+}
+.card:nth-child(1){animation-delay:.05s}.card:nth-child(2){animation-delay:.10s}.card:nth-child(3){animation-delay:.15s}.card:nth-child(4){animation-delay:.20s}.card:nth-child(5){animation-delay:.25s}.card:nth-child(6){animation-delay:.30s}.card:nth-child(7){animation-delay:.35s}
+@keyframes gilded{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+.card:hover{border-color:var(--bdr2);background:var(--surf2)}
+.card.open{border-left-color:var(--gold);background:var(--surf2)}
+.card.done{border-left-color:var(--green2)}
+
+.card-hd{display:flex;align-items:center;gap:0;cursor:pointer;user-select:none;}
+.card-hd:hover{background:rgba(201,162,39,.02)}
+.c-num{
+  font-family:'Playfair Display',serif;font-size:42px;font-weight:900;
+  color:var(--mute);min-width:80px;text-align:center;padding:16px 0;line-height:1;
+  border-right:1px solid var(--bdr);flex-shrink:0;font-style:italic;
+}
+.card.open .c-num{color:var(--gold);text-shadow:0 0 16px rgba(201,162,39,.3)}
+.card.done .c-num{color:var(--green2)}
+.c-info{flex:1;padding:14px 22px}
+.c-eye{font-family:'Cinzel',serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:4px;}
+.card.done .c-eye{color:var(--green2)}
+.c-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--cream);line-height:1.25;}
+.c-tags{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
+.ctag{font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;padding:2px 8px;border:1px solid;text-transform:uppercase;}
+.ctag.ilm{border-color:rgba(201,162,39,.4);color:var(--gold)}
+.ctag.es{border-color:rgba(91,155,213,.4);color:var(--blue2)}
+.ctag.sec{border-color:rgba(212,132,58,.4);color:var(--warm)}
+.ctag.hi{border-color:rgba(76,175,80,.4);color:var(--green2)}
+.c-r{display:flex;align-items:center;gap:18px;padding:14px 22px;border-left:1px solid var(--bdr)}
+.done-pip{width:8px;height:8px;background:var(--green2);transform:rotate(45deg);box-shadow:0 0 8px var(--green2);display:none}
+.card.done .done-pip{display:block}
+.chev{font-family:'Playfair Display',serif;font-size:18px;color:var(--mute);transition:transform .25s;font-style:italic}
+.card.open .chev{transform:rotate(180deg);color:var(--gold)}
+
+.card-body{display:none;padding:22px 22px 28px 80px;border-top:1px solid var(--bdr);animation:appear .25s ease;}
+.card.open .card-body{display:block}
+@keyframes appear{from{opacity:0}to{opacity:1}}
+
+.slbl{
+  font-family:'Cinzel',serif;font-size:9px;letter-spacing:4px;text-transform:uppercase;
+  color:var(--gold);margin:20px 0 11px;display:flex;align-items:center;gap:12px;
+}
+.slbl::before{content:'◆';font-size:8px;color:var(--gold);flex-shrink:0}
+.slbl::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--bdr2),transparent)}
+
+.prose{font-family:'Playfair Display',serif;font-size:15px;color:var(--dim);line-height:1.8;margin-bottom:13px;}
+.prose strong{color:var(--text);font-style:normal}
+.prose em{color:var(--gold);font-style:italic}
+.prose code{font-family:'DM Mono',monospace;font-size:11.5px;background:var(--surf3);padding:1px 7px;color:var(--gold);border:1px solid var(--bdr2);}
+
+.code{
+  background:var(--code-bg);border:1px solid var(--bdr);border-left:3px solid var(--gold);
+  padding:15px 18px;font-family:'DM Mono',monospace;font-size:12px;line-height:1.75;
+  overflow-x:auto;margin-bottom:13px;position:relative;
+}
+.code .cm{color:var(--mute)}.code .kw{color:var(--gold2)}.code .st{color:#81c784}
+.code .fd{color:var(--blue2)}.code .vl{color:#ffcc80}.code .hl{color:#e57373}.code .ph{color:var(--warm)}
+.copy-btn{
+  position:absolute;top:7px;right:7px;
+  background:rgba(201,162,39,.1);border:1px solid rgba(201,162,39,.25);
+  color:rgba(201,162,39,.5);font-family:'DM Mono',monospace;font-size:9px;
+  padding:3px 9px;cursor:pointer;transition:all .2s;
+}
+.copy-btn:hover{background:var(--gold);color:var(--bg)}
+
+.callout{display:flex;gap:13px;padding:12px 17px;border-left:3px solid;margin-bottom:13px;font-family:'DM Mono',monospace;font-size:12px;line-height:1.65;color:var(--dim);}
+.callout.exam{border-color:var(--gold);background:rgba(201,162,39,.06)}
+.callout.tip{border-color:var(--green2);background:rgba(76,175,80,.05)}
+.callout.warn{border-color:var(--warm);background:rgba(212,132,58,.05)}
+.callout.info{border-color:var(--blue2);background:rgba(91,155,213,.05)}
+.callout-icon{font-size:14px;flex-shrink:0;margin-top:1px}.callout strong{color:var(--text)}
+
+.tbl{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:13px;font-family:'DM Mono',monospace;border:1px solid var(--bdr)}
+.tbl th{text-align:left;padding:8px 13px;background:var(--surf3);font-family:'Cinzel',serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);border-bottom:1px solid var(--bdr2);font-weight:400;}
+.tbl td{padding:8px 13px;border-bottom:1px solid var(--bdr);color:var(--dim);vertical-align:top;line-height:1.5;}
+.tbl td:first-child{color:var(--gold2)}
+.tbl tr:last-child td{border-bottom:none}.tbl tr:hover td{background:rgba(201,162,39,.03)}
+
+.steps{display:flex;flex-direction:column;margin-bottom:13px;border:1px solid var(--bdr)}
+.step{display:flex;gap:0;border-bottom:1px solid var(--bdr)}.step:last-child{border-bottom:none}
+.snum{font-family:'Playfair Display',serif;font-size:28px;font-weight:900;font-style:italic;color:var(--mute);min-width:52px;display:flex;align-items:center;justify-content:center;border-right:1px solid var(--bdr);padding:14px 0;flex-shrink:0;}
+.sc{padding:13px 17px}
+.sc .st{font-family:'Cinzel',serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--cream);margin-bottom:3px;}
+.sc .sd{font-size:12px;color:var(--dim);line-height:1.55;font-family:'DM Mono',monospace}
+.sc .sd code{font-family:'DM Mono',monospace;font-size:11px;background:var(--surf3);padding:1px 5px;color:var(--gold);border:1px solid var(--bdr2)}
+
+.quiz{background:var(--surf3);border:1px solid var(--bdr2);border-top:2px solid var(--gold);padding:18px;margin-top:12px}
+.quiz-hdr{font-family:'Cinzel',serif;font-size:9px;letter-spacing:4px;text-transform:uppercase;color:var(--gold);margin-bottom:9px}
+.quiz-q{font-family:'Playfair Display',serif;font-size:15px;color:var(--text);margin-bottom:13px;line-height:1.6;font-style:italic}
+.quiz-opts{display:flex;flex-direction:column;gap:6px}
+.qo{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:var(--surf);border:1px solid var(--bdr);cursor:pointer;transition:all .2s;font-family:'DM Mono',monospace;font-size:12px;color:var(--dim);line-height:1.5;}
+.qo:hover:not(.locked){border-color:var(--gold);background:rgba(201,162,39,.04);color:var(--text)}
+.qo.correct{border-color:var(--green2);background:rgba(76,175,80,.07);color:var(--text)}
+.qo.wrong{border-color:var(--warm);background:rgba(212,132,58,.07);color:var(--dim)}
+.qo.locked{cursor:default}
+.ql{font-family:'Playfair Display',serif;font-size:22px;font-weight:900;font-style:italic;min-width:20px;color:var(--mute)}
+.qo.correct .ql{color:var(--green2)}.qo.wrong .ql{color:var(--warm)}
+.qfb{margin-top:10px;padding:11px 14px;font-family:'DM Mono',monospace;font-size:11px;line-height:1.6;display:none}
+.qfb.show{display:block}
+.qfb.correct{background:rgba(76,175,80,.07);border-left:2px solid var(--green2);color:var(--dim)}
+.qfb.wrong{background:rgba(212,132,58,.07);border-left:2px solid var(--warm);color:var(--dim)}
+
+.done-btn{display:inline-flex;align-items:center;gap:8px;margin-top:17px;background:transparent;border:1px solid rgba(76,175,80,.4);color:var(--green2);font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:8px 18px;cursor:pointer;transition:all .2s;}
+.done-btn:hover{background:rgba(76,175,80,.07);box-shadow:0 0 12px rgba(76,175,80,.15)}
+.done-btn.marked{background:rgba(76,175,80,.1)}
+
+/* ═══════════════
+   INTERACTIVE
+═══════════════ */
+
+/* ILM Policy Builder */
+.ilm-builder{background:var(--code-bg);border:1px solid var(--bdr2);overflow:hidden;margin-bottom:13px}
+.ilm-toolbar{background:var(--surf3);border-bottom:1px solid var(--bdr);padding:9px 15px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.ilm-lbl{font-family:'Cinzel',serif;font-size:9px;letter-spacing:3px;color:var(--mute);flex:1;text-transform:uppercase}
+.ilm-body{display:grid;grid-template-columns:240px 1fr;gap:0}
+.ilm-form{padding:16px;border-right:1px solid var(--bdr);background:var(--surf)}
+.ilm-fg{display:flex;flex-direction:column;gap:4px;margin-bottom:11px}
+.ilm-lbl2{font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--gold)}
+.ilm-inp,.ilm-sel{background:var(--surf2);border:1px solid var(--bdr2);color:var(--text);font-family:'DM Mono',monospace;font-size:11px;padding:6px 9px;outline:none;transition:border-color .2s;width:100%;appearance:none;}
+.ilm-inp:focus,.ilm-sel:focus{border-color:var(--gold)}
+.ilm-run{background:var(--gold);border:none;color:var(--bg);font-family:'Cinzel',serif;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:9px;cursor:pointer;width:100%;transition:all .2s;margin-top:4px;}
+.ilm-run:hover{background:var(--gold3)}
+.ilm-out{padding:16px;font-family:'DM Mono',monospace;font-size:11.5px;line-height:1.75;overflow:auto;max-height:380px;color:var(--dim);}
+.ilm-out .kw{color:var(--gold2)}.ilm-out .st{color:#81c784}.ilm-out .vl{color:#ffcc80}.ilm-out .cm{color:var(--mute)}.ilm-out .ph{color:var(--warm)}
+
+/* Tier diagram */
+.tier-diagram{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:13px;background:var(--bdr)}
+.tier{padding:14px 12px;text-align:center;background:var(--surf2)}
+.tier-icon{font-size:28px;margin-bottom:8px;display:block}
+.tier-name{font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
+.tier-name.hot{color:var(--warm)}.tier-name.warm{color:var(--gold)}.tier-name.cold{color:var(--cold)}.tier-name.frozen{color:var(--frozen)}
+.tier-detail{font-family:'DM Mono',monospace;font-size:10px;color:var(--mute);line-height:1.6}
+.tier-arrow{display:flex;align-items:center;justify-content:center;background:var(--surf3);font-size:18px;color:var(--mute);padding:14px 4px}
+
+/* Role builder */
+.role-builder{background:var(--surf);border:1px solid var(--bdr2);overflow:hidden;margin-bottom:13px}
+.rb-header{background:var(--surf3);border-bottom:1px solid var(--bdr);padding:9px 15px;display:flex;align-items:center;gap:10px;}
+.rb-lbl{font-family:'Cinzel',serif;font-size:9px;letter-spacing:3px;color:var(--mute);flex:1;text-transform:uppercase}
+.rb-grid{display:grid;grid-template-columns:240px 1fr;gap:0}
+.rb-form{padding:16px;border-right:1px solid var(--bdr)}
+.rb-fg{display:flex;flex-direction:column;gap:4px;margin-bottom:11px}
+.rb-lbl2{font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--gold)}
+.rb-sel,.rb-inp{background:var(--surf2);border:1px solid var(--bdr2);color:var(--text);font-family:'DM Mono',monospace;font-size:11px;padding:6px 9px;outline:none;transition:border-color .2s;width:100%;appearance:none;}
+.rb-sel:focus,.rb-inp:focus{border-color:var(--gold)}
+.rb-run{background:var(--surf3);border:1px solid var(--gold);color:var(--gold);font-family:'Cinzel',serif;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;padding:9px;cursor:pointer;width:100%;transition:all .2s;margin-top:4px;}
+.rb-run:hover{background:var(--gold);color:var(--bg)}
+.rb-out{padding:16px;font-family:'DM Mono',monospace;font-size:11.5px;line-height:1.75;background:var(--code-bg);overflow:auto;max-height:320px;color:var(--dim);}
+.rb-out .kw{color:var(--gold2)}.rb-out .st{color:#81c784}.rb-out .vl{color:#ffcc80}.rb-out .cm{color:var(--mute)}
+
+/* completion certificate */
+.certificate{
+  border:2px solid var(--gold);background:var(--surf2);
+  padding:36px;text-align:center;margin-bottom:13px;position:relative;overflow:hidden;
+}
+.certificate::before{
+  content:'';position:absolute;inset:6px;border:1px solid rgba(201,162,39,.3);pointer-events:none;
+}
+.certificate::after{
+  content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:200px;height:200px;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(201,162,39,.04) 0%,transparent 70%);pointer-events:none;
+}
+.cert-title{font-family:'Cinzel',serif;font-size:11px;letter-spacing:5px;color:var(--gold);text-transform:uppercase;margin-bottom:16px}
+.cert-name{font-family:'Playfair Display',serif;font-size:36px;font-weight:900;color:var(--cream);line-height:1;margin-bottom:8px}
+.cert-sub{font-family:'Playfair Display',serif;font-style:italic;font-size:14px;color:var(--dim);margin-bottom:20px}
+.cert-topics{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.cert-topic{font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;color:var(--mute);text-transform:uppercase;display:flex;align-items:center;gap:5px}
+.cert-pip{width:6px;height:6px;background:var(--green2);transform:rotate(45deg)}
+.cert-divider{width:120px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:0 auto 16px}
+.cert-motto{font-family:'Playfair Display',serif;font-style:italic;font-size:13px;color:var(--mute)}
+
+/* cheatsheet */
+.cs-wrap{border:1px solid var(--bdr2);border-top:2px solid var(--gold);overflow:hidden;margin-bottom:56px}
+.cs-hd{padding:16px 22px;cursor:pointer;display:flex;align-items:center;gap:14px;background:var(--surf2);}
+.cs-title{font-family:'Cinzel',serif;font-size:13px;font-weight:700;color:var(--cream);flex:1;text-transform:uppercase;letter-spacing:2px}
+.cs-chev{font-family:'Playfair Display',serif;font-style:italic;font-size:16px;color:var(--mute)}
+.cs-body{display:none;padding:22px;background:var(--surf)}
+.cs-body.open{display:block}
+.cs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;margin-bottom:16px}
+.cs-item{background:var(--bg2);border:1px solid var(--bdr);padding:12px 14px}
+.cs-t{font-family:'Cinzel',serif;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--gold);margin-bottom:5px;padding-bottom:5px;border-bottom:1px solid var(--bdr)}
+.cs-d{font-family:'DM Mono',monospace;font-size:11px;color:var(--mute);line-height:1.65}
+.cs-d strong{color:var(--gold2)}
+
+footer{border-top:1px solid var(--bdr2);background:var(--bg2);padding:22px 36px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;position:relative;z-index:1;}
+.ft{font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:var(--mute);text-transform:uppercase}
+.nav-btn{display:inline-flex;align-items:center;gap:7px;background:var(--surf);border:1px solid var(--bdr2);color:var(--dim);font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:8px 18px;cursor:pointer;text-decoration:none;transition:all .2s;}
+.nav-btn:hover{border-color:var(--gold);color:var(--gold)}
+.nav-btn.primary{background:linear-gradient(135deg,var(--gold),var(--gold3));border-color:var(--gold);color:var(--bg);font-weight:700;}
+.nav-btn.primary:hover{box-shadow:0 0 20px rgba(201,162,39,.3)}
+
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bdr2)}
+</style>
+</head>
+<body>
+
+<div class="top-ornament"></div>
+
+<div class="topnav">
+  <span class="crumb">Observability Eng</span>
+  <div class="tabs">
+    <button class="tab done">I Metrics ✓</button>
+    <button class="tab done">II Logging ✓</button>
+    <button class="tab done">III APM ✓</button>
+    <button class="tab done">IV Uptime ✓</button>
+    <button class="tab done">V Struct ✓</button>
+    <button class="tab done">VI Obs Data ✓</button>
+    <button class="tab active">VII Mgmt</button>
+  </div>
+</div>
+
+<header>
+  <div class="wrap">
+    <div class="header-badge">
+      <div class="hb-diamond"></div>
+      <span class="hb-text">Final Topic · VII of VII · Elastic Observability Engineer</span>
+      <div class="hb-diamond"></div>
+    </div>
+    <h1>Managing</h1>
+    <div class="h1-sub">Data</div>
+    <p class="h-desc">Govern the full lifecycle of your observability data — from hot indices to frozen archives, snapshot backups, security roles, ILM policies, and cross-cluster replication. The capstone of production-grade Elastic operations.</p>
+    <div class="prog-wrap">
+      <span class="prog-lbl">Progress</span>
+      <div class="prog-tr"><div class="prog-fill" id="pFill"></div></div>
+      <span class="prog-ct" id="pNum">0 / 7 objectives</span>
+    </div>
+    <div class="final-badge">◆ Final Topic — Complete All 7 to Finish ◆</div>
+  </div>
+</header>
+
+<main><div class="wrap">
+<div class="cards">
+
+<!-- OBJ 1 -->
+<div class="card open" id="c1">
+  <div class="card-hd" onclick="tog('c1')">
+    <span class="c-num">I</span>
+    <div class="c-info">
+      <div class="c-eye">Index Lifecycle</div>
+      <div class="c-title">Define and Apply ILM Policies</div>
+      <div class="c-tags"><span class="ctag ilm">ILM</span><span class="ctag es">Elasticsearch</span><span class="ctag hi">Core Exam</span></div>
+    </div>
+    <div class="c-r"><div class="done-pip"></div><span class="chev">v</span></div>
+  </div>
+  <div class="card-body">
+    <p class="prose"><strong>Index Lifecycle Management (ILM)</strong> automates moving indices through phases as they age and grow. For Elastic Observability, ILM controls how long logs/metrics/traces are retained and on which hardware tier they reside.</p>
+    <div class="callout exam"><span class="callout-icon">◆</span><div><strong>Exam objective:</strong> Create and apply ILM policies with rollover, phase transitions, and delete actions. Know how to attach a policy to an index template and trigger rollover conditions.</div></div>
+
+    <div class="slbl">ILM Policy Builder</div>
+    <div class="ilm-builder">
+      <div class="ilm-toolbar"><span class="ilm-lbl">Interactive ILM Policy Generator</span></div>
+      <div class="ilm-body">
+        <div class="ilm-form">
+          <div class="ilm-fg"><label class="ilm-lbl2">Policy Name</label><input class="ilm-inp" id="ilmName" value="logs-30-day" oninput="genILM()"/></div>
+          <div class="ilm-fg"><label class="ilm-lbl2">Rollover Max Age</label>
+            <select class="ilm-sel" id="ilmRollAge" onchange="genILM()">
+              <option value="1d">1 day</option><option value="7d" selected>7 days</option><option value="30d">30 days</option></select></div>
+          <div class="ilm-fg"><label class="ilm-lbl2">Rollover Max Size</label>
+            <select class="ilm-sel" id="ilmRollSize" onchange="genILM()">
+              <option value="25gb">25 GB</option><option value="50gb" selected>50 GB</option><option value="100gb">100 GB</option></select></div>
+          <div class="ilm-fg"><label class="ilm-lbl2">Warm Phase After</label>
+            <select class="ilm-sel" id="ilmWarm" onchange="genILM()">
+              <option value="off">Disabled</option><option value="7d" selected>7 days</option><option value="14d">14 days</option><option value="30d">30 days</option></select></div>
+          <div class="ilm-fg"><label class="ilm-lbl2">Cold Phase After</label>
+            <select class="ilm-sel" id="ilmCold" onchange="genILM()">
+              <option value="off">Disabled</option><option value="30d" selected>30 days</option><option value="60d">60 days</option><option value="90d">90 days</option></select></div>
+          <div class="ilm-fg"><label class="ilm-lbl2">Delete After</label>
+            <select class="ilm-sel" id="ilmDelete" onchange="genILM()">
+              <option value="30d">30 days</option><option value="60d">60 days</option><option value="90d" selected>90 days</option><option value="365d">1 year</option></select></div>
+          <button class="ilm-run" onclick="genILM()">◆ Generate Policy</button>
+        </div>
+        <div class="ilm-out" id="ilmOut"></div>
+      </div>
+    </div>
+
+    <div class="slbl">ILM Phase Summary</div>
+    <div class="tier-diagram">
+      <div class="tier">
+        <span class="tier-icon">🔥</span>
+        <div class="tier-name hot">Hot</div>
+        <div class="tier-detail">Active writes<br>Rollover on<br>age or size<br><br>Best hardware<br>SSD / NVMe</div>
+      </div>
+      <div class="tier-arrow">→</div>
+      <div class="tier">
+        <span class="tier-icon">☀️</span>
+        <div class="tier-name warm">Warm</div>
+        <div class="tier-detail">Read-only<br>Shrink shards<br>Force merge<br><br>Good hardware<br>SSD</div>
+      </div>
+      <div class="tier-arrow">→</div>
+      <div class="tier">
+        <span class="tier-icon">❄️</span>
+        <div class="tier-name cold">Cold</div>
+        <div class="tier-detail">Read-only<br>Searchable<br>snapshots<br><br>Cheap storage<br>HDD / Object</div>
+      </div>
+      <div class="tier-arrow">→</div>
+      <div class="tier">
+        <span class="tier-icon">🧊</span>
+        <div class="tier-name frozen">Frozen</div>
+        <div class="tier-detail">On-demand<br>cached from<br>snapshot<br><br>Cheapest<br>Object store</div>
+      </div>
+    </div>
+
+    <div class="slbl">Key ILM Actions Per Phase</div>
+    <table class="tbl"><tr><th>Phase</th><th>Available Actions</th><th>Common usage</th></tr>
+      <tr><td>Hot</td><td>rollover, set_priority, readonly</td><td>Rollover at 50GB or 7 days; priority 100</td></tr>
+      <tr><td>Warm</td><td>shrink, forcemerge, readonly, allocate, set_priority</td><td>Shrink to 1 shard, forcemerge to 1 segment, move to warm nodes</td></tr>
+      <tr><td>Cold</td><td>allocate, freeze (deprecated), searchable_snapshot, set_priority</td><td>Migrate to cold tier or searchable snapshot on object storage</td></tr>
+      <tr><td>Frozen</td><td>searchable_snapshot (partial)</td><td>Mount from snapshot on demand, cheapest long-term storage</td></tr>
+      <tr><td>Delete</td><td>delete, wait_for_snapshot</td><td>Delete after retention period; optionally wait for snapshot</td></tr>
+    </table>
+
+    <div class="slbl">Attach ILM Policy to Index Template</div>
+    <div class="code"><button class="copy-btn" onclick="cpCode(this)">copy</button>
+<span class="cm"># In index template settings — policy is applied automatically</span>
+PUT <span class="fd">_index_template/logs-nginx-template</span>
+{
+  <span class="kw">"template"</span>: {
+    <span class="kw">"settings"</span>: {
+      <span class="kw">"index.lifecycle.name"</span>:           <span class="st">"logs-30-day"</span>,
+      <span class="kw">"index.lifecycle.rollover_alias"</span>:  <span class="st">"logs-nginx"</span>  <span class="cm">← required for alias-based rollover</span>
+    }
+  }
+}
+<span class="cm"># For data streams, rollover_alias is NOT needed — data stream handles it</span>
+    </div>
+    <button class="done-btn" onclick="markDone('c1',this)">☐ Mark Complete</button>
+  </div>
+</div>
+
+<!-- OBJ 2 -->
+<div class="card" id="c2">
+  <div class="card-hd" onclick="tog('c2')">
+    <span class="c-num">II</span>
+    <div class="c-info">
+      <div class="c-eye">Snapshots</div>
+      <div class="c-title">Configure Snapshot Repositories and Policies</div>
+      <div class="c-tags"><span class="ctag es">Elasticsearch</span><span class="ctag hi">Core Exam</span></div>
+    </div>
+    <div class="c-r"><div class="done-pip"></div><span class="chev">v</span></div>
+  </div>
+  <div class="card-body">
+    <p class="prose">Snapshots are point-in-time backups of indices or data streams stored in an external <em>snapshot repository</em> (S3, GCS, Azure Blob, HDFS, or shared filesystem). They are also used for searchable snapshots in the Cold/Frozen ILM phases.</p>
+    <div class="callout exam"><span class="callout-icon">◆</span><div><strong>Exam objective:</strong> Register a repository, create a snapshot, restore data from a snapshot. Know how SLM (Snapshot Lifecycle Management) automates this.</div></div>
+
+    <div class="slbl">Snapshot Repository &amp; SLM</div>
+    <div class="code"><button class="copy-btn" onclick="cpCode(this)">copy</button>
+<span class="cm"># 1. Register a snapshot repository</span>
+PUT <span class="fd">_snapshot/my-s3-repo</span>
+{
+  <span class="kw">"type"</span>: <span class="st">"s3"</span>,
+  <span class="kw">"settings"</span>: {
+    <span class="kw">"bucket"</span>:    <span class="st">"my-elastic-backups"</span>,
+    <span class="kw">"region"</span>:    <span class="st">"us-east-1"</span>,
+    <span class="kw">"base_path"</span>: <span class="st">"elasticsearch/snapshots"</span>
+  }
+}
+
+<span class="cm"># 2. Create a manual snapshot</span>
+PUT <span class="fd">_snapshot/my-s3-repo/snapshot-2026-02-27</span>
+{
+  <span class="kw">"indices"</span>:            <span class="st">"logs-nginx.*,metrics-system.*"</span>,
+  <span class="kw">"include_global_state"</span>: <span class="vl">false</span>
+}
+
+<span class="cm"># 3. Monitor snapshot status</span>
+GET <span class="fd">_snapshot/my-s3-repo/snapshot-2026-02-27</span>
+GET <span class="fd">_snapshot/my-s3-repo/_current</span>   <span class="cm">← in-progress snapshot</span>
+
+<span class="cm"># 4. Restore from snapshot</span>
+POST <span class="fd">_snapshot/my-s3-repo/snapshot-2026-02-27/_restore</span>
+{
+  <span class="kw">"indices"</span>: <span class="st">"logs-nginx.*"</span>,
+  <span class="kw">"rename_pattern"</span>:     <span class="st">"logs-nginx-(.*)"</span>,
+  <span class="kw">"rename_replacement"</span>: <span class="st">"restored-logs-nginx-$1"</span>
+}
+    </div>
+
+    <div class="slbl">SLM — Snapshot Lifecycle Management</div>
+    <div class="code"><button class="copy-btn" onclick="cpCode(this)">copy</button>
+<span class="cm"># Create an SLM policy for automated daily snapshots</span>
+PUT <span class="fd">_slm/policy/daily-snapshots</span>
+{
+  <span class="kw">"schedule"</span>:   <span class="st">"0 30 1 * * ?"</span>,    <span class="cm">← cron: every day at 01:30</span>
+  <span class="kw">"name"</span>:       <span class="st">"&lt;daily-snap-{now/d}&gt;"</span>,
+  <span class="kw">"repository"</span>: <span class="st">"my-s3-repo"</span>,
+  <span class="kw">"config"</span>: {
+    <span class="kw">"indices"</span>:             [<span class="st">"logs-*"</span>, <span class="st">"metrics-*"</span>],
+    <span class="kw">"include_global_state"</span>: <span class="vl">false</span>
+  },
+  <span class="kw">"retention"</span>: {
+    <span class="kw">"expire_after"</span>:  <span class="st">"30d"</span>,
+    <span class="kw">"min_count"</span>:     <span class="vl">5</span>,
+    <span class="kw">"max_count"</span>:     <span class="vl">50</span>
+  }
+}
+
+<span class="cm"># Trigger SLM policy manually</span>
+POST <span class="fd">_slm/policy/daily-snapshots/_execute</span>
+
+<span class="cm"># Navigate in Kibana: Stack Management → Snapshot &amp; Restore → Policies</span>
+    </div>
+
+    <div class="slbl">Practice Quiz</div>
+    <div class="quiz" id="q2">
+      <div class="quiz-hdr">◆ Exam Question</div>
+      <div class="quiz-q">You want to restore the index <code>logs-nginx-000010</code> from a snapshot without overwriting the existing live index. What should you include in the restore request?</div>
+      <div class="quiz-opts" id="qo2">
+        <div class="qo" onclick="doQ('q2',0,2)"><span class="ql">a</span><span>Use <code>include_global_state: true</code> to force a clean restore</span></div>
+        <div class="qo" onclick="doQ('q2',1,2)"><span class="ql">b</span><span>Delete the existing index first, then restore without any rename</span></div>
+        <div class="qo" onclick="doQ('q2',2,2)"><span class="ql">c</span><span>Use <code>rename_pattern</code> and <code>rename_replacement</code> to restore under a different name</span></div>
+        <div class="qo" onclick="doQ('q2',3,2)"><span class="ql">d</span><span>Snapshots always restore to a new index — no rename needed</span></div>
+      </div>
+      <div class="qfb" id="qf2"></div>
+    </div>
+    <button class="done-btn" onclick="markDone('c2',this)">☐ Mark Complete</button>
+  </div>
+</div>
+
+<!-- OBJ 3 -->
+<div class="card" id="c3">
+  <div class="card-hd" onclick="tog('c3')">
+    <span class="c-num">III</span>
+    <div class="c-info">
+      <div class="c-eye">Security</div>
+      <div class="c-title">Configure Roles, Users, and API Keys for Security</div>
+      <div class="c-tags"><span class="ctag sec">Security</span><span class="ctag hi">Core Exam</span></div>
+    </div>
+    <div class="c-r"><div class="done-pip"></div><span class="chev">v</span></div>
+  </div>
+  <div class="card-body">
+    <p class="prose">Elastic Security uses a <strong>role-based access control (RBAC)</strong> model. Roles define what a user can do (cluster privileges) and what data they can access (index privileges, field-level, document-level). API keys are preferred over passwords for programmatic access.</p>
+    <div class="callout exam"><span class="callout-icon">◆</span><div><strong>Exam focus:</strong> Create a role with specific index privileges. Create a user assigned to that role. Create an API key with restricted privileges. Know built-in roles like kibana_admin, monitoring_user, apm_user.</div></div>
+
+    <div class="slbl">Interactive Role Builder</div>
+    <div class="role-builder">
+      <div class="rb-header"><span class="rb-lbl">Elasticsearch Role Config Generator</span><span style="font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;color:var(--gold)">INTERACTIVE</span></div>
+      <div class="rb-grid">
+        <div class="rb-form">
+          <div class="rb-fg"><label class="rb-lbl2">Role Name</label><input class="rb-inp" id="rbName" value="observability-reader" oninput="genRole()"/></div>
+          <div class="rb-fg"><label class="rb-lbl2">Index Pattern</label><input class="rb-inp" id="rbIdx" value="logs-*,metrics-*,traces-*" oninput="genRole()"/></div>
+          <div class="rb-fg"><label class="rb-lbl2">Index Privileges</label>
+            <select class="rb-sel" id="rbPriv" onchange="genRole()">
+              <option value="read">read (search, get)</option>
+              <option value="write">write (index, create)</option>
+              <option value="all">all (full access)</option>
+              <option value="monitor">monitor (stats only)</option>
+            </select></div>
+          <div class="rb-fg"><label class="rb-lbl2">Cluster Privileges</label>
+            <select class="rb-sel" id="rbCluster" onchange="genRole()">
+              <option value="none">None</option>
+              <option value="monitor">monitor</option>
+              <option value="manage_ilm">manage_ilm</option>
+              <option value="manage_index_templates">manage_index_templates</option>
+            </select></div>
+          <div class="rb-fg"><label class="rb-lbl2">Kibana Space Access</label>
+            <select class="rb-sel" id="rbKibana" onchange="genRole()">
+              <option value="read">Read only</option>
+              <option value="all">All features</option>
+              <option value="none">No Kibana access</option>
+            </select></div>
+          <button class="rb-run" onclick="genRole()">◆ Generate Role</button>
+        </div>
+        <div class="rb-out" id="roleOut"></div>
+      </div>
+    </div>
+
+    <div class="slbl">Key Built-in Roles</div>
+    <table class="tbl"><tr><th>Built-in Role</th><th>Purpose</th></tr>
+      <tr><td>superuser</td><td>Full cluster access — use sparingly</td></tr>
+      <tr><td>kibana_admin</td><td>Full Kibana admin access across all spaces</td></tr>
+      <tr><td>monitoring_user</td><td>View Stack Monitoring dashboards (read-only)</td></tr>
+      <tr><td>apm_user</td><td>Read APM indices and Kibana APM app</td></tr>
+      <tr><td>beats_admin</td><td>Manage Beats central management</td></tr>
+      <tr><td>viewer</td><td>Read all Kibana features in all spaces</td></tr>
+      <tr><td>editor</td><td>Read/write Kibana features (no admin)</td></tr>
+    </table>
+
+    <div class="slbl">API Keys</div>
+    <div class="code"><button class="copy-btn" onclick="cpCode(this)">copy</button>
+<span class="cm"># Create an API key with restricted privileges</span>
+POST <span class="fd">_security/api_key</span>
+{
+  <span class="kw">"name"</span>: <span class="st">"filebeat-logs-writer"</span>,
+  <span class="kw">"expiration"</span>: <span class="st">"90d"</span>,
+  <span class="kw">"role_descriptors"</span>: {
+    <span class="kw">"logs-writer"</span>: {
+      <span class="kw">"cluster"</span>: [<span class="st">"monitor"</span>],
+      <span class="kw">"index"</span>: [{
+        <span class="kw">"names"</span>:      [<span class="st">"logs-*"</span>],
+        <span class="kw">"privileges"</span>: [<span class="st">"create_index"</span>, <span class="st">"create"</span>, <span class="st">"auto_configure"</span>]
+      }]
+    }
+  }
+}
+<span class="cm"># Response includes "encoded" value — use as: Authorization: ApiKey &lt;encoded&gt;</span>
+<span class="cm"># In Filebeat/Metricbeat: output.elasticsearch.api_key: "&lt;encoded&gt;"</span>
+    </div>
+    <button class="done-btn" onclick="markDone('c3',this)">☐ Mark Complete</button>
+  </div>
+</div>
+
+<!-- OBJ 4 -->
+<div class="card" id="c4">
+  <div class="card-hd" onclick="tog('c4')">
+    <span class="c-num">IV</span>
+    <div class="c-info">
+      <div class="c-eye">Stack Monitoring</div>
+      <div class="c-title">Monitor the Elastic Stack Itself</div>
+      <div class="c-tags"><span class="ctag es">Elasticsearch</span><span class="ctag ilm">Monitoring</span></div>
+    </div>
+    <div class="c-r"><div class="done-pip"></div><span class="chev">v</span></div>
+  </div>
+  <div class="card-body">
+    <p class="prose"><strong>Stack Monitoring</strong> collects health and performance metrics from Elasticsearch, Kibana, Logstash, and Beats and displays them in Kibana → Stack Monitoring. Use a separate <em>monitoring cluster</em> in production to avoid noisy-neighbour effects.</p>
+
+    <div class="callout exam"><span class="callout-icon">◆</span><div><strong>Key distinction:</strong> Metricbeat/Filebeat-based monitoring (recommended) vs internal monitoring. For Beats monitoring, set <code>xpack.monitoring.enabled: true</code> in the Beat config. For the monitoring cluster, ensure the correct Elasticsearch output.</div></div>
+
+    <div class="slbl">Enabling Stack Monitoring</div>
+    <div class="code"><button class="copy-btn" onclick="cpCode(this)">copy</button>
+<span class="cm"># Method 1: Metricbeat-based (RECOMMENDED)</span>
+<span class="cm"># On each Elasticsearch node — in metricbeat.yml:</span>
+<span class="fd">metricbeat.modules</span>:
+  - <span class="fd">module</span>: <span class="st">elasticsearch</span>
+    <span class="fd">xpack.enabled</span>: <span class="vl">true</span>          <span class="cm">← routes to .monitoring-es-* indices</span>
+    <span class="fd">period</span>: <span class="vl">10s</span>
+    <span class="fd">hosts</span>: [<span class="st">"https://localhost:9200"</span>]
+    <span class="fd">username</span>: <span class="st">"remote_monitoring_user"</span>
+    <span class="fd">password</span>: <span class="st">"${MONITORING_PASS}"</span>
+
+<span class="fd">output.elasticsearch</span>:
+  <span class="fd">hosts</span>: [<span class="st">"https://monitoring-cluster:9200"</span>]  <span class="cm">← dedicated monitoring cluster</span>
+
+<span class="cm"># For Logstash monitoring — in logstash.yml:</span>
+<span class="fd">xpack.monitoring.enabled</span>: <span class="vl">true</span>
+<span class="fd">xpack.monitoring.elasticsearch.hosts</span>: [<span class="st">"https://monitoring-cluster:9200"</span>]
+
+<span class="cm"># For Beats (Filebeat/Metricbeat) — in filebeat.yml:</span>
+<span class="fd">monitoring.enabled</span>: <span class="vl">true</span>    <span class="cm">← enables Beat self-monitoring</span>
+<span class="cm"># OR use xpack.enabled: true in the beat module for sending to monitoring cluster</span>
+    </div>
+
+    <div class="callout warn"><span class="callout-icon">⚠</span><div><strong>Critical:</strong> <code>xpack.enabled: true</code> in a Metricbeat Elasticsearch/Logstash module causes data to be routed to the monitoring index pattern (<code>.monitoring-*</code>) instead of normal indices. This is what the Stack Monitoring app reads from. Forgetting this is a common mistake.</div></div>
+
+    <div class="slbl">Practice Quiz</div>
+    <div class="quiz" id="q4">
+      <div class="quiz-hdr">◆ Exam Question</div>
+      <div class="quiz-q">You have configured Metricbeat to collect Elasticsearch metrics, but the data doesn't appear in Kibana Stack Monitoring. What setting is most likely missing in your Metricbeat configuration?</div>
+      <div class="quiz-opts" id="qo4">
+        <div class="qo" onclick="doQ('q4',0,1)"><span class="ql">a</span><span>The <code>period</code> interval is too long — set it to 5s</span></div>
+        <div class="qo" onclick="doQ('q4',1,1)"><span class="ql">b</span><span><code>xpack.enabled: true</code> in the elasticsearch module — without this, data goes to a normal index, not the monitoring index pattern</span></div>
+        <div class="qo" onclick="doQ('q4',2,1)"><span class="ql">c</span><span>Stack Monitoring requires Metricbeat to send to the same cluster being monitored</span></div>
+        <div class="qo" onclick="doQ('q4',3,1)"><span class="ql">d</span><span>The <code>monitoring_user</code> role hasn't been assigned</span></div>
+      </div>
+      <div class="qfb" id="qf4"></div>
+    </div>
+    <button class="done-btn" onclick="markDone('c4',this)">☐ Mark Complete</button>
+  </div>
+</div>
+
+<!-- OBJ 5 -->
+<div class="card" id="c5">
+  <div class="card-hd" onclick="tog('c5')">
+    <span class="c-num">V</span>
+    <div class="c-info">
+      <div class="c-eye">Index Management</div>
+      <div class="c-title">Manage Indices: Mappings, Settings, and Aliases</div>
+      <div class="c-tags"><span class="ctag es">Elasticsearch</span><span class="ctag hi">Core Exam</span></div>
+    </div>
+    <div class="c-r"><div class="done-pip"></div><span class="chev">v</span></div>
+  </div>
+  <div class="card-body">
+    <p class="prose">Beyond data streams, you need to manage the underlying indices — updating mappings, adjusting settings, creating aliases for rollover, and controlling shard allocation. The <strong>Index Management</strong> app in Kibana (Stack Management → Index Management) provides a UI for all of this.</p>
+
+    <div class="slbl">Essential Index APIs</div>
+    <div class="code"><button class="copy-btn" onclick="cpCode(this)">copy</button>
+<span class="cm"># View index settings and mappings</span>
+GET <span class="fd">logs-nginx-000001/_settings</span>
+GET <span class="fd">logs-nginx-000001/_mapping</span>
+
+<span class="cm"># Update mappings (can add new fields, can't change existing type)</span>
+PUT <span class="fd">logs-nginx-000001/_mapping</span>
+{ <span class="kw">"properties"</span>: { <span class="kw">"custom.field"</span>: { <span class="kw">"type"</span>: <span class="st">"keyword"</span> } } }
+
+<span class="cm"># Update dynamic index settings</span>
+PUT <span class="fd">logs-nginx-000001/_settings</span>
+{ <span class="kw">"number_of_replicas"</span>: <span class="vl">0</span> }   <span class="cm">← can change replicas live</span>
+
+<span class="cm"># Static settings (number_of_shards) require index close/open</span>
+POST <span class="fd">logs-nginx-000001/_close</span>
+PUT  <span class="fd">logs-nginx-000001/_settings</span>  <span class="cm">← apply static settings</span>
+POST <span class="fd">logs-nginx-000001/_open</span>
+
+<span class="cm"># Aliases</span>
+POST <span class="fd">_aliases</span>
+{ <span class="kw">"actions"</span>: [
+  { <span class="kw">"add"</span>: { <span class="kw">"index"</span>: <span class="st">"logs-nginx-000001"</span>, <span class="kw">"alias"</span>: <span class="st">"logs-nginx"</span>, <span class="kw">"is_write_index"</span>: <span class="vl">true</span> } }
+]}
+
+<span class="cm"># Reindex — copy data from one index to another</span>
+POST <span class="fd">_reindex</span>
+{ <span class="kw">"source"</span>: { <span class="kw">"index"</span>: <span class="st">"old-logs"</span> }, <span class="kw">"dest"</span>: { <span class="kw">"index"</span>: <span class="st">"logs-new-000001"</span>, <span class="kw">"pipeline"</span>: <span class="st">"parse-nginx"</span> } }
+
+<span class="cm"># Force merge (reduce segment count — typically in warm phase)</span>
+POST <span class="fd">logs-nginx-000001/_forcemerge?max_num_segments=1</span>
+    </div>
+
+    <div class="slbl">Dynamic vs Static Settings</div>
+    <table class="tbl"><tr><th>Setting</th><th>Type</th><th>Can change live?</th></tr>
+      <tr><td>number_of_replicas</td><td>Dynamic</td><td>Yes — PUT _settings anytime</td></tr>
+      <tr><td>index.lifecycle.name</td><td>Dynamic</td><td>Yes — assign/change ILM policy live</td></tr>
+      <tr><td>index.routing.allocation.*</td><td>Dynamic</td><td>Yes — move shards to different tiers</td></tr>
+      <tr><td>number_of_shards</td><td>Static</td><td>No — must close index first (or reindex)</td></tr>
+      <tr><td>index.codec</td><td>Static</td><td>No — set at creation time only</td></tr>
+    </table>
+    <button class="done-btn" onclick="markDone('c5',this)">☐ Mark Complete</button>
+  </div>
+</div>
+
+<!-- OBJ 6 -->
+<div class="card" id="c6">
+  <div class="card-hd" onclick="tog('c6')">
+    <span class="c-num">VI</span>
+    <div class="c-info">
+      <div class="c-eye">Cross-Cluster Replication</div>
+      <div class="c-title">Configure Cross-Cluster Replication (CCR)</div>
+      <div class="c-tags"><span class="ctag es">Elasticsearch</span><span class="ctag ilm">CCR</span></div>
+    </div>
+    <div class="c-r"><div class="done-pip"></div><span class="chev">v</span></div>
+  </div>
+  <div class="card-body">
+    <p class="prose"><strong>Cross-Cluster Replication (CCR)</strong> continuously replicates indices from a <em>leader</em> cluster to a <em>follower</em> cluster. Used for disaster recovery, geo-distribution, and local reads. Follower indices are read-only and automatically kept in sync.</p>
+
+    <div class="slbl">CCR Setup</div>
+    <div class="code"><button class="copy-btn" onclick="cpCode(this)">copy</button>
+<span class="cm"># 1. Configure remote cluster (on the FOLLOWER cluster)</span>
+PUT <span class="fd">_cluster/settings</span>
+{ <span class="kw">"persistent"</span>: {
+    <span class="kw">"cluster.remote.leader-cluster.seeds"</span>: [<span class="st">"leader-node-1:9300"</span>, <span class="st">"leader-node-2:9300"</span>]
+}}
+
+<span class="cm"># 2. Create a follower index (on the FOLLOWER cluster)</span>
+PUT <span class="fd">/follower-logs-nginx/_ccr/follow</span>
+{
+  <span class="kw">"remote_cluster"</span>:  <span class="st">"leader-cluster"</span>,
+  <span class="kw">"leader_index"</span>:    <span class="st">"logs-nginx-000001"</span>
+}
+
+<span class="cm"># 3. Auto-follow pattern — replicate new indices automatically</span>
+PUT <span class="fd">_ccr/auto_follow/logs-pattern</span>
+{
+  <span class="kw">"remote_cluster"</span>:    <span class="st">"leader-cluster"</span>,
+  <span class="kw">"leader_index_patterns"</span>: [<span class="st">"logs-nginx-*"</span>],
+  <span class="kw">"follow_index_pattern"</span>:  <span class="st">"{{leader_index}}"</span>
+}
+
+<span class="cm"># Navigate: Stack Management → Cross-Cluster Replication</span>
+    </div>
+
+    <table class="tbl"><tr><th>Feature</th><th>CCR</th></tr>
+      <tr><td>Direction</td><td>Leader → Follower (one-way)</td></tr>
+      <tr><td>Follower mode</td><td>Read-only</td></tr>
+      <tr><td>Use cases</td><td>DR (disaster recovery), geo-local reads, data locality</td></tr>
+      <tr><td>Requires</td><td>Platinum/Enterprise license, remote cluster configured</td></tr>
+      <tr><td>Cross-cluster search</td><td>Different feature — query across clusters without replication</td></tr>
+    </table>
+    <button class="done-btn" onclick="markDone('c6',this)">☐ Mark Complete</button>
+  </div>
+</div>
+
+<!-- OBJ 7 -->
+<div class="card" id="c7">
+  <div class="card-hd" onclick="tog('c7')">
+    <span class="c-num">VII</span>
+    <div class="c-info">
+      <div class="c-eye">Fleet &amp; Agent Management</div>
+      <div class="c-title">Manage Elastic Agents and Fleet Policies</div>
+      <div class="c-tags"><span class="ctag ilm">Fleet</span><span class="ctag hi">Core Exam</span></div>
+    </div>
+    <div class="c-r"><div class="done-pip"></div><span class="chev">v</span></div>
+  </div>
+  <div class="card-body">
+    <p class="prose"><strong>Fleet</strong> is the central management layer for Elastic Agents — it pushes <em>agent policies</em> containing integrations, data streams, and configuration to all enrolled agents simultaneously. Understand how to manage agents at scale.</p>
+    <div class="callout exam"><span class="callout-icon">◆</span><div><strong>Exam focus:</strong> Know how to add an integration to a policy, enroll a new agent, check agent health, and update policy settings. Fleet replaces manual Beat configurations at scale.</div></div>
+
+    <div class="slbl">Fleet Agent Lifecycle</div>
+    <div class="steps">
+      <div class="step"><div class="snum">1</div><div class="sc"><div class="st">Create Agent Policy</div><div class="sd">Kibana → Fleet → Agent policies → Create policy. Name it, set monitoring settings.</div></div></div>
+      <div class="step"><div class="snum">2</div><div class="sc"><div class="st">Add Integrations</div><div class="sd">Click policy → Add integration: System, Nginx, APM, Kubernetes, AWS, etc. Each integration adds data streams and ingest pipelines automatically.</div></div></div>
+      <div class="step"><div class="snum">3</div><div class="sc"><div class="st">Enroll an Agent</div><div class="sd">Fleet → Add agent → select policy → copy enrollment command. Run on the host: <code>elastic-agent install --url=https://fleet-server:8220 --enrollment-token=TOKEN</code></div></div></div>
+      <div class="step"><div class="snum">4</div><div class="sc"><div class="st">Monitor Agent Health</div><div class="sd">Fleet → Agents tab → check status (Healthy / Unhealthy / Updating / Offline). Click agent for logs and diagnostics.</div></div></div>
+      <div class="step"><div class="snum">5</div><div class="sc"><div class="st">Update Policy</div><div class="sd">Edit policy → change integration settings → Save. Fleet automatically pushes the updated config to all enrolled agents within seconds.</div></div></div>
+    </div>
+
+    <div class="slbl">Fleet vs Manual Beats</div>
+    <table class="tbl"><tr><th>Feature</th><th>Fleet + Elastic Agent</th><th>Manual Beats</th></tr>
+      <tr><td>Configuration</td><td>Central UI, pushed automatically</td><td>Per-host config files (filebeat.yml, etc.)</td></tr>
+      <tr><td>Updates</td><td>Fleet pushes policy changes live</td><td>Manual edit + restart on each host</td></tr>
+      <tr><td>Multiple inputs</td><td>Single agent, multiple integrations</td><td>Multiple Beat processes needed</td></tr>
+      <tr><td>Best for</td><td>Scale: 10s to 10,000s of hosts</td><td>Simple setups, legacy, custom pipelines</td></tr>
+    </table>
+
+    <div class="slbl">Practice Quiz</div>
+    <div class="quiz" id="q7">
+      <div class="quiz-hdr">◆ Exam Question</div>
+      <div class="quiz-q">You need to add Nginx log collection to 200 hosts that already have Elastic Agent enrolled in Fleet. What is the correct approach?</div>
+      <div class="quiz-opts" id="qo7">
+        <div class="qo" onclick="doQ('q7',0,1)"><span class="ql">a</span><span>SSH to each of the 200 hosts and manually add an nginx input to filebeat.yml</span></div>
+        <div class="qo" onclick="doQ('q7',1,1)"><span class="ql">b</span><span>In Fleet, add the Nginx integration to the agent policy — Fleet automatically pushes the config to all 200 enrolled agents</span></div>
+        <div class="qo" onclick="doQ('q7',2,1)"><span class="ql">c</span><span>Create a new agent policy and re-enroll all 200 agents with the new policy</span></div>
+        <div class="qo" onclick="doQ('q7',3,1)"><span class="ql">d</span><span>Deploy a separate Filebeat instance on each host alongside the existing Elastic Agent</span></div>
+      </div>
+      <div class="qfb" id="qf7"></div>
+    </div>
+    <button class="done-btn" onclick="markDone('c7',this)">☐ Mark Complete</button>
+  </div>
+</div>
+
+</div><!-- /cards -->
+
+<!-- COMPLETION CERTIFICATE -->
+<div class="certificate" id="certBlock" style="display:none">
+  <div class="cert-title">◆ Certificate of Completion ◆</div>
+  <div class="cert-name">Elastic Observability</div>
+  <div class="cert-sub">All Seven Topics Mastered</div>
+  <div class="cert-divider"></div>
+  <div class="cert-topics">
+    <div class="cert-topic"><div class="cert-pip"></div>I. Metrics</div>
+    <div class="cert-topic"><div class="cert-pip"></div>II. Logging</div>
+    <div class="cert-topic"><div class="cert-pip"></div>III. APM</div>
+    <div class="cert-topic"><div class="cert-pip"></div>IV. Uptime</div>
+    <div class="cert-topic"><div class="cert-pip"></div>V. Structuring Data</div>
+    <div class="cert-topic"><div class="cert-pip"></div>VI. Obs Data</div>
+    <div class="cert-topic"><div class="cert-pip"></div>VII. Managing Data</div>
+  </div>
+  <div class="cert-divider"></div>
+  <div class="cert-motto">"You are ready. Go pass the exam."</div>
+</div>
+
+<!-- CHEATSHEET -->
+<div class="cs-wrap">
+  <div class="cs-hd" onclick="toggleCS()">
+    <span class="cs-title">◆ Topic 7 Quick Reference — Managing Data</span>
+    <span class="cs-chev" id="csChev">▾</span>
+  </div>
+  <div class="cs-body" id="csBody">
+    <div class="cs-grid">
+      <div class="cs-item"><div class="cs-t">ILM Phases</div><div class="cs-d">Hot → Warm → Cold → Frozen → Delete<br><strong>Rollover:</strong> max_age + max_size<br>Attach via index.lifecycle.name</div></div>
+      <div class="cs-item"><div class="cs-t">ILM Actions</div><div class="cs-d">Hot: rollover, set_priority<br>Warm: shrink, forcemerge, readonly<br>Cold: searchable_snapshot<br>Delete: delete, wait_for_snapshot</div></div>
+      <div class="cs-item"><div class="cs-t">Snapshot APIs</div><div class="cs-d">PUT _snapshot/repo/snap-name<br>POST repo/snap/_restore<br>PUT _slm/policy/name<br>GET _snapshot/_current</div></div>
+      <div class="cs-item"><div class="cs-t">SLM Retention</div><div class="cs-d">expire_after: "30d"<br>min_count: 5<br>max_count: 50<br>Cron schedule format</div></div>
+      <div class="cs-item"><div class="cs-t">RBAC</div><div class="cs-d">Role: cluster + index privileges<br>Index: read / write / all<br>API key: scoped role_descriptors<br>Built-in: apm_user, monitoring_user</div></div>
+      <div class="cs-item"><div class="cs-t">Stack Monitoring</div><div class="cs-d"><strong>xpack.enabled: true</strong> required!<br>Routes to .monitoring-* indices<br>Use dedicated monitoring cluster<br>User: remote_monitoring_user</div></div>
+      <div class="cs-item"><div class="cs-t">Index APIs</div><div class="cs-d">GET idx/_settings · /_mapping<br>PUT idx/_settings (dynamic only)<br>POST _reindex<br>POST idx/_forcemerge</div></div>
+      <div class="cs-item"><div class="cs-t">Fleet</div><div class="cs-d">Policy → Integrations → Agents<br>Edit policy = auto-push to agents<br>elastic-agent install --url --enrollment-token<br>Replaces manual filebeat.yml</div></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+</main>
+
+<footer>
+  <div class="wrap" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;width:100%">
+    <span class="ft">Elastic Cert Observability Eng · Topic VII · Managing Data · Final Topic</span>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a href="#" class="nav-btn" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">↑ Top</a>
+      <a href="#" class="nav-btn" onclick="alert('Open Topic 6: Working with Obs Data');return false;">← Obs Data</a>
+      <a href="#" class="nav-btn primary">◆ Series Complete ◆</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ILM builder
+function genILM(){
+  const name=document.getElementById('ilmName').value||'my-policy';
+  const rollAge=document.getElementById('ilmRollAge').value;
+  const rollSize=document.getElementById('ilmRollSize').value;
+  const warm=document.getElementById('ilmWarm').value;
+  const cold=document.getElementById('ilmCold').value;
+  const del=document.getElementById('ilmDelete').value;
+  let phases=`    <span class="kw">"hot"</span>: {\n      <span class="kw">"actions"</span>: {\n        <span class="kw">"rollover"</span>: { <span class="kw">"max_age"</span>: <span class="st">"${rollAge}"</span>, <span class="kw">"max_primary_shard_size"</span>: <span class="st">"${rollSize}"</span> },\n        <span class="kw">"set_priority"</span>: { <span class="kw">"priority"</span>: <span class="vl">100</span> }\n      }\n    }`;
+  if(warm!=='off') phases+=`,\n    <span class="kw">"warm"</span>: {\n      <span class="kw">"min_age"</span>: <span class="st">"${warm}"</span>,\n      <span class="kw">"actions"</span>: {\n        <span class="kw">"forcemerge"</span>: { <span class="kw">"max_num_segments"</span>: <span class="vl">1</span> },\n        <span class="kw">"readonly"</span>: {},\n        <span class="kw">"set_priority"</span>: { <span class="kw">"priority"</span>: <span class="vl">50</span> }\n      }\n    }`;
+  if(cold!=='off') phases+=`,\n    <span class="kw">"cold"</span>: {\n      <span class="kw">"min_age"</span>: <span class="st">"${cold}"</span>,\n      <span class="kw">"actions"</span>: { <span class="kw">"set_priority"</span>: { <span class="kw">"priority"</span>: <span class="vl">0</span> } }\n    }`;
+  phases+=`,\n    <span class="kw">"delete"</span>: {\n      <span class="kw">"min_age"</span>: <span class="st">"${del}"</span>,\n      <span class="kw">"actions"</span>: { <span class="kw">"delete"</span>: {} }\n    }`;
+  document.getElementById('ilmOut').innerHTML=`PUT <span class="ph">_ilm/policy/${name}</span>\n{\n  <span class="kw">"policy"</span>: {\n    <span class="kw">"phases"</span>: {\n${phases}\n    }\n  }\n}\n\n<span class="cm"># Attach to index template:</span>\n<span class="st">"index.lifecycle.name"</span>: <span class="st">"${name}"</span>`;
+}
+genILM();
+
+// Role builder
+function genRole(){
+  const name=document.getElementById('rbName').value||'my-role';
+  const idx=document.getElementById('rbIdx').value||'logs-*';
+  const priv=document.getElementById('rbPriv').value;
+  const cluster=document.getElementById('rbCluster').value;
+  const kibana=document.getElementById('rbKibana').value;
+  const clusterStr=cluster==='none'?'[]':`[<span class="st">"${cluster}"</span>]`;
+  const kibanaStr=kibana==='none'?'':`\n  <span class="kw">"kibana"</span>: [{\n    <span class="kw">"spaces"</span>: [<span class="st">"*"</span>],\n    <span class="kw">"base"</span>: [<span class="st">"${kibana}"</span>]\n  }],`;
+  document.getElementById('roleOut').innerHTML=
+`POST <span class="kw">_security/role/${name}</span>
+{
+  <span class="kw">"cluster"</span>: ${clusterStr},${kibanaStr}
+  <span class="kw">"indices"</span>: [{
+    <span class="kw">"names"</span>:      [<span class="st">"${idx.split(',').join('", "')}"</span>],
+    <span class="kw">"privileges"</span>: [<span class="st">"${priv}"</span>]
+  }]
+}
+
+<span class="cm"># Create user with this role:</span>
+POST <span class="kw">_security/user/analyst-01</span>
+{
+  <span class="kw">"password"</span>: <span class="st">"SecureP@ss123!"</span>,
+  <span class="kw">"roles"</span>: [<span class="st">"${name}"</span>]
+}
+
+<span class="cm"># Or: Stack Management → Security → Roles → Create role</span>`;
+}
+genRole();
+
+// Quiz
+const qA={
+  q2:{c:2,ok:'✓ Correct! rename_pattern and rename_replacement in the restore request let you restore the index under a new name, avoiding conflicts with the live index.',fail:'✗ Use rename_pattern/rename_replacement. Snapshots do NOT automatically restore to a different name — you must explicitly specify the rename. Deleting the live index is risky and unnecessary.'},
+  q4:{c:1,ok:'✓ Correct! xpack.enabled: true in the elasticsearch Metricbeat module is what routes data to the .monitoring-es-* index pattern that Stack Monitoring reads from. Without it, data goes to a regular index that Stack Monitoring ignores.',fail:'✗ The answer is xpack.enabled: true in the elasticsearch module. This is the switch that routes metrics to the Stack Monitoring-specific indices. Without it, Metricbeat collects the data but puts it in the wrong place.'},
+  q7:{c:1,ok:'✓ Correct! With Fleet, you simply add the Nginx integration to the existing agent policy. Fleet automatically pushes the updated configuration to all 200 enrolled agents — no SSH, no per-host changes needed.',fail:'✗ Fleet is designed exactly for this scenario. Add the integration to the policy in the UI and Fleet pushes it to all enrolled agents automatically. That\'s the entire value proposition vs manual Beats configuration.'},
+};
+function doQ(qid,sel,correct){
+  const n=qid.replace('q','');
+  const opts=document.getElementById('qo'+n);
+  if(opts.querySelector('.locked'))return;
+  opts.querySelectorAll('.qo').forEach((o,i)=>{o.classList.add('locked');if(i===correct)o.classList.add('correct');else if(i===sel&&sel!==correct)o.classList.add('wrong');});
+  const fb=document.getElementById('qf'+n);
+  fb.className='qfb show '+(sel===correct?'correct':'wrong');
+  fb.textContent=qA[qid][sel===correct?'ok':'fail'];
+}
+
+function tog(id){document.getElementById(id).classList.toggle('open')}
+
+let dc=0;const T=7;
+function markDone(id,btn){
+  const c=document.getElementById(id);
+  if(c.classList.contains('done'))return;
+  c.classList.add('done');btn.classList.add('marked');btn.textContent='✓ Complete';dc++;
+  document.getElementById('pFill').style.width=(dc/T*100)+'%';
+  document.getElementById('pNum').textContent=dc+' / '+T+' objectives';
+  if(dc===T){
+    document.getElementById('certBlock').style.display='block';
+    document.getElementById('certBlock').scrollIntoView({behavior:'smooth',block:'center'});
+  }
+}
+
+function toggleCS(){
+  const b=document.getElementById('csBody');const ch=document.getElementById('csChev');
+  ch.textContent=b.classList.toggle('open')?'▴':'▾';
+}
+function cpCode(btn){
+  const txt=btn.parentElement.innerText.replace('copy','').trim();
+  navigator.clipboard.writeText(txt).catch(()=>{});
+  btn.textContent='✓';setTimeout(()=>btn.textContent='copy',1500);
+}
+</script>
+</body>
+</html>

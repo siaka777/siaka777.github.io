@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elastic Certified Observability Engineer — Topic 6: Working with Observability Data</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;500;700;900&family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #030d0f;
+  --bg2:     #05141a;
+  --surf:    #071c24;
+  --surf2:   #0a2430;
+  --surf3:   #0d2d3a;
+  --bdr:     #0f3545;
+  --bdr2:    #165060;
+  --text:    #c8f0f5;
+  --dim:     #7ab8c4;
+  --mute:    #2a5a6a;
+  --teal:    #00e5ff;
+  --teal2:   #00b8d4;
+  --mag:     #e040fb;
+  --mag2:    #ab47bc;
+  --lime:    #76ff03;
+  --amber:   #ffab40;
+  --white:   #e8f8fa;
+  --code-bg: #020a0c;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'IBM Plex Mono',monospace;
+  min-height:100vh;overflow-x:hidden;
+}
+
+/* bioluminescent particle bg */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 60% 40% at 10% 20%, rgba(0,229,255,.06) 0%,transparent 55%),
+    radial-gradient(ellipse 50% 60% at 90% 70%, rgba(224,64,251,.05) 0%,transparent 55%),
+    radial-gradient(ellipse 80% 30% at 50% 50%, rgba(0,184,212,.03) 0%,transparent 60%);
+}
+
+/* subtle hex grid */
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.07;
+  background-image:url("data:image/svg+xml,%3Csvg width='60' height='52' viewBox='0 0 60 52' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 2 L58 17 L58 35 L30 50 L2 35 L2 17 Z' fill='none' stroke='%2300e5ff' stroke-width='0.5'/%3E%3C/svg%3E");
+  background-size:60px 52px;
+}
+
+/* ── NAV ── */
+.topbar{
+  background:rgba(3,13,15,.9);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--bdr2);
+  padding:0 36px;display:flex;align-items:stretch;
+  position:relative;z-index:10;overflow-x:auto;
+}
+.crumb{
+  font-size:9px;letter-spacing:4px;text-transform:uppercase;color:var(--teal);
+  padding:13px 20px 13px 0;margin-right:20px;
+  border-right:1px solid var(--bdr);white-space:nowrap;flex-shrink:0;align-self:center;
+  font-family:'IBM Plex Mono',monospace;
+}
+.tabs{display:flex}
+.tab{
+  font-family:'Unbounded',sans-serif;font-size:10px;font-weight:400;
+  letter-spacing:1px;padding:13px 16px;color:var(--mute);
+  background:none;border:none;cursor:pointer;transition:all .2s;
+  white-space:nowrap;text-transform:uppercase;position:relative;
+  border-right:1px solid var(--bdr);
+}
+.tab:hover{color:var(--dim)}
+.tab.done{color:var(--lime)}
+.tab.done::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--lime);}
+.tab.active{color:var(--teal)}
+.tab.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--teal);box-shadow:0 0 10px var(--teal);}
+
+/* ── HEADER ── */
+header{
+  padding:60px 0 52px;
+  border-bottom:1px solid var(--bdr);
+  position:relative;z-index:1;
+  overflow:hidden;
+}
+.wrap{max-width:1100px;margin:0 auto;padding:0 36px;position:relative;z-index:1}
+
+.h-eyebrow{
+  font-size:10px;letter-spacing:5px;text-transform:uppercase;
+  color:var(--teal);margin-bottom:20px;display:flex;align-items:center;gap:16px;
+  font-family:'IBM Plex Mono',monospace;
+}
+.h-eyebrow::before{content:'';width:48px;height:1px;background:linear-gradient(90deg,transparent,var(--teal))}
+.h-eyebrow .ping{
+  width:8px;height:8px;border-radius:50%;background:var(--teal);
+  box-shadow:0 0 12px var(--teal);animation:sonar 2.5s ease-in-out infinite;
+}
+@keyframes sonar{
+  0%,100%{box-shadow:0 0 4px var(--teal),0 0 0 0 rgba(0,229,255,.4)}
+  50%{box-shadow:0 0 12px var(--teal),0 0 0 12px rgba(0,229,255,0)}
+}
+
+h1{
+  font-family:'Unbounded',sans-serif;
+  font-size:clamp(44px,8vw,96px);
+  line-height:.9;letter-spacing:-1px;font-weight:900;
+  text-transform:uppercase;margin-bottom:22px;color:var(--white);
+}
+h1 .line2{display:block;color:var(--teal);font-size:.55em;font-weight:300;letter-spacing:2px;margin-top:6px}
+.h-desc{
+  font-family:'Instrument Serif',serif;font-style:italic;
+  font-size:16px;color:var(--dim);line-height:1.75;
+  max-width:600px;margin-bottom:28px;
+}
+.prog-wrap{display:flex;align-items:center;gap:14px;max-width:560px;background:var(--surf);border:1px solid var(--bdr2);padding:11px 18px;}
+.prog-lbl{font-size:9px;letter-spacing:3px;color:var(--mute);text-transform:uppercase;font-family:'IBM Plex Mono',monospace}
+.prog-tr{flex:1;height:2px;background:var(--bdr2)}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--teal),var(--mag));transition:width .5s ease;width:0%;box-shadow:0 0 8px var(--teal)}
+.prog-ct{font-size:11px;color:var(--teal);white-space:nowrap;font-family:'IBM Plex Mono',monospace}
+
+/* ── CARDS ── */
+.cards{display:flex;flex-direction:column;gap:2px;margin-bottom:56px}
+
+.card{
+  background:var(--surf);border:1px solid var(--bdr);
+  border-left:2px solid transparent;
+  position:relative;transition:all .2s;
+  animation:rise .4s cubic-bezier(.4,0,.2,1) both;
+}
+.card:nth-child(1){animation-delay:.05s}.card:nth-child(2){animation-delay:.10s}.card:nth-child(3){animation-delay:.15s}.card:nth-child(4){animation-delay:.20s}.card:nth-child(5){animation-delay:.25s}.card:nth-child(6){animation-delay:.30s}.card:nth-child(7){animation-delay:.35s}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.card:hover{background:var(--surf2);border-color:var(--bdr2)}
+.card.open{border-left-color:var(--teal);background:var(--surf2)}
+.card.done{border-left-color:var(--lime)}
+
+.card-hd{display:flex;align-items:center;gap:0;cursor:pointer;user-select:none;}
+.card-hd:hover{background:rgba(0,229,255,.02)}
+.c-num{
+  font-family:'Unbounded',sans-serif;font-size:36px;font-weight:900;
+  color:var(--mute);min-width:80px;text-align:center;
+  padding:16px 0;line-height:1;
+  border-right:1px solid var(--bdr);flex-shrink:0;
+}
+.card.open .c-num{color:var(--teal);text-shadow:0 0 20px rgba(0,229,255,.4)}
+.card.done .c-num{color:var(--lime)}
+.c-info{flex:1;padding:14px 22px}
+.c-eye{font-size:9px;letter-spacing:4px;text-transform:uppercase;color:var(--teal);margin-bottom:4px;font-family:'IBM Plex Mono',monospace}
+.card.done .c-eye{color:var(--lime)}
+.c-title{
+  font-family:'Unbounded',sans-serif;font-size:14px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.5px;color:var(--white);line-height:1.3;
+}
+.c-tags{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
+.ctag{font-size:9px;letter-spacing:2px;padding:2px 8px;border:1px solid;text-transform:uppercase;font-family:'IBM Plex Mono',monospace}
+.ctag.kb{border-color:rgba(0,229,255,.4);color:var(--teal)}
+.ctag.hi{border-color:rgba(224,64,251,.4);color:var(--mag)}
+.ctag.ql{border-color:rgba(118,255,3,.4);color:var(--lime)}
+.ctag.al{border-color:rgba(255,171,64,.4);color:var(--amber)}
+.c-r{display:flex;align-items:center;gap:18px;padding:14px 22px;border-left:1px solid var(--bdr)}
+.done-pip{width:8px;height:8px;border-radius:50%;background:var(--lime);box-shadow:0 0 8px var(--lime);display:none}
+.card.done .done-pip{display:block}
+.chev{font-size:12px;color:var(--mute);transition:transform .25s}
+.card.open .chev{transform:rotate(180deg);color:var(--teal)}
+
+.card-body{
+  display:none;padding:22px 22px 28px 80px;
+  border-top:1px solid var(--bdr);
+  animation:fadein .25s ease;
+}
+.card.open .card-body{display:block}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+
+/* section label */
+.slbl{
+  font-size:9px;letter-spacing:4px;text-transform:uppercase;
+  color:var(--teal);margin:20px 0 11px;
+  display:flex;align-items:center;gap:12px;
+  font-family:'IBM Plex Mono',monospace;
+}
+.slbl::before{content:'◈';font-size:10px;color:var(--teal);flex-shrink:0}
+.slbl::after{content:'';flex:1;height:1px;background:var(--bdr)}
+
+/* prose */
+.prose{font-size:13px;color:var(--dim);line-height:1.85;margin-bottom:13px;font-family:'Instrument Serif',serif;font-size:15px}
+.prose strong{color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13px}
+.prose em{color:var(--teal);font-style:italic}
+.prose code{font-family:'IBM Plex Mono',monospace;font-size:11.5px;background:var(--surf3);padding:1px 7px;color:var(--teal);border:1px solid var(--bdr2)}
+
+/* code */
+.code{
+  background:var(--code-bg);
+  border:1px solid var(--bdr);border-left:2px solid var(--teal);
+  padding:15px 18px;font-family:'IBM Plex Mono',monospace;font-size:12px;
+  line-height:1.75;overflow-x:auto;margin-bottom:13px;position:relative;
+}
+.code .cm{color:var(--mute)}.code .kw{color:var(--amber)}.code .st{color:var(--lime)}
+.code .fd{color:var(--teal)}.code .vl{color:#90caf9}.code .hl{color:var(--mag)}.code .op{color:var(--dim)}
+.copy-btn{
+  position:absolute;top:7px;right:7px;
+  background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.2);
+  color:rgba(0,229,255,.5);font-family:'IBM Plex Mono',monospace;font-size:9px;
+  padding:3px 9px;cursor:pointer;transition:all .2s;letter-spacing:.5px;
+}
+.copy-btn:hover{background:var(--teal);color:var(--bg)}
+
+/* callout */
+.callout{
+  display:flex;gap:13px;padding:12px 17px;border-left:2px solid;
+  margin-bottom:13px;font-family:'IBM Plex Mono',monospace;font-size:12px;
+  line-height:1.65;color:var(--dim);
+}
+.callout.exam{border-color:var(--mag); background:rgba(224,64,251,.05)}
+.callout.tip {border-color:var(--lime);background:rgba(118,255,3,.04)}
+.callout.warn{border-color:var(--amber);background:rgba(255,171,64,.05)}
+.callout.info{border-color:var(--teal);background:rgba(0,229,255,.04)}
+.callout-icon{font-size:14px;flex-shrink:0;margin-top:1px}
+.callout strong{color:var(--text)}
+
+/* table */
+.tbl{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:13px;font-family:'IBM Plex Mono',monospace}
+.tbl th{text-align:left;padding:7px 13px;background:var(--surf3);font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--teal);border-bottom:1px solid var(--bdr2);font-weight:400;}
+.tbl td{padding:8px 13px;border-bottom:1px solid var(--bdr);color:var(--dim);vertical-align:top;line-height:1.5;}
+.tbl td:first-child{color:var(--teal2)}
+.tbl tr:last-child td{border-bottom:none}.tbl tr:hover td{background:rgba(0,229,255,.03)}
+
+/* quiz */
+.quiz{background:var(--surf3);border:1px solid var(--bdr2);padding:18px;margin-top:12px}
+.quiz-hdr{font-size:9px;letter-spacing:4px;text-transform:uppercase;color:var(--mag);margin-bottom:9px;font-family:'IBM Plex Mono',monospace}
+.quiz-q{font-family:'Instrument Serif',serif;font-size:15px;color:var(--text);margin-bottom:13px;line-height:1.6;font-style:italic}
+.quiz-opts{display:flex;flex-direction:column;gap:6px}
+.qo{
+  display:flex;align-items:flex-start;gap:10px;padding:10px 14px;
+  background:var(--surf);border:1px solid var(--bdr);
+  cursor:pointer;transition:all .2s;font-size:12px;
+  color:var(--dim);line-height:1.5;font-family:'IBM Plex Mono',monospace;
+}
+.qo:hover:not(.locked){border-color:var(--teal);background:rgba(0,229,255,.04);color:var(--text)}
+.qo.correct{border-color:var(--lime);background:rgba(118,255,3,.06);color:var(--text)}
+.qo.wrong{border-color:var(--mag);background:rgba(224,64,251,.06);color:var(--dim)}
+.qo.locked{cursor:default}
+.ql{font-family:'Unbounded',sans-serif;font-size:18px;font-weight:700;min-width:20px;color:var(--mute)}
+.qo.correct .ql{color:var(--lime)}.qo.wrong .ql{color:var(--mag)}
+.qfb{margin-top:10px;padding:11px 14px;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.6;display:none}
+.qfb.show{display:block}
+.qfb.correct{background:rgba(118,255,3,.07);border-left:2px solid var(--lime);color:var(--dim)}
+.qfb.wrong{background:rgba(224,64,251,.07);border-left:2px solid var(--mag);color:var(--dim)}
+
+/* done btn */
+.done-btn{
+  display:inline-flex;align-items:center;gap:8px;margin-top:17px;
+  background:transparent;border:1px solid rgba(118,255,3,.35);
+  color:var(--lime);font-family:'IBM Plex Mono',monospace;font-size:12px;
+  padding:8px 18px;cursor:pointer;transition:all .2s;letter-spacing:.5px;
+}
+.done-btn:hover{background:rgba(118,255,3,.07);box-shadow:0 0 12px rgba(118,255,3,.15)}
+.done-btn.marked{background:rgba(118,255,3,.1)}
+
+/* ═══════════════════════
+   INTERACTIVE DEMOS
+═══════════════════════ */
+
+/* KQL Builder */
+.kql-demo{background:var(--code-bg);border:1px solid var(--bdr2);overflow:hidden;margin-bottom:13px}
+.kql-toolbar{background:var(--surf3);border-bottom:1px solid var(--bdr);padding:9px 15px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.kql-lbl{font-size:9px;letter-spacing:3px;color:var(--mute);flex:1;text-transform:uppercase;font-family:'IBM Plex Mono',monospace}
+.kql-chip-row{padding:12px 15px;display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--bdr)}
+.kql-chip{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;
+  padding:5px 12px;background:var(--surf);border:1px solid var(--bdr2);
+  color:var(--dim);cursor:pointer;transition:all .2s;
+}
+.kql-chip:hover{border-color:var(--teal);color:var(--teal);background:rgba(0,229,255,.04)}
+.kql-chip.active{border-color:var(--teal);color:var(--teal);background:rgba(0,229,255,.08)}
+.kql-inp-row{padding:12px 15px;display:flex;gap:8px;align-items:center}
+.kql-inp{
+  flex:1;background:var(--surf);border:1px solid var(--bdr2);
+  color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12px;
+  padding:8px 12px;outline:none;transition:border-color .2s;
+}
+.kql-inp:focus{border-color:var(--teal);box-shadow:0 0 8px rgba(0,229,255,.1)}
+.kql-btn{
+  background:var(--teal2);border:none;color:var(--bg);
+  font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;
+  padding:8px 16px;cursor:pointer;transition:all .2s;letter-spacing:.5px;
+}
+.kql-btn:hover{background:var(--teal);box-shadow:0 0 12px rgba(0,229,255,.3)}
+.kql-results{padding:15px;min-height:80px}
+.kql-result-lbl{font-size:9px;letter-spacing:3px;color:var(--mute);margin-bottom:8px;text-transform:uppercase}
+.kql-hits{display:flex;flex-direction:column;gap:5px}
+.kql-hit{
+  background:var(--surf);border:1px solid var(--bdr);padding:8px 12px;
+  font-size:11px;color:var(--dim);
+}
+.kql-hit .ts{color:var(--mute);margin-right:10px}
+.kql-hit .hl{color:var(--teal)}
+.kql-hit .lvl-err{color:var(--mag)}.kql-hit .lvl-warn{color:var(--amber)}.kql-hit .lvl-info{color:var(--teal)}
+.kql-no-results{font-size:12px;color:var(--mute);padding:12px 0;font-style:italic}
+
+/* Visualization builder */
+.viz-builder{background:var(--surf);border:1px solid var(--bdr2);overflow:hidden;margin-bottom:13px}
+.vb-toolbar{background:var(--surf3);border-bottom:1px solid var(--bdr);padding:9px 15px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.vb-lbl{font-size:9px;letter-spacing:3px;color:var(--mute);flex:1;text-transform:uppercase;font-family:'IBM Plex Mono',monospace}
+.vb-btn{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.5px;
+  padding:5px 12px;border:1px solid var(--bdr2);background:none;
+  color:var(--dim);cursor:pointer;transition:all .2s;text-transform:uppercase;
+}
+.vb-btn:hover,.vb-btn.active{background:rgba(0,229,255,.08);border-color:var(--teal);color:var(--teal)}
+.vb-body{display:grid;grid-template-columns:220px 1fr;gap:0}
+.vb-config{padding:15px;border-right:1px solid var(--bdr)}
+.vb-fg{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.vb-lbl2{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--teal);font-family:'IBM Plex Mono',monospace}
+.vb-sel{background:var(--surf2);border:1px solid var(--bdr2);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:6px 9px;outline:none;transition:border-color .2s}
+.vb-sel:focus{border-color:var(--teal)}
+.vb-run{background:var(--teal2);border:none;color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;padding:9px;cursor:pointer;width:100%;transition:all .2s;letter-spacing:.5px;margin-top:4px}
+.vb-run:hover{background:var(--teal);box-shadow:0 0 12px rgba(0,229,255,.25)}
+.vb-canvas{padding:15px;background:var(--code-bg);min-height:200px;display:flex;align-items:center;justify-content:center}
+
+/* Bar chart */
+.bar-chart{width:100%;padding:10px 0}
+.bc-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.bc-label{font-size:10px;color:var(--dim);min-width:120px;text-align:right;font-family:'IBM Plex Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bc-bar-wrap{flex:1;height:18px;background:rgba(0,229,255,.06);position:relative}
+.bc-bar{height:100%;transition:width .6s cubic-bezier(.4,0,.2,1);min-width:2px;position:relative}
+.bc-bar::after{content:'';position:absolute;right:0;top:0;bottom:0;width:1px;background:rgba(255,255,255,.2)}
+.bc-val{font-size:10px;color:var(--teal);min-width:50px;font-family:'IBM Plex Mono',monospace}
+
+/* timeseries sparkline */
+.spark-canvas{width:100%;height:120px;position:relative}
+
+/* alert rule builder */
+.alert-builder{background:var(--surf);border:1px solid var(--bdr2);overflow:hidden;margin-bottom:13px}
+.ab-head{background:var(--surf3);border-bottom:1px solid var(--bdr);padding:9px 15px;display:flex;align-items:center;gap:10px}
+.ab-lbl{font-size:9px;letter-spacing:3px;color:var(--mute);flex:1;text-transform:uppercase;font-family:'IBM Plex Mono',monospace}
+.ab-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.ab-form{padding:16px;border-right:1px solid var(--bdr)}
+.ab-fg{display:flex;flex-direction:column;gap:4px;margin-bottom:11px}
+.ab-fl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--teal);font-family:'IBM Plex Mono',monospace}
+.ab-sel,.ab-inp{background:var(--surf2);border:1px solid var(--bdr2);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:6px 9px;outline:none;transition:border-color .2s}
+.ab-sel:focus,.ab-inp:focus{border-color:var(--teal)}
+.ab-go{background:var(--mag2);border:none;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:11px;padding:9px;cursor:pointer;width:100%;transition:all .2s;letter-spacing:.5px;margin-top:4px}
+.ab-go:hover{background:var(--mag);box-shadow:0 0 12px rgba(224,64,251,.3)}
+.ab-out{padding:16px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.7;background:var(--code-bg);overflow:auto;max-height:320px;color:var(--dim)}
+.ab-out .kw{color:var(--amber)}.ab-out .st{color:var(--lime)}.ab-out .vl{color:#90caf9}.ab-out .cm{color:var(--mute)}
+
+/* Cheatsheet */
+.cs-wrap{border:1px solid var(--bdr2);overflow:hidden;margin-bottom:56px}
+.cs-hd{padding:16px 22px;cursor:pointer;display:flex;align-items:center;gap:14px;background:var(--surf2);border-bottom:1px solid var(--bdr)}
+.cs-title{font-family:'Unbounded',sans-serif;font-size:14px;font-weight:700;color:var(--text);flex:1;text-transform:uppercase;letter-spacing:1px}
+.cs-chev{font-size:11px;color:var(--mute);font-family:'IBM Plex Mono',monospace;transition:all .2s}
+.cs-body{display:none;padding:22px;background:var(--surf)}
+.cs-body.open{display:block}
+.cs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;margin-bottom:16px}
+.cs-item{background:var(--bg2);border:1px solid var(--bdr);padding:12px 14px}
+.cs-t{font-family:'Unbounded',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--teal);margin-bottom:5px;letter-spacing:.5px}
+.cs-d{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--mute);line-height:1.65}
+.cs-d strong{color:var(--amber)}
+
+footer{
+  border-top:1px solid var(--bdr2);background:var(--bg2);padding:22px 36px;
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;position:relative;z-index:1;
+}
+.ft{font-size:9px;letter-spacing:2px;color:var(--mute);text-transform:uppercase;font-family:'IBM Plex Mono',monospace}
+.nav-btn{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--surf);border:1px solid var(--bdr2);color:var(--dim);
+  font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.5px;
+  padding:8px 18px;cursor:pointer;text-decoration:none;transition:all .2s;
+}
+.nav-btn:hover{border-color:var(--teal);color:var(--teal)}
+.nav-btn.primary{background:rgba(0,229,255,.1);border-color:var(--teal);color:var(--teal);font-weight:500}
+.nav-btn.primary:hover{background:var(--teal);color:var(--bg);box-shadow:0 0 16px rgba(0,229,255,.3)}
+
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bdr2)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="crumb">Observability Eng</span>
+  <div class="tabs">
+    <button class="tab done">01 Metrics ✓</button>
+    <button class="tab done">02 Logging ✓</button>
+    <button class="tab done">03 APM ✓</button>
+    <button class="tab done">04 Uptime ✓</button>
+    <button class="tab done">05 Struct ✓</button>
+    <button class="tab active">06 Obs Data</button>
+    <button class="tab">07 Mgmt</button>
+  </div>
+</div>
+
+<header>
+  <div class="wrap">
+    <div class="h-eyebrow"><div class="ping"></div>Topic 06 of 07 · Analysis &amp; Alerting</div>
+    <h1>WORKING WITH<span class="line2">Observability Data</span></h1>
+    <p class="h-desc">Query your data with KQL and ES|QL, build dashboards and visualizations in Kibana Lens, create intelligent alerts, correlate across logs/metrics/traces, and surface insights with machine learning.</p>
+    <div class="prog-wrap">
+      <span class="prog-lbl">Progress</span>
+      <div class="prog-tr"><div class="prog-fill" id="pFill"></div></div>
+      <span class="prog-ct" id="pNum">0 / 7 objectives</span>
+    </div>
+  </div>
+</header>
+
+<main><div class="wrap">
+<div class="cards">
+
+<!-- OBJ 1 -->
+<div class="card open" id="c1">
+  <div class="card-hd" onclick="tog('c1')">
+    <span class="c-num">01</span>
+    <div class="c-info">
+      <div class="c-eye">KQL &amp; Discover</div>
+      <div class="c-title">Search and Filter Data with KQL in Kibana Discover</div>
+      <div class="c-tags"><span class="ctag kb">Kibana</span><span class="ctag ql">KQL</span><span class="ctag hi">Core Exam</span></div>
+    </div>
+    <div class="c-r"><div class="done-pip"></div><span class="chev">▾</span></div>
+  </div>
+  <div class="card-body">
+    <p class="prose">The <strong>Discover</strong> app (Kibana → Discover) is the primary interface for exploring raw data. Use <em>KQL (Kibana Query Language)</em> to filter documents — it's simpler than Lucene syntax and auto-completes field names and values.</p>
+    <div class="callout exam"><span class="callout-icon">🎯</span><div><strong>Exam focus:</strong> You'll use Discover constantly on the exam to find events, filter by service/host/level, and read field values. Know KQL syntax cold.</div></div>
+
+    <div class="slbl">Interactive KQL Query Builder</div>
+    <div class="kql-demo">
+      <div class="kql-toolbar"><span class="kql-lbl">KQL Query Builder — click a template or type your own</span></div>
+      <div class="kql-chip-row" id="kqlChips"></div>
+      <div class="kql-inp-row">
+        <input class="kql-inp" id="kqlInput" placeholder='e.g. log.level: "ERROR" and service.name: "checkout"' />
+        <button class="kql-btn" onclick="runKQL()">▶ Search</button>
+      </div>
+      <div class="kql-results"><div class="kql-result-lbl">Results</div><div class="kql-hits" id="kqlHits"><div class="kql-no-results">Enter a query above and click Search</div></div></div>
+    </div>
+
+    <div class="slbl">KQL Syntax Reference</div>
+    <table class="tbl"><tr><th>Pattern</th><th>Example</th><th>Meaning</th></tr>
+      <tr><td>field: value</td><td>service.name: "api"</td><td>Exact match (keyword field)</td></tr>
+      <tr><td>field: *</td><td>error.message: *</td><td>Field exists</td></tr>
+      <tr><td>field: value*</td><td>host.name: web-*</td><td>Wildcard suffix match</td></tr>
+      <tr><td>field &gt;= n</td><td>http.response.status_code >= 500</td><td>Range comparison</td></tr>
+      <tr><td>and / or / not</td><td>log.level: "ERROR" and service.name: "pay*"</td><td>Boolean operators</td></tr>
+      <tr><td>()</td><td>(log.level: "ERROR" or log.level: "WARN") and host.name: "web-01"</td><td>Grouping</td></tr>
+      <tr><td>field: (a or b)</td><td>log.level: ("ERROR" or "FATAL")</td><td>Multi-value match</td></tr>
+    </table>
+    <button class="done-btn" onclick="markDone('c1',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+<!-- OBJ 2 -->
+<div class="card" id="c2">
+  <div class="card-hd" onclick="tog('c2')">
+    <span class="c-num">02</span>
+    <div class="c-info">
+      <div class="c-eye">ES|QL</div>
+      <div class="c-title">Query Data with ES|QL (Elasticsearch Query Language)</div>
+      <div class="c-tags"><span class="ctag ql">ES|QL</span><span class="ctag kb">Kibana</span></div>
+    </div>
+    <div class="c-r"><div class="done-pip"></div><span class="chev">▾</span></div>
+  </div>
+  <div class="card-body">
+    <p class="prose"><strong>ES|QL</strong> is a pipe-based query language introduced in Elasticsearch 8.11. It allows you to process, transform, and aggregate data using a series of commands chained with pipes (<code>|</code>). Available in Kibana Discover, Dashboards, and the ES|QL editor.</p>
+
+    <div class="slbl">ES|QL Syntax &amp; Examples</div>
+    <div class="code"><button class="copy-btn" onclick="cpCode(this)">copy</button>
+<span class="cm"># Basic structure: SOURCE | CMD1 | CMD2 | ...</span>
+
+<span class="cm"># Find top error sources</span>
+FROM <span class="fd">logs-*</span>
+| WHERE <span class="kw">log.level</span> == <span class="st">"ERROR"</span>
+| STATS <span class="op">count</span> = COUNT(*) BY <span class="fd">service.name</span>
+| SORT <span class="op">count</span> DESC
+| LIMIT <span class="vl">10</span>
+
+<span class="cm"># Calculate p95 latency per service</span>
+FROM <span class="fd">traces-apm.*</span>
+| WHERE <span class="kw">transaction.type</span> == <span class="st">"request"</span>
+| STATS
+    <span class="op">p95</span>    = PERCENTILE(<span class="fd">transaction.duration.us</span>, <span class="vl">95</span>),
+    <span class="op">avg_ms</span> = AVG(<span class="fd">transaction.duration.us</span>) / <span class="vl">1000</span>,
+    <span class="op">total</span>  = COUNT(*)
+  BY <span class="fd">service.name</span>
+| SORT <span class="op">p95</span> DESC
+
+<span class="cm"># Enrich with EVAL (calculated field)</span>
+FROM <span class="fd">logs-nginx.*</span>
+| EVAL <span class="op">is_error</span> = <span class="kw">http.response.status_code</span> >= <span class="vl">400</span>
+| STATS <span class="op">errors</span> = COUNT(*) WHERE <span class="op">is_error</span> BY <span class="fd">url.path</span>
+| SORT <span class="op">errors</span> DESC | LIMIT <span class="vl">5</span>
+    </div>
+
+    <div class="slbl">Core ES|QL Commands</div>
+    <table class="tbl"><tr><th>Command</th><th>Purpose</th><th>Example</th></tr>
+      <tr><td>FROM</td><td>Source index pattern</td><td>FROM logs-* , metrics-*</td></tr>
+      <tr><td>WHERE</td><td>Filter documents (like SQL WHERE)</td><td>WHERE log.level == "ERROR"</td></tr>
+      <tr><td>STATS … BY</td><td>Aggregation with optional grouping</td><td>STATS count=COUNT(*) BY service.name</td></tr>
+      <tr><td>EVAL</td><td>Add a computed column</td><td>EVAL ms = duration_us / 1000</td></tr>
+      <tr><td>SORT</td><td>Order results</td><td>SORT count DESC</td></tr>
+      <tr><td>LIMIT</td><td>Restrict number of rows</td><td>LIMIT 10</td></tr>
+      <tr><td>KEEP</td><td>Select specific columns</td><td>KEEP @timestamp, service.name, log.level</td></tr>
+      <tr><td>DROP</td><td>Remove columns</td><td>DROP message, agent.*</td></tr>
+      <tr><td>RENAME</td><td>Rename a column</td><td>RENAME duration_us AS latency_us</td></tr>
+      <tr><td>DISSECT / GROK</td><td>Parse text fields inline</td><td>GROK message "%{IP:src} %{WORD:method}"</td></tr>
+    </table>
+
+    <div class="callout info"><span class="callout-icon">ℹ</span><div><strong>KQL vs ES|QL:</strong> Use KQL for quick filtering and exploration in Discover. Use ES|QL for transformations, aggregations, calculated fields, and when you need tabular/analytical results or want to build a new kind of visualization.</div></div>
+    <button class="done-btn" onclick="markDone('c2',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+<!-- OBJ 3 -->
+<div class="card" id="c3">
+  <div class="card-hd" onclick="tog('c3')">
+    <span class="c-num">03</span>
+    <div class="c-info">
+      <div class="c-eye">Kibana Lens</div>
+      <div class="c-title">Create Visualizations with Kibana Lens</div>
+      <div class="c-tags"><span class="ctag kb">Lens</span><span class="ctag hi">Core Exam</span></div>
+    </div>
+    <div class="c-r"><div class="done-pip"></div><span class="chev">▾</span></div>
+  </div>
+  <div class="card-body">
+    <p class="prose"><strong>Kibana Lens</strong> is the drag-and-drop visualization editor. You drag fields onto axes, and Lens suggests chart types. It can be used from Dashboards → Create panel → Lens, or from Discover → Visualize field. Lens is the recommended visualization tool for most use cases.</p>
+    <div class="callout exam"><span class="callout-icon">🎯</span><div><strong>Exam focus:</strong> Know how to create a bar/line chart showing metrics over time, a pie chart, a data table, and a metric visualization using Lens. Know how to split series, change aggregation types, and add filters.</div></div>
+
+    <div class="slbl">Interactive Visualization Preview</div>
+    <div class="viz-builder">
+      <div class="vb-toolbar">
+        <span class="vb-lbl">Lens Visualization Simulator</span>
+        <button class="vb-btn active" id="vbt-bar" onclick="setViz('bar')">Bar</button>
+        <button class="vb-btn" id="vbt-line" onclick="setViz('line')">Line</button>
+        <button class="vb-btn" id="vbt-pie" onclick="setViz('pie')">Pie</button>
+        <button class="vb-btn" id="vbt-metric" onclick="setViz('metric')">Metric</button>
+      </div>
+      <div class="vb-body">
+        <div class="vb-config">
+          <div class="vb-fg"><label class="vb-lbl2">Index Pattern</label>
+            <select class="vb-sel" id="vizIdx" onchange="renderViz()">
+              <option>logs-nginx.*</option><option>metrics-system.*</option><option>traces-apm.*</option></select></div>
+          <div class="vb-fg"><label class="vb-lbl2">Metric</label>
+            <select class="vb-sel" id="vizMetric" onchange="renderViz()">
+              <option value="count">Count of records</option>
+              <option value="avg">Average latency (ms)</option>
+              <option value="sum">Sum of bytes</option>
+              <option value="uniq">Unique count</option></select></div>
+          <div class="vb-fg"><label class="vb-lbl2">Split by</label>
+            <select class="vb-sel" id="vizSplit" onchange="renderViz()">
+              <option value="service">service.name</option>
+              <option value="host">host.name</option>
+              <option value="level">log.level</option>
+              <option value="status">http.response.status_code</option></select></div>
+          <button class="vb-run" onclick="renderViz()">▶ Render</button>
+        </div>
+        <div class="vb-canvas" id="vizCanvas"><span style="color:var(--mute);font-family:'IBM Plex Mono',monospace;font-size:11px">← configure and click Render</span></div>
+      </div>
+    </div>
+
+    <div class="slbl">Lens Chart Type Guide</div>
+    <table class="tbl"><tr><th>Chart type</th><th>Best for</th><th>Key Lens config</th></tr>
+      <tr><td>Bar (stacked/grouped)</td><td>Comparing values across categories or time</td><td>X: @timestamp (date histogram), Y: metric, breakdown: field</td></tr>
+      <tr><td>Line / Area</td><td>Trends over time</td><td>X: @timestamp, Y: metric, breakdown: optional split field</td></tr>
+      <tr><td>Pie / Donut</td><td>Proportions across a small set of categories</td><td>Slice by: field (top N), Size: metric</td></tr>
+      <tr><td>Data table</td><td>Exact values with multiple metrics side-by-side</td><td>Rows: field(s), Columns: metrics (count, avg, sum, etc.)</td></tr>
+      <tr><td>Metric</td><td>Single KPI value with optional trend indicator</td><td>Primary metric: aggregation, optional secondary/color threshold</td></tr>
+      <tr><td>Heatmap</td><td>Density across two dimensions</td><td>X: time, Y: category field, color: count/metric</td></tr>
+      <tr><td>Gauge / Goal</td><td>Current value vs target</td><td>Metric value + max/goal value</td></tr>
+    </table>
+    <button class="done-btn" onclick="markDone('c3',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+<!-- OBJ 4 -->
+<div class="card" id="c4">
+  <div class="card-hd" onclick="tog('c4')">
+    <span class="c-num">04</span>
+    <div class="c-info">
+      <div class="c-eye">Dashboards</div>
+      <div class="c-title">Build and Navigate Kibana Dashboards</div>
+      <div class="c-tags"><span class="ctag kb">Kibana</span><span class="ctag hi">Core Exam</span></div>
+    </div>
+    <div class="c-r"><div class="done-pip"></div><span class="chev">▾</span></div>
+  </div>
+  <div class="card-body">
+    <p class="prose"><strong>Dashboards</strong> compose multiple visualizations, saved searches, and controls into a single view. You can filter all panels simultaneously, drill through to Discover, and link dashboards together for a layered observability experience.</p>
+
+    <div class="slbl">Creating &amp; Using Dashboards</div>
+    <div class="code"><button class="copy-btn" onclick="cpCode(this)">copy</button>
+<span class="cm"># Dashboard workflow</span>
+<span class="kw">Navigate:</span> Kibana → Dashboards → Create dashboard
+
+<span class="kw">Add panels:</span>
+  Add from library      <span class="cm">← reuse existing saved visualizations</span>
+  Create visualization  <span class="cm">← Lens editor inline</span>
+  Add text/markdown     <span class="cm">← documentation panels</span>
+  Add controls          <span class="cm">← interactive filters (Options List, Range Slider)</span>
+  Add links             <span class="cm">← navigate to other dashboards</span>
+
+<span class="kw">Key dashboard features:</span>
+  Time picker      <span class="cm">← controls all panels (top right)</span>
+  KQL filter bar   <span class="cm">← filters all panels simultaneously</span>
+  Pin filters      <span class="cm">← keep filter across dashboard navigation</span>
+  Drill-down       <span class="cm">← click a chart value → go to Discover with filter applied</span>
+  Download CSV     <span class="cm">← export panel data</span>
+  Share            <span class="cm">← share link / embed in iFrame / PDF/PNG report</span>
+    </div>
+
+    <div class="callout tip"><span class="callout-icon">💡</span><div>On the exam, you may need to navigate between dashboards and filter data. Know that clicking a chart value creates a filter, and that the <strong>KQL bar at the top filters all panels at once</strong>.</div></div>
+
+    <div class="slbl">Practice Quiz</div>
+    <div class="quiz" id="q4">
+      <div class="quiz-hdr">◆ Exam Question</div>
+      <div class="quiz-q">You're on a Kibana Dashboard showing metrics for all services. You need to filter all panels to show only data from the service <code>checkout-api</code>. What is the most efficient approach?</div>
+      <div class="quiz-opts" id="qo4">
+        <div class="qo" onclick="doQ('q4',0,1)"><span class="ql">a</span><span>Edit each visualization panel separately and add a filter inside Lens</span></div>
+        <div class="qo" onclick="doQ('q4',1,1)"><span class="ql">b</span><span>Type <code>service.name: "checkout-api"</code> in the KQL filter bar — it applies to all panels simultaneously</span></div>
+        <div class="qo" onclick="doQ('q4',2,1)"><span class="ql">c</span><span>Create a new dashboard that only contains checkout-api visualizations</span></div>
+        <div class="qo" onclick="doQ('q4',3,1)"><span class="ql">d</span><span>Use the time picker to select only the checkout-api service's time range</span></div>
+      </div>
+      <div class="qfb" id="qf4"></div>
+    </div>
+    <button class="done-btn" onclick="markDone('c4',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+<!-- OBJ 5 -->
+<div class="card" id="c5">
+  <div class="card-hd" onclick="tog('c5')">
+    <span class="c-num">05</span>
+    <div class="c-info">
+      <div class="c-eye">Alerting</div>
+      <div class="c-title">Create Kibana Alerting Rules and Connectors</div>
+      <div class="c-tags"><span class="ctag al">Alerting</span><span class="ctag hi">Core Exam</span></div>
+    </div>
+    <div class="c-r"><div class="done-pip"></div><span class="chev">▾</span></div>
+  </div>
+  <div class="card-body">
+    <p class="prose">Kibana Alerting provides a unified rule engine across all Elastic Observability apps. Rules run on a schedule, evaluate a condition, and fire actions via <em>connectors</em> (Slack, PagerDuty, email, webhook, JIRA, etc.) when the condition is met.</p>
+    <div class="callout exam"><span class="callout-icon">🎯</span><div><strong>Exam focus:</strong> Know how to create rules from Observability → Alerts, understand rule types across Metrics/Logs/APM/Uptime, and know how connectors work.</div></div>
+
+    <div class="slbl">Interactive Alert Rule Builder</div>
+    <div class="alert-builder">
+      <div class="ab-head"><span class="ab-lbl">Alert Rule Config Generator</span><span style="font-size:9px;letter-spacing:2px;color:var(--mag);font-family:'IBM Plex Mono',monospace">INTERACTIVE</span></div>
+      <div class="ab-grid">
+        <div class="ab-form">
+          <div class="ab-fg"><label class="ab-fl">Rule Type</label>
+            <select class="ab-sel" id="arType" onchange="genAlert()">
+              <option value="log_threshold">Logs — Log threshold</option>
+              <option value="metric_threshold">Metrics — Custom threshold</option>
+              <option value="apm_latency">APM — Latency threshold</option>
+              <option value="apm_error">APM — Error rate</option>
+              <option value="uptime_monitor">Uptime — Monitor status</option>
+              <option value="es_query">Elasticsearch query</option>
+            </select></div>
+          <div class="ab-fg"><label class="ab-fl">Service / Monitor</label>
+            <input class="ab-inp" id="arSvc" value="checkout-api" oninput="genAlert()"/></div>
+          <div class="ab-fg"><label class="ab-fl">Threshold</label>
+            <input class="ab-inp" id="arThresh" value="2000" oninput="genAlert()"/></div>
+          <div class="ab-fg"><label class="ab-fl">Time Window</label>
+            <select class="ab-sel" id="arWindow" onchange="genAlert()">
+              <option>1m</option><option>5m</option><option>15m</option><option>1h</option></select></div>
+          <div class="ab-fg"><label class="ab-fl">Connector</label>
+            <select class="ab-sel" id="arConn" onchange="genAlert()">
+              <option value="slack">Slack</option>
+              <option value="pd">PagerDuty</option>
+              <option value="email">Email</option>
+              <option value="webhook">Webhook</option>
+            </select></div>
+          <button class="ab-go" onclick="genAlert()">⚡ Generate Rule</button>
+        </div>
+        <div class="ab-out" id="alertOut"><span style="color:var(--mute)">← configure and generate</span></div>
+      </div>
+    </div>
+
+    <div class="slbl">Observability Rule Types Reference</div>
+    <table class="tbl"><tr><th>App</th><th>Rule Type</th><th>What it alerts on</th></tr>
+      <tr><td>Logs</td><td>Log threshold</td><td>Count of log documents matching a KQL filter exceeds N in time window</td></tr>
+      <tr><td>Metrics</td><td>Inventory threshold</td><td>Per-host/pod metric (CPU, memory, etc.) exceeds threshold</td></tr>
+      <tr><td>Metrics</td><td>Custom threshold</td><td>Any field aggregation (avg/max/count) vs threshold</td></tr>
+      <tr><td>APM</td><td>Latency threshold</td><td>avg/p95/p99 latency for a service/transaction exceeds Xms</td></tr>
+      <tr><td>APM</td><td>Error rate</td><td>Error percentage for a service exceeds X%</td></tr>
+      <tr><td>APM</td><td>Anomaly</td><td>ML-detected anomaly score for service metrics</td></tr>
+      <tr><td>Uptime</td><td>Monitor status</td><td>Monitor is DOWN for N consecutive checks</td></tr>
+      <tr><td>Uptime</td><td>TLS certificate</td><td>Certificate expires within N days</td></tr>
+      <tr><td>General</td><td>Elasticsearch query</td><td>ES query returns results / count exceeds threshold</td></tr>
+    </table>
+    <button class="done-btn" onclick="markDone('c5',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+<!-- OBJ 6 -->
+<div class="card" id="c6">
+  <div class="card-hd" onclick="tog('c6')">
+    <span class="c-num">06</span>
+    <div class="c-info">
+      <div class="c-eye">Machine Learning</div>
+      <div class="c-title">Enable and Use Anomaly Detection ML Jobs</div>
+      <div class="c-tags"><span class="ctag hi">ML</span><span class="ctag kb">Kibana</span></div>
+    </div>
+    <div class="c-r"><div class="done-pip"></div><span class="chev">▾</span></div>
+  </div>
+  <div class="card-body">
+    <p class="prose">Elastic ML provides <em>unsupervised anomaly detection</em> — it learns a baseline from your historical data and alerts when behavior deviates. Each Observability app has predefined ML jobs you can enable with one click. Custom jobs can be built in Machine Learning → Anomaly Detection.</p>
+
+    <div class="slbl">Predefined ML Jobs Per App</div>
+    <table class="tbl"><tr><th>App</th><th>Job ID</th><th>Detects</th></tr>
+      <tr><td>Metrics</td><td>metrics_hosts_memory_usage</td><td>Unusual memory usage spikes on hosts</td></tr>
+      <tr><td>Metrics</td><td>metrics_hosts_network_in</td><td>Unexpected network inbound traffic</td></tr>
+      <tr><td>Metrics</td><td>metrics_k8s_pod_cpu</td><td>Kubernetes pod CPU anomalies</td></tr>
+      <tr><td>Logs</td><td>logs_ui_analysis</td><td>Anomalous log event rate (unusual spike or drop)</td></tr>
+      <tr><td>Logs</td><td>logs_ui_categories</td><td>Rare or novel log message categories</td></tr>
+      <tr><td>APM</td><td>apm_tx_metrics (auto)</td><td>Transaction latency and throughput anomalies per service</td></tr>
+      <tr><td>Uptime</td><td>(via Anomaly alert rule)</td><td>Unusual uptime/response time patterns</td></tr>
+    </table>
+
+    <div class="slbl">Enabling Predefined ML Jobs</div>
+    <div class="code"><button class="copy-btn" onclick="cpCode(this)">copy</button>
+<span class="cm"># Metrics ML jobs</span>
+<span class="kw">Navigate:</span> Kibana → Observability → Metrics → Anomaly detection
+  → Enable jobs (metrics_hosts_memory_usage, etc.)
+
+<span class="cm"># Logs ML jobs</span>
+<span class="kw">Navigate:</span> Kibana → Observability → Logs → Anomalies tab
+  → Enable log rate anomaly detection
+
+<span class="cm"># APM ML — enabled automatically when:</span>
+<span class="kw">Navigate:</span> Kibana → Observability → APM → [service] → Anomalies
+  → Enable anomaly detection for the service
+
+<span class="cm"># View all ML jobs</span>
+<span class="kw">Navigate:</span> Kibana → Machine Learning → Anomaly Detection → Jobs
+  → See job status, bucket span, datafeed state
+
+<span class="cm"># Key ML job states:</span>
+<span class="fd">opened</span>     <span class="cm">← job running, datafeed active</span>
+<span class="fd">closed</span>     <span class="cm">← job stopped (can be reopened)</span>
+<span class="fd">failed</span>     <span class="cm">← error state, check job messages</span>
+    </div>
+
+    <div class="callout tip"><span class="callout-icon">💡</span><div>ML anomaly scores range from 0–100. Scores above <strong>75</strong> are considered critical. The "critical" threshold can be configured in alert rules. Anomaly results appear as colored bands in timeline views across all Observability apps.</div></div>
+    <button class="done-btn" onclick="markDone('c6',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+<!-- OBJ 7 -->
+<div class="card" id="c7">
+  <div class="card-hd" onclick="tog('c7')">
+    <span class="c-num">07</span>
+    <div class="c-info">
+      <div class="c-eye">Cross-pillar Correlation</div>
+      <div class="c-title">Correlate Logs, Metrics, Traces, and Uptime Data</div>
+      <div class="c-tags"><span class="ctag kb">Kibana</span><span class="ctag hi">Core Exam</span></div>
+    </div>
+    <div class="c-r"><div class="done-pip"></div><span class="chev">▾</span></div>
+  </div>
+  <div class="card-body">
+    <p class="prose">The real power of Elastic Observability is <em>cross-pillar correlation</em> — jumping from a metric spike to related logs to the APM trace that caused it, all linked by shared fields like <code>host.name</code>, <code>service.name</code>, and <code>trace.id</code>.</p>
+
+    <div class="slbl">Correlation Pathways</div>
+    <table class="tbl"><tr><th>From</th><th>To</th><th>Linking field / method</th></tr>
+      <tr><td>APM Transaction</td><td>Logs</td><td>trace.id — APM app → Transaction → Logs tab</td></tr>
+      <tr><td>APM Service</td><td>Infrastructure</td><td>service.name + host.name — APM app → Infrastructure tab</td></tr>
+      <tr><td>Metrics (host spike)</td><td>Logs on that host</td><td>host.name — Metrics Inventory → click host → Logs</td></tr>
+      <tr><td>Log error</td><td>APM trace for that request</td><td>trace.id in log → click trace link in Logs app</td></tr>
+      <tr><td>Uptime monitor down</td><td>Logs from that service</td><td>service.name → Logs app with filter</td></tr>
+      <tr><td>Any event</td><td>Timeline view</td><td>Use Kibana Discover with shared time range across apps</td></tr>
+    </table>
+
+    <div class="slbl">Required Fields for Correlation</div>
+    <div class="code">
+<span class="cm"># For APM ↔ Logs correlation — logs MUST contain:</span>
+<span class="fd">trace.id</span>          <span class="cm">← injected by APM agent automatically</span>
+<span class="fd">transaction.id</span>    <span class="cm">← injected by APM agent automatically</span>
+<span class="fd">service.name</span>      <span class="cm">← must match APM service name exactly</span>
+
+<span class="cm"># For Metrics ↔ APM correlation:</span>
+<span class="fd">host.name</span>         <span class="cm">← same value in both Metricbeat and APM agent config</span>
+<span class="fd">service.name</span>      <span class="cm">← same value in both logs and APM</span>
+
+<span class="cm"># Infrastructure tab in APM — auto-populated when:</span>
+<span class="fd">container.id</span>      <span class="cm">← APM agent picks this up automatically in containers</span>
+<span class="fd">kubernetes.pod.name</span> <span class="cm">← from k8s metadata enrichment</span>
+    </div>
+
+    <div class="slbl">Practice Quiz</div>
+    <div class="quiz" id="q7">
+      <div class="quiz-hdr">◆ Exam Question</div>
+      <div class="quiz-q">A customer reports an error during checkout. In the APM app, you find a failed transaction for <code>checkout-api</code>. You want to see the application log lines that correspond to this specific request. What must exist in the logs for this correlation to work?</div>
+      <div class="quiz-opts" id="qo7">
+        <div class="qo" onclick="doQ('q7',0,1)"><span class="ql">a</span><span>The log timestamp must be within 1 second of the transaction start time</span></div>
+        <div class="qo" onclick="doQ('q7',1,1)"><span class="ql">b</span><span>The log lines must contain the <code>trace.id</code> field matching the transaction's trace ID, injected by the APM agent</span></div>
+        <div class="qo" onclick="doQ('q7',2,1)"><span class="ql">c</span><span>The logs must be stored in the same index as the APM data</span></div>
+        <div class="qo" onclick="doQ('q7',3,1)"><span class="ql">d</span><span>The service.name must match — trace.id is optional for log correlation</span></div>
+      </div>
+      <div class="qfb" id="qf7"></div>
+    </div>
+    <button class="done-btn" onclick="markDone('c7',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+</div><!-- /cards -->
+
+<!-- CHEATSHEET -->
+<div class="cs-wrap">
+  <div class="cs-hd" onclick="toggleCS()">
+    <span class="cs-title">◈ Topic 6 Quick Reference — Working with Obs Data</span>
+    <span class="cs-chev" id="csChev">▾ expand</span>
+  </div>
+  <div class="cs-body" id="csBody">
+    <div class="cs-grid">
+      <div class="cs-item"><div class="cs-t">KQL Operators</div><div class="cs-d">field: value (exact)<br>field: value* (wildcard)<br>and · or · not · (groups)<br>field >= n (range)</div></div>
+      <div class="cs-item"><div class="cs-t">ES|QL Commands</div><div class="cs-d">FROM · WHERE · STATS…BY<br>EVAL · SORT · LIMIT<br>KEEP · DROP · RENAME<br>GROK · DISSECT inline</div></div>
+      <div class="cs-item"><div class="cs-t">Lens Chart Types</div><div class="cs-d">Bar / Line / Area / Pie<br>Data table · Metric · Gauge<br>Heatmap · Treemap</div></div>
+      <div class="cs-item"><div class="cs-t">Dashboard Tips</div><div class="cs-d">KQL bar = filters <strong>all panels</strong><br>Time picker = global time<br>Click value → auto filter</div></div>
+      <div class="cs-item"><div class="cs-t">Alert Rule Types</div><div class="cs-d">Log threshold · Inv. threshold<br>APM latency / error rate<br>Uptime monitor · ES query</div></div>
+      <div class="cs-item"><div class="cs-t">ML Job States</div><div class="cs-d">opened → running<br>closed → stopped<br>Anomaly score 0–100<br><strong>75+</strong> = critical</div></div>
+      <div class="cs-item"><div class="cs-t">Correlation Fields</div><div class="cs-d">trace.id · transaction.id<br>service.name · host.name<br>container.id (for k8s)</div></div>
+      <div class="cs-item"><div class="cs-t">Predefined ML Jobs</div><div class="cs-d">metrics_hosts_memory_usage<br>logs_ui_analysis<br>logs_ui_categories<br>APM: auto via service view</div></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+</main>
+
+<footer>
+  <div class="wrap" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;width:100%">
+    <span class="ft">Elastic Cert Obs Eng · Topic 6 · Working with Obs Data · 7 Objectives</span>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a href="#" class="nav-btn" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">↑ Top</a>
+      <a href="#" class="nav-btn" onclick="alert('Open Topic 5: Structuring Data');return false;">← Struct Data</a>
+      <a href="#" class="nav-btn primary" onclick="alert('Ask Claude for Topic 7: Managing Data — the final topic!');return false;">Topic 7: Managing Data →</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+// KQL demo
+const kqlTemplates=[
+  {label:'Errors only', q:'log.level: "ERROR"'},
+  {label:'Service filter', q:'service.name: "checkout-api"'},
+  {label:'5xx responses', q:'http.response.status_code >= 500'},
+  {label:'Host wildcard', q:'host.name: web-*'},
+  {label:'Error on host', q:'log.level: "ERROR" and host.name: "web-01"'},
+  {label:'Slow requests', q:'transaction.duration.ms > 2000'},
+];
+const kqlDocs=[
+  {ts:'10:30:01',svc:'checkout-api',host:'web-01',level:'ERROR',msg:'Payment failed: card_declined for order 9981'},
+  {ts:'10:30:02',svc:'checkout-api',host:'web-01',level:'ERROR',msg:'NullPointerException in PaymentService.java:142'},
+  {ts:'10:30:03',svc:'api-gateway', host:'web-02',level:'INFO', msg:'GET /api/checkout HTTP/1.1 200 142ms'},
+  {ts:'10:30:04',svc:'search-service',host:'web-03',level:'WARN',msg:'Slow query detected: 2340ms for search?q=shoes'},
+  {ts:'10:30:05',svc:'checkout-api',host:'web-01',level:'ERROR',msg:'Database connection timeout after 30000ms'},
+  {ts:'10:30:06',svc:'inventory',  host:'web-02',level:'INFO', msg:'Stock updated: product_id=4521 qty=150'},
+  {ts:'10:30:07',svc:'payment-svc',host:'web-03',level:'ERROR',msg:'Stripe API timeout after 5000ms'},
+  {ts:'10:30:08',svc:'api-gateway',host:'web-01',level:'INFO', msg:'POST /api/order HTTP/1.1 500 89ms'},
+  {ts:'10:30:09',svc:'checkout-api',host:'web-02',level:'WARN',msg:'Retry attempt 2/3 for payment processing'},
+  {ts:'10:30:10',svc:'search-service',host:'web-01',level:'INFO',msg:'Cache hit ratio: 94.2% over last 5m'},
+];
+function initKQL(){
+  document.getElementById('kqlChips').innerHTML=kqlTemplates.map((t,i)=>`<div class="kql-chip" onclick="useKQL(${i})">${t.label}</div>`).join('');
+}
+function useKQL(i){
+  document.querySelectorAll('.kql-chip').forEach(c=>c.classList.remove('active'));
+  document.querySelectorAll('.kql-chip')[i].classList.add('active');
+  document.getElementById('kqlInput').value=kqlTemplates[i].q;
+  runKQL();
+}
+function runKQL(){
+  const q=document.getElementById('kqlInput').value.trim().toLowerCase();
+  if(!q){document.getElementById('kqlHits').innerHTML='<div class="kql-no-results">Enter a query above</div>';return;}
+  const hits=kqlDocs.filter(d=>{
+    if(q.includes('log.level: "error"')||q==='log.level:"error"')return d.level==='ERROR';
+    if(q.includes('service.name: "checkout-api"'))return d.svc==='checkout-api';
+    if(q.includes('>= 500'))return d.msg.includes('500')||d.level==='ERROR';
+    if(q.includes('host.name: web-*'))return true;
+    if(q.includes('and host.name: "web-01"'))return d.level==='ERROR'&&d.host==='web-01';
+    if(q.includes('transaction.duration.ms > 2000'))return d.msg.includes('ms')&&parseInt(d.msg.match(/(\d+)ms/)?.[1]||0)>2000;
+    // generic: check if any field contains any word from query
+    const words=q.replace(/[:"*]/g,' ').split(/\s+/).filter(w=>w.length>2&&!['and','or','not'].includes(w));
+    return words.some(w=>Object.values(d).some(v=>String(v).toLowerCase().includes(w)));
+  });
+  if(!hits.length){document.getElementById('kqlHits').innerHTML='<div class="kql-no-results">No matching documents</div>';return;}
+  document.getElementById('kqlHits').innerHTML=hits.slice(0,5).map(d=>{
+    const lvlCls=d.level==='ERROR'?'lvl-err':d.level==='WARN'?'lvl-warn':'lvl-info';
+    return `<div class="kql-hit"><span class="ts">${d.ts}</span><span class="${lvlCls}">${d.level}</span> <span class="hl">${d.svc}</span>@${d.host} — ${d.msg}</div>`;
+  }).join('')+(hits.length>5?`<div style="font-size:10px;color:var(--mute);padding:6px 0">+ ${hits.length-5} more results</div>`:'');
+}
+initKQL();
+
+// Viz builder
+let curViz='bar';
+const vizData={
+  bar:{
+    service:{labels:['checkout-api','payment-svc','search-svc','api-gateway','inventory'],values:[4520,3210,8940,12300,1840],color:'rgba(0,229,255,.7)'},
+    host:{labels:['web-01','web-02','web-03','db-01','cache-01'],values:[5230,4810,3920,1240,890],color:'rgba(0,229,255,.7)'},
+    level:{labels:['INFO','WARN','ERROR','DEBUG'],values:[18400,2340,891,5670],color:'rgba(118,255,3,.5)'},
+    status:{labels:['200','404','500','301','302'],values:[14200,1240,387,890,432],color:'rgba(255,171,64,.6)'},
+  },
+  pie:{
+    service:{labels:['checkout-api','payment-svc','search-svc','api-gateway','inventory'],values:[28,20,35,12,5]},
+    host:{labels:['web-01','web-02','web-03','db-01','cache-01'],values:[32,30,24,8,6]},
+    level:{labels:['INFO','WARN','ERROR','DEBUG'],values:[67,9,3,21]},
+    status:{labels:['200','404','500','301','302'],values:[82,7,2,5,2]},
+  }
+};
+const pieColors=['rgba(0,229,255,.8)','rgba(224,64,251,.7)','rgba(118,255,3,.7)','rgba(255,171,64,.7)','rgba(255,87,87,.7)'];
+function setViz(t){
+  curViz=t;
+  ['bar','line','pie','metric'].forEach(k=>{const b=document.getElementById('vbt-'+k);if(b)b.classList.toggle('active',k===t)});
+  renderViz();
+}
+function renderViz(){
+  const idx=document.getElementById('vizIdx').value;
+  const metric=document.getElementById('vizMetric').value;
+  const split=document.getElementById('vizSplit').value;
+  const canvas=document.getElementById('vizCanvas');
+  const d=vizData.bar[split]||vizData.bar.service;
+  const metricLabels={count:'Count',avg:'Avg Latency (ms)',sum:'Sum Bytes',uniq:'Unique Count'};
+  const multipliers={count:1,avg:0.5,sum:8,uniq:0.12};
+  const mult=multipliers[metric]||1;
+  const vals=d.values.map(v=>Math.round(v*mult));
+  const maxV=Math.max(...vals);
+  if(curViz==='bar'){
+    canvas.innerHTML=`<div class="bar-chart" style="width:100%">
+      <div style="font-size:9px;letter-spacing:2px;color:var(--mute);margin-bottom:10px;font-family:'IBM Plex Mono',monospace">${metricLabels[metric]} by ${split}</div>
+      ${d.labels.map((l,i)=>`<div class="bc-row">
+        <div class="bc-label">${l}</div>
+        <div class="bc-bar-wrap">
+          <div class="bc-bar" style="width:${(vals[i]/maxV*100).toFixed(1)}%;background:${d.color}"></div>
+        </div>
+        <div class="bc-val">${vals[i].toLocaleString()}</div>
+      </div>`).join('')}
+    </div>`;
+  } else if(curViz==='pie'){
+    const pd=vizData.pie[split]||vizData.pie.service;
+    const total=pd.values.reduce((a,b)=>a+b,0);
+    let angle=0;const size=160;
+    let svgPaths='';
+    pd.values.forEach((v,i)=>{
+      const slice=v/total*360;
+      const startAngle=angle*(Math.PI/180);
+      const endAngle=(angle+slice)*(Math.PI/180);
+      const x1=Math.cos(startAngle-Math.PI/2)*70+80,y1=Math.sin(startAngle-Math.PI/2)*70+80;
+      const x2=Math.cos(endAngle-Math.PI/2)*70+80,  y2=Math.sin(endAngle-Math.PI/2)*70+80;
+      const large=slice>180?1:0;
+      svgPaths+=`<path d="M80,80 L${x1},${y1} A70,70 0 ${large},1 ${x2},${y2} Z" fill="${pieColors[i]}" stroke="var(--bg)" stroke-width="2"/>`;
+      angle+=slice;
+    });
+    canvas.innerHTML=`<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;width:100%">
+      <svg width="${size}" height="${size}" viewBox="0 0 160 160">${svgPaths}</svg>
+      <div style="display:flex;flex-direction:column;gap:5px">
+        ${pd.labels.map((l,i)=>`<div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--dim);font-family:'IBM Plex Mono',monospace">
+          <div style="width:10px;height:10px;background:${pieColors[i]};flex-shrink:0"></div>
+          <span>${l}</span><span style="color:var(--teal)">${pd.values[i]}%</span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  } else if(curViz==='line'){
+    const pts=Array.from({length:24},(_,i)=>({t:i,v:Math.floor(Math.random()*400+200)}));
+    const maxPt=Math.max(...pts.map(p=>p.v));
+    const W=400,H=120;
+    const coords=pts.map((p,i)=>`${(i/(pts.length-1)*W).toFixed(1)},${(H-(p.v/maxPt*H*.9+H*.05)).toFixed(1)}`);
+    canvas.innerHTML=`<div style="width:100%">
+      <div style="font-size:9px;letter-spacing:2px;color:var(--mute);margin-bottom:8px;font-family:'IBM Plex Mono',monospace">${metricLabels[metric]} — last 24h</div>
+      <svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+        <defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(0,229,255,.3)"/><stop offset="100%" stop-color="rgba(0,229,255,0)"/></linearGradient></defs>
+        <polygon points="${coords.join(' ')} ${W},${H} 0,${H}" fill="url(#lg)"/>
+        <polyline points="${coords.join(' ')}" fill="none" stroke="rgba(0,229,255,.9)" stroke-width="1.5"/>
+        ${pts.filter((_,i)=>i%6===0).map((p,i)=>`<text x="${(i*6/(pts.length-1)*W).toFixed(1)}" y="${H}" fill="rgba(0,229,255,.4)" font-size="9" font-family="monospace" text-anchor="middle">${i*4}h</text>`).join('')}
+      </svg>
+    </div>`;
+  } else if(curViz==='metric'){
+    const v=vals[0]||0;
+    canvas.innerHTML=`<div style="text-align:center">
+      <div style="font-family:'Unbounded',sans-serif;font-size:48px;font-weight:900;color:var(--teal);text-shadow:0 0 20px rgba(0,229,255,.4);line-height:1">${v.toLocaleString()}</div>
+      <div style="font-size:10px;letter-spacing:3px;color:var(--mute);margin-top:8px;font-family:'IBM Plex Mono',monospace">${metricLabels[metric].toUpperCase()} · LAST 15 MIN</div>
+      <div style="font-size:12px;color:var(--lime);margin-top:8px;font-family:'IBM Plex Mono',monospace">↑ +12.4% vs previous period</div>
+    </div>`;
+  }
+}
+setViz('bar');
+
+// Alert builder
+const alertDefs={
+  log_threshold:{
+    gen:(svc,thresh,window,conn)=>`<span class="kw">Rule Type:</span>     <span class="st">Logs — Log threshold</span>\n<span class="kw">Index:</span>          <span class="st">logs-*</span>\n<span class="kw">KQL filter:</span>     <span class="st">service.name: "${svc}" and log.level: "ERROR"</span>\n<span class="kw">Condition:</span>      count > <span class="vl">${thresh}</span> in last <span class="vl">${window}</span>\n<span class="kw">Group by:</span>       service.name\n\n<span class="kw">Action:</span>\n  <span class="vl">Connector:</span>    <span class="st">${conn}</span>\n  <span class="vl">Message:</span>      Error count on {{context.serviceName}}\n                  exceeded ${thresh}: {{context.matchingDocuments}} errors\n\n<span class="cm"># Navigate: Observability → Logs → Alerts → Create rule</span>`
+  },
+  metric_threshold:{
+    gen:(svc,thresh,window,conn)=>`<span class="kw">Rule Type:</span>     <span class="st">Metrics — Custom threshold</span>\n<span class="kw">Filter:</span>         <span class="st">host.name: "${svc}"</span>\n<span class="kw">Metric:</span>         avg(system.cpu.total.pct)\n<span class="kw">Condition:</span>      > <span class="vl">${thresh/100}</span> (${thresh}%) averaged over <span class="vl">${window}</span>\n<span class="kw">Group by:</span>       host.name\n\n<span class="kw">Action:</span>\n  <span class="vl">Connector:</span>    <span class="st">${conn}</span>\n  <span class="vl">Message:</span>      CPU on {{context.group}} is {{context.metric.value}}\n\n<span class="cm"># Navigate: Observability → Alerts → Create rule → Metrics</span>`
+  },
+  apm_latency:{
+    gen:(svc,thresh,window,conn)=>`<span class="kw">Rule Type:</span>     <span class="st">APM — Latency threshold</span>\n<span class="kw">Service:</span>        <span class="st">${svc}</span>\n<span class="kw">Type:</span>           <span class="st">request</span>\n<span class="kw">Environment:</span>    <span class="st">production</span>\n<span class="kw">Aggregation:</span>    <span class="st">95th percentile</span>\n<span class="kw">Threshold:</span>      > <span class="vl">${thresh}ms</span> in last <span class="vl">${window}</span>\n\n<span class="kw">Action:</span>\n  <span class="vl">Connector:</span>    <span class="st">${conn}</span>\n  <span class="vl">Message:</span>      ${svc} p95 latency: {{context.triggerValue}}ms\n\n<span class="cm"># Navigate: APM → [service] → Alerts → Create latency rule</span>`
+  },
+  apm_error:{
+    gen:(svc,thresh,window,conn)=>`<span class="kw">Rule Type:</span>     <span class="st">APM — Error rate</span>\n<span class="kw">Service:</span>        <span class="st">${svc}</span>\n<span class="kw">Environment:</span>    <span class="st">production</span>\n<span class="kw">Threshold:</span>      error rate > <span class="vl">${thresh}%</span> in last <span class="vl">${window}</span>\n\n<span class="kw">Action:</span>\n  <span class="vl">Connector:</span>    <span class="st">${conn}</span>\n  <span class="vl">Message:</span>      ${svc} error rate: {{context.triggerValue}}%\n\n<span class="cm"># Navigate: APM → [service] → Alerts → Create error rate rule</span>`
+  },
+  uptime_monitor:{
+    gen:(svc,thresh,window,conn)=>`<span class="kw">Rule Type:</span>     <span class="st">Uptime — Monitor status</span>\n<span class="kw">Filter:</span>         <span class="st">tag: "production"</span>\n<span class="kw">Condition:</span>      DOWN for <span class="vl">${thresh}</span> consecutive checks\n<span class="kw">Check window:</span>  last <span class="vl">${window}</span>\n\n<span class="kw">Action:</span>\n  <span class="vl">Connector:</span>    <span class="st">${conn}</span>\n  <span class="vl">Message:</span>      Monitor {{context.monitorName}} is DOWN\n                  URL: {{context.monitorUrl}}\n\n<span class="cm"># Navigate: Observability → Uptime → Alerts → Create rule</span>`
+  },
+  es_query:{
+    gen:(svc,thresh,window,conn)=>`<span class="kw">Rule Type:</span>     <span class="st">Elasticsearch query</span>\n<span class="kw">Index:</span>          <span class="st">logs-${svc.replace('-','.')}.*</span>\n<span class="kw">Query:</span>\n  { <span class="st">"bool"</span>: { <span class="st">"must"</span>: [\n      { <span class="st">"term"</span>: { <span class="st">"log.level"</span>: <span class="st">"ERROR"</span> } }\n    ]}}\n<span class="kw">Threshold:</span>      count > <span class="vl">${thresh}</span> in last <span class="vl">${window}</span>\n\n<span class="kw">Action:</span>\n  <span class="vl">Connector:</span>    <span class="st">${conn}</span>\n\n<span class="cm"># Navigate: Observability → Alerts → Create rule → ES query</span>`
+  },
+};
+function genAlert(){
+  const type=document.getElementById('arType').value;
+  const svc=document.getElementById('arSvc').value||'my-service';
+  const thresh=document.getElementById('arThresh').value||'100';
+  const window=document.getElementById('arWindow').value;
+  const conn=document.getElementById('arConn').value;
+  const def=alertDefs[type];
+  document.getElementById('alertOut').innerHTML=def?def.gen(svc,thresh,window,conn):'<span style="color:var(--mute)">Unknown rule type</span>';
+}
+genAlert();
+
+// Quiz
+const qA={
+  q4:{c:1,ok:'✓ Correct! The KQL filter bar in Kibana Dashboards applies to all panels simultaneously — it\'s the most efficient way to filter a full dashboard by a single dimension.',fail:'✗ The KQL filter bar at the top of the dashboard filters all panels at once. Editing each panel individually would be slow and doesn\'t persist as a dashboard-level filter.'},
+  q7:{c:1,ok:'✓ Correct! The APM agent automatically injects trace.id and transaction.id into logs when using supported logging frameworks. This trace.id is what the APM app uses to find related log lines on the Logs tab.',fail:'✗ trace.id is the key field. The APM agent injects it into logs automatically. The APM app queries for log lines with a matching trace.id to show correlated logs. service.name alone is not specific enough to correlate a single request.'},
+};
+function doQ(qid,sel,correct){
+  const n=qid.replace('q','');
+  const opts=document.getElementById('qo'+n);
+  if(opts.querySelector('.locked'))return;
+  opts.querySelectorAll('.qo').forEach((o,i)=>{o.classList.add('locked');if(i===correct)o.classList.add('correct');else if(i===sel&&sel!==correct)o.classList.add('wrong');});
+  const fb=document.getElementById('qf'+n);
+  fb.className='qfb show '+(sel===correct?'correct':'wrong');
+  fb.textContent=qA[qid][sel===correct?'ok':'fail'];
+}
+
+function tog(id){document.getElementById(id).classList.toggle('open')}
+
+let dc=0;const T=7;
+function markDone(id,btn){
+  const c=document.getElementById(id);
+  if(c.classList.contains('done'))return;
+  c.classList.add('done');btn.classList.add('marked');btn.textContent='✓ Understood';dc++;
+  document.getElementById('pFill').style.width=(dc/T*100)+'%';
+  document.getElementById('pNum').textContent=dc+' / '+T+' objectives';
+}
+
+function toggleCS(){
+  const b=document.getElementById('csBody');const ch=document.getElementById('csChev');
+  ch.textContent=b.classList.toggle('open')?'▴ collapse':'▾ expand';
+}
+
+function cpCode(btn){
+  const txt=btn.parentElement.innerText.replace('copy','').trim();
+  navigator.clipboard.writeText(txt).catch(()=>{});
+  btn.textContent='✓';setTimeout(()=>btn.textContent='copy',1500);
+}
+</script>
+</body>
+</html>

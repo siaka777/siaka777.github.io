@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elastic Certified Observability Engineer — Topic 5: Structuring Data</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,300;0,400;0,500;0,600;0,700;0,900;1,400&family=Barlow+Condensed:wght@300;400;500;600;700;900&family=Noto+Sans+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--white:#f5f3ef;--paper:#eeebe4;--rule:#d4cfc5;--rule2:#bbb5a8;--text:#1a1815;--text2:#3d3a35;--text3:#6b6760;--red:#d32f00;--red2:#b02500;--red-bg:#fff0ec;--black:#0f0e0c;--blue:#0052a3;--blue-bg:#eef3fb;--green:#1a7a3f;--green-bg:#eef7f2;--orange:#c45c00;--ora-bg:#fff6ee;--code-bg:#1a1815;--code-tx:#e8e4d8;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--white);color:var(--text);font-family:'Barlow',sans-serif;font-weight:400;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(var(--rule) 1px,transparent 1px),linear-gradient(90deg,var(--rule) 1px,transparent 1px);background-size:48px 48px;opacity:.4;}
+.top-rule{height:6px;background:linear-gradient(90deg,var(--red) 0%,var(--red) 40%,var(--black) 40%,var(--black) 100%);position:relative;z-index:10;}
+.topnav{background:var(--black);padding:0 40px;display:flex;align-items:stretch;position:relative;z-index:5;overflow-x:auto;}
+.cert-crumb{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;letter-spacing:3px;color:rgba(255,255,255,.4);text-transform:uppercase;padding:14px 24px 14px 0;margin-right:24px;border-right:1px solid rgba(255,255,255,.1);white-space:nowrap;flex-shrink:0;align-self:center;}
+.topic-tabs{display:flex;gap:0}
+.ttab{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:500;letter-spacing:2px;padding:14px 18px;color:rgba(255,255,255,.35);background:none;border:none;cursor:pointer;transition:all .2s;white-space:nowrap;text-transform:uppercase;position:relative;border-right:1px solid rgba(255,255,255,.06);}
+.ttab:hover{color:rgba(255,255,255,.7);background:rgba(255,255,255,.04)}
+.ttab.done{color:#4caf7d}.ttab.done::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:#4caf7d;}
+.ttab.active{color:#fff;background:var(--red)}.ttab.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--red);}
+header{background:var(--white);border-bottom:3px solid var(--black);padding:56px 0 48px;position:relative;z-index:1;}
+.wrap{max-width:1100px;margin:0 auto;padding:0 40px;position:relative;z-index:1}
+.header-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start;}
+.header-badge{display:inline-flex;align-items:center;gap:0;margin-bottom:24px;}
+.hb-num{background:var(--red);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;padding:5px 14px;text-transform:uppercase;}
+.hb-label{background:var(--black);color:rgba(255,255,255,.6);font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:500;letter-spacing:2px;padding:5px 14px;text-transform:uppercase;}
+h1{font-family:'Barlow Condensed',sans-serif;font-size:clamp(72px,10vw,110px);font-weight:900;line-height:.88;text-transform:uppercase;letter-spacing:-2px;color:var(--black);margin-bottom:20px;}
+h1 .accent{color:var(--red)}
+.header-desc{font-size:15px;font-weight:300;color:var(--text2);line-height:1.75;max-width:480px;}
+.header-right{padding-top:12px;border-left:2px solid var(--rule2);padding-left:36px;}
+.pb-label{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--text3);margin-bottom:12px;}
+.prog-row{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.prog-track{flex:1;height:4px;background:var(--rule2);overflow:hidden}
+.prog-fill{height:100%;background:var(--red);transition:width .5s ease;width:0%}
+.prog-num{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--red);white-space:nowrap;}
+.obj-list{display:flex;flex-direction:column;gap:5px}
+.obj-item{display:flex;align-items:center;gap:10px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:500;letter-spacing:.5px;color:var(--text3);}
+.obj-pip{width:6px;height:6px;background:var(--rule2);flex-shrink:0}
+.obj-item.done-item .obj-pip{background:var(--green)}.obj-item.done-item{color:var(--green)}
+.cards{display:flex;flex-direction:column;gap:0;margin-bottom:56px;border:2px solid var(--black)}
+.card{background:var(--white);border-bottom:1px solid var(--rule);position:relative;animation:cardIn .35s ease both;}
+.card:nth-child(1){animation-delay:.04s}.card:nth-child(2){animation-delay:.08s}.card:nth-child(3){animation-delay:.12s}.card:nth-child(4){animation-delay:.16s}.card:nth-child(5){animation-delay:.20s}.card:nth-child(6){animation-delay:.24s}.card:nth-child(7){animation-delay:.28s}.card:nth-child(8){animation-delay:.32s}
+.card:last-child{border-bottom:none}
+@keyframes cardIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.card.open{background:var(--paper)}.card.done{background:var(--green-bg)}
+.card.done::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--green);}
+.card-hd{display:flex;align-items:center;gap:0;cursor:pointer;user-select:none;}
+.card-num{font-family:'Barlow Condensed',sans-serif;font-size:52px;font-weight:900;color:var(--rule2);min-width:80px;text-align:center;line-height:1;padding:18px 0;border-right:1px solid var(--rule);transition:color .2s;}
+.card.open .card-num{color:var(--red)}.card.done .card-num{color:var(--green)}
+.card-meta{flex:1;padding:16px 24px}
+.card-section{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--red);margin-bottom:3px;}
+.card.done .card-section{color:var(--green)}
+.card-title{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--black);line-height:1.2;}
+.card-tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.ctag{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:600;letter-spacing:2px;padding:2px 8px;border:1px solid;text-transform:uppercase;}
+.ctag.pp{border-color:rgba(211,47,0,.4);color:var(--red)}.ctag.es{border-color:rgba(0,82,163,.4);color:var(--blue)}.ctag.ec{border-color:rgba(26,122,63,.4);color:var(--green)}.ctag.ht{border-color:rgba(196,92,0,.4);color:var(--orange)}.ctag.hi{border-color:var(--rule2);color:var(--text3)}
+.card-right{display:flex;align-items:center;gap:24px;padding:16px 24px;border-left:1px solid var(--rule);}
+.done-check{width:22px;height:22px;border:2px solid var(--rule2);display:flex;align-items:center;justify-content:center;font-size:12px;color:transparent;transition:all .2s;flex-shrink:0;}
+.card.done .done-check{background:var(--green);border-color:var(--green);color:#fff}
+.card-chev{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--rule2);transition:transform .25s;flex-shrink:0;}
+.card.open .card-chev{transform:rotate(180deg);color:var(--red)}
+.card-body{display:none;padding:24px 24px 28px 80px;border-top:1px solid var(--rule);animation:bodyIn .25s ease;}
+.card.open .card-body{display:block}
+@keyframes bodyIn{from{opacity:0}to{opacity:1}}
+.slbl{display:flex;align-items:center;gap:14px;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:var(--red);margin:22px 0 12px;}
+.slbl::before{content:'';width:24px;height:2px;background:var(--red);flex-shrink:0}.slbl::after{content:'';flex:1;height:1px;background:var(--rule)}
+.prose{font-size:14px;font-weight:300;color:var(--text2);line-height:1.8;margin-bottom:14px}
+.prose strong{color:var(--text);font-weight:600}.prose em{color:var(--red);font-style:italic;font-weight:500}
+.prose code{font-family:'Noto Sans Mono',monospace;font-size:12px;background:var(--paper);padding:1px 7px;color:var(--red);border:1px solid var(--rule2);}
+.code{background:var(--code-bg);color:var(--code-tx);padding:16px 20px;font-family:'Noto Sans Mono',monospace;font-size:12px;line-height:1.75;overflow-x:auto;margin-bottom:14px;position:relative;border-left:4px solid var(--red);}
+.code .cm{color:#555}.code .kw{color:#ff8a65}.code .st{color:#a5d6a7}.code .fd{color:#90caf9}.code .vl{color:#fff59d}.code .hl{color:#ef5350}.code .pp{color:#ce93d8}
+.copy-btn{position:absolute;top:8px;right:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.5);font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:600;letter-spacing:2px;padding:3px 10px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+.copy-btn:hover{background:var(--red);border-color:var(--red);color:#fff}
+.callout{display:flex;gap:14px;padding:13px 18px;border-left:4px solid;margin-bottom:14px;font-size:13px;font-weight:300;line-height:1.7;color:var(--text2);}
+.callout.exam{border-color:var(--red);background:var(--red-bg)}.callout.tip{border-color:var(--green);background:var(--green-bg)}.callout.warn{border-color:var(--orange);background:var(--ora-bg)}.callout.info{border-color:var(--blue);background:var(--blue-bg)}
+.callout-icon{font-size:16px;flex-shrink:0;margin-top:2px}.callout strong{color:var(--text);font-weight:600}
+.tbl{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px;border:1px solid var(--rule)}
+.tbl th{text-align:left;padding:8px 14px;background:var(--black);color:rgba(255,255,255,.75);font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;font-weight:600;}
+.tbl td{padding:9px 14px;border-bottom:1px solid var(--rule);color:var(--text2);vertical-align:top;line-height:1.5;font-weight:300;}
+.tbl td:first-child{font-family:'Noto Sans Mono',monospace;font-size:12px;color:var(--blue);font-weight:400;}
+.tbl tr:last-child td{border-bottom:none}.tbl tr:hover td{background:var(--paper)}
+.steps{display:flex;flex-direction:column;margin-bottom:14px;border:1px solid var(--rule)}
+.step{display:flex;gap:0;border-bottom:1px solid var(--rule)}.step:last-child{border-bottom:none}
+.snum{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:var(--rule2);min-width:52px;display:flex;align-items:center;justify-content:center;border-right:1px solid var(--rule);padding:14px 0;flex-shrink:0;}
+.sc{padding:14px 18px}
+.sc .st{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--black);margin-bottom:4px;}
+.sc .sd{font-size:13px;font-weight:300;color:var(--text2);line-height:1.55}
+.sc .sd code{font-family:'Noto Sans Mono',monospace;font-size:11px;background:var(--paper);padding:1px 6px;color:var(--blue);border:1px solid var(--rule2);}
+.quiz{border:2px solid var(--black);margin-top:14px;background:var(--paper);}
+.quiz-hdr{background:var(--black);color:rgba(255,255,255,.7);font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;padding:8px 16px;}
+.quiz-q{font-size:15px;font-weight:600;color:var(--black);padding:16px 16px 12px;line-height:1.5;}
+.quiz-opts{display:flex;flex-direction:column;gap:0;border-top:1px solid var(--rule)}
+.qo{display:flex;align-items:flex-start;gap:0;border-bottom:1px solid var(--rule);cursor:pointer;transition:background .15s;font-size:13px;font-weight:300;color:var(--text2);line-height:1.5;}
+.qo:last-child{border-bottom:none}.qo:hover:not(.locked){background:var(--red-bg)}.qo.correct{background:var(--green-bg)}.qo.wrong{background:var(--red-bg)}.qo.locked{cursor:default}
+.ql{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;min-width:48px;text-align:center;padding:10px 0;color:var(--rule2);border-right:1px solid var(--rule);flex-shrink:0;}
+.qo.correct .ql{color:var(--green);background:var(--green-bg)}.qo.wrong .ql{color:var(--red);background:var(--red-bg)}
+.qa{padding:12px 16px;flex:1}
+.qfb{font-size:12px;font-family:'Noto Sans Mono',monospace;font-weight:300;line-height:1.65;padding:12px 16px;display:none;border-top:1px solid var(--rule);}
+.qfb.show{display:block}.qfb.correct{background:var(--green-bg);color:var(--green);border-left:4px solid var(--green)}.qfb.wrong{background:var(--red-bg);color:var(--red2);border-left:4px solid var(--red)}
+.done-btn{display:inline-flex;align-items:center;gap:8px;margin-top:18px;background:transparent;border:2px solid var(--rule2);color:var(--text3);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:2px;text-transform:uppercase;padding:8px 18px;cursor:pointer;transition:all .2s;}
+.done-btn:hover{border-color:var(--green);color:var(--green);background:var(--green-bg)}.done-btn.marked{border-color:var(--green);color:var(--green);background:var(--green-bg)}
+/* Pipeline builder */
+.pipeline-demo{border:1px solid var(--rule);background:var(--paper);margin-bottom:14px;overflow:hidden;}
+.pd-toolbar{background:var(--black);padding:10px 16px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.pd-label{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;color:rgba(255,255,255,.5);flex:1;text-transform:uppercase;min-width:100px;}
+.pd-btn{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:5px 12px;border:1px solid rgba(255,255,255,.2);background:none;color:rgba(255,255,255,.6);cursor:pointer;transition:all .2s;}
+.pd-btn:hover,.pd-btn.active{background:var(--red);border-color:var(--red);color:#fff}
+.pd-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.pd-form{padding:18px;border-right:1px solid var(--rule)}
+.pd-fg{display:flex;flex-direction:column;gap:5px;margin-bottom:13px}
+.pd-lbl{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--red);}
+.pd-sel,.pd-inp{background:var(--white);border:1px solid var(--rule2);color:var(--text);font-family:'Noto Sans Mono',monospace;font-size:12px;padding:7px 10px;outline:none;transition:border-color .2s;appearance:none;}
+.pd-sel:focus,.pd-inp:focus{border-color:var(--red)}
+.pd-run{background:var(--red);border:none;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:2px;text-transform:uppercase;padding:10px;cursor:pointer;width:100%;transition:all .2s;margin-top:4px;}
+.pd-run:hover{background:var(--red2)}
+.pd-out{padding:18px;font-family:'Noto Sans Mono',monospace;font-size:11.5px;line-height:1.7;background:var(--code-bg);color:var(--code-tx);overflow:auto;max-height:360px;}
+.pd-out .ok{color:#a5d6a7}.pd-out .kw{color:#ff8a65}.pd-out .fd{color:#90caf9}.pd-out .vl{color:#fff59d}.pd-out .cm{color:#555}
+/* Grok tester */
+.grok-demo{border:1px solid var(--rule);overflow:hidden;margin-bottom:14px}
+.gd-header{background:var(--black);padding:10px 16px;display:flex;align-items:center;gap:10px;}
+.gd-label{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;color:rgba(255,255,255,.5);flex:1;text-transform:uppercase}
+.gd-row{display:flex;flex-direction:column;gap:5px;padding:14px 16px;border-bottom:1px solid var(--rule)}
+.gd-row:last-child{border-bottom:none}
+.gd-rl{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--blue);margin-bottom:4px}
+.gd-inp{background:var(--white);border:1px solid var(--rule2);color:var(--text);font-family:'Noto Sans Mono',monospace;font-size:12px;padding:8px 12px;outline:none;width:100%;transition:border-color .2s;}
+.gd-inp:focus{border-color:var(--red)}
+.gd-presets{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.gd-preset{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;padding:4px 10px;border:1px solid var(--rule2);background:none;color:var(--text3);cursor:pointer;transition:all .2s;}
+.gd-preset:hover,.gd-preset.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.gd-test-btn{background:var(--black);border:none;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:9px 20px;cursor:pointer;transition:all .2s;align-self:flex-start;}
+.gd-test-btn:hover{background:var(--red)}
+.gd-result{display:none;padding:14px 16px;background:var(--paper);border-top:1px solid var(--rule);}
+.gd-result.show{display:block}.gd-fields{display:flex;flex-wrap:wrap;gap:8px}
+.gd-field{display:flex;flex-direction:column;gap:2px;background:var(--white);border:1px solid var(--rule);padding:8px 12px;min-width:120px;}
+.gd-fname{font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--blue)}
+.gd-fval{font-family:'Noto Sans Mono',monospace;font-size:11px;color:var(--text);margin-top:2px}
+/* ECS mapper */
+.ecs-demo{border:1px solid var(--rule);overflow:hidden;margin-bottom:14px;}
+.ecs-header{background:var(--black);padding:10px 16px;display:flex;align-items:center;gap:10px;}
+.ecs-label{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;color:rgba(255,255,255,.5);flex:1;text-transform:uppercase}
+.ecs-grid-display{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule)}
+.ecs-col{background:var(--white);padding:16px}
+.ecs-col-hd{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--text3);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--rule)}
+.ecs-col-hd.before{color:var(--orange)}.ecs-col-hd.after{color:var(--green)}
+.ecs-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;padding:6px 10px;font-family:'Noto Sans Mono',monospace;font-size:11px;}
+.ecs-row.mapped{background:var(--green-bg);border-left:2px solid var(--green)}.ecs-row.custom{background:var(--ora-bg);border-left:2px solid var(--orange)}
+.ecs-field{color:var(--blue);flex:1}.ecs-val{color:var(--text2);font-size:10px}
+.ecs-badge{font-family:'Barlow Condensed',sans-serif;font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:1px 6px;border:1px solid;flex-shrink:0}
+.ecs-badge.core{border-color:var(--green);color:var(--green)}.ecs-badge.ext{border-color:var(--blue);color:var(--blue)}.ecs-badge.cust{border-color:var(--orange);color:var(--orange)}
+/* Cheatsheet */
+.cheatsheet{border:2px solid var(--black);overflow:hidden;margin-bottom:56px}
+.cs-hd{padding:16px 24px;cursor:pointer;display:flex;align-items:center;gap:14px;background:var(--black);}
+.cs-hd-title{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;color:#fff;flex:1;text-transform:uppercase;letter-spacing:2px;}
+.cs-chev{font-family:'Barlow Condensed',sans-serif;font-size:12px;color:rgba(255,255,255,.4);letter-spacing:2px;transition:transform .2s}
+.cs-body{display:none;padding:24px;background:var(--paper)}.cs-body.open{display:block}
+.cs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1px;background:var(--rule);margin-bottom:1px}
+.cs-item{background:var(--white);padding:14px 16px}
+.cs-t{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--black);margin-bottom:5px;border-bottom:1px solid var(--rule);padding-bottom:5px}
+.cs-d{font-family:'Noto Sans Mono',monospace;font-size:11px;color:var(--text3);line-height:1.7}
+.cs-d strong{color:var(--red)}
+footer{background:var(--black);padding:24px 40px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;position:relative;z-index:1;}
+.ft{font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:2px;color:rgba(255,255,255,.3);text-transform:uppercase}
+.nav-btn{display:inline-flex;align-items:center;gap:7px;background:transparent;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.6);font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:8px 18px;cursor:pointer;text-decoration:none;transition:all .2s;}
+.nav-btn:hover{border-color:rgba(255,255,255,.6);color:#fff}
+.nav-btn.primary{background:var(--red);border-color:var(--red);color:#fff;font-weight:700}.nav-btn.primary:hover{background:var(--red2)}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--paper)}::-webkit-scrollbar-thumb{background:var(--rule2)}
+</style>
+</head>
+<body>
+<div class="top-rule"></div>
+<div class="topnav">
+  <span class="cert-crumb">Observability Eng</span>
+  <div class="topic-tabs">
+    <button class="ttab done">01 Metrics ✓</button>
+    <button class="ttab done">02 Logging ✓</button>
+    <button class="ttab done">03 APM ✓</button>
+    <button class="ttab done">04 Uptime ✓</button>
+    <button class="ttab active">05 Struct Data</button>
+    <button class="ttab">06 Obs Data</button>
+    <button class="ttab">07 Mgmt</button>
+  </div>
+</div>
+<header>
+  <div class="wrap">
+    <div class="header-grid">
+      <div class="header-left">
+        <div class="header-badge"><span class="hb-num">Topic 05</span><span class="hb-label">of 07 · Elastic Obs Engineer</span></div>
+        <h1>STRUCT<span class="accent">URING</span><br>DATA</h1>
+        <p class="header-desc">Transform raw data into clean, structured, searchable documents using ingest pipelines, processors, Logstash, ECS, and data stream configuration — the architectural foundation of Elastic Observability.</p>
+      </div>
+      <div class="header-right">
+        <div class="pb-label">Objective Progress</div>
+        <div class="prog-row"><div class="prog-track"><div class="prog-fill" id="pFill"></div></div><span class="prog-num" id="pNum">0/8</span></div>
+        <div class="obj-list">
+          <div class="obj-item" id="oi1"><span class="obj-pip"></span>Ingest Pipelines</div>
+          <div class="obj-item" id="oi2"><span class="obj-pip"></span>Pipeline Processors</div>
+          <div class="obj-item" id="oi3"><span class="obj-pip"></span>Grok Patterns</div>
+          <div class="obj-item" id="oi4"><span class="obj-pip"></span>Logstash Pipelines</div>
+          <div class="obj-item" id="oi5"><span class="obj-pip"></span>ECS Field Mapping</div>
+          <div class="obj-item" id="oi6"><span class="obj-pip"></span>Data Streams</div>
+          <div class="obj-item" id="oi7"><span class="obj-pip"></span>Index Templates</div>
+          <div class="obj-item" id="oi8"><span class="obj-pip"></span>Component Templates</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+<main><div class="wrap">
+<div class="cards">
+
+<!-- OBJ 1 -->
+<div class="card open" id="c1">
+  <div class="card-hd" onclick="tog('c1')"><span class="card-num">01</span>
+    <div class="card-meta"><div class="card-section">Ingest Node</div><div class="card-title">Define and Use Ingest Pipelines</div><div class="card-tags"><span class="ctag pp">Pipeline</span><span class="ctag es">Elasticsearch</span><span class="ctag hi">Core Exam</span></div></div>
+    <div class="card-right"><div class="done-check" id="dc1">✓</div><span class="card-chev">▾</span></div>
+  </div>
+  <div class="card-body">
+    <p class="prose">An <strong>ingest pipeline</strong> is a sequence of processors applied to documents before they are indexed into Elasticsearch. Pipelines run on ingest nodes (all nodes by default). Define them in Kibana → Stack Management → Ingest Pipelines, or via the API.</p>
+    <div class="callout exam"><span class="callout-icon">🎯</span><div><strong>Exam objective:</strong> Create a pipeline, add processors, test with a sample document, and apply it to an index or Beats output.</div></div>
+    <div class="slbl">Create & Simulate an Ingest Pipeline</div>
+    <div class="code"><button class="copy-btn" onclick="cpCode(this)">COPY</button><span class="cm"># Create a pipeline</span>
+PUT <span class="fd">_ingest/pipeline/parse-nginx-logs</span>
+{
+  <span class="kw">"description"</span>: <span class="st">"Parse Nginx access logs"</span>,
+  <span class="kw">"processors"</span>: [
+    { <span class="kw">"grok"</span>: { <span class="kw">"field"</span>: <span class="st">"message"</span>, <span class="kw">"patterns"</span>: [<span class="st">"%{COMBINEDAPACHELOG}"</span>] } },
+    { <span class="kw">"date"</span>: { <span class="kw">"field"</span>: <span class="st">"timestamp"</span>, <span class="kw">"formats"</span>: [<span class="st">"dd/MMM/yyyy:HH:mm:ss Z"</span>] } },
+    { <span class="kw">"geoip"</span>: { <span class="kw">"field"</span>: <span class="st">"clientip"</span> } },
+    { <span class="kw">"remove"</span>: { <span class="kw">"field"</span>: <span class="st">"message"</span> } }
+  ]
+}
+
+<span class="cm"># Test before applying</span>
+POST <span class="fd">_ingest/pipeline/parse-nginx-logs/_simulate</span>
+{
+  <span class="kw">"docs"</span>: [{ <span class="kw">"_source"</span>: { <span class="kw">"message"</span>: <span class="st">"198.51.100.1 - - [27/Feb/2026:10:30:00 +0000] \"GET /api HTTP/1.1\" 200 142"</span> } }]
+}</div>
+    <div class="slbl">Applying Pipelines</div>
+    <table class="tbl"><tr><th>Method</th><th>How to apply</th></tr>
+      <tr><td>Index API</td><td>?pipeline=&lt;name&gt; appended to indexing request</td></tr>
+      <tr><td>Index settings</td><td>index.default_pipeline or index.final_pipeline</td></tr>
+      <tr><td>Beats output</td><td>output.elasticsearch.pipeline: "&lt;name&gt;"</td></tr>
+      <tr><td>Elastic Agent</td><td>Set pipeline in integration or component template settings</td></tr>
+    </table>
+    <div class="callout tip"><span class="callout-icon">💡</span><div><strong>index.default_pipeline</strong> runs on every doc. <strong>index.final_pipeline</strong> always runs last, even after per-request pipelines — ideal for global enrichment.</div></div>
+    <button class="done-btn" onclick="markDone('c1',1,this)">☐ Mark Complete</button>
+  </div>
+</div>
+
+<!-- OBJ 2 -->
+<div class="card" id="c2">
+  <div class="card-hd" onclick="tog('c2')"><span class="card-num">02</span>
+    <div class="card-meta"><div class="card-section">Processors</div><div class="card-title">Configure Ingest Pipeline Processors</div><div class="card-tags"><span class="ctag pp">Pipeline</span><span class="ctag hi">Core Exam</span></div></div>
+    <div class="card-right"><div class="done-check" id="dc2">✓</div><span class="card-chev">▾</span></div>
+  </div>
+  <div class="card-body">
+    <p class="prose">Processors are the building blocks of ingest pipelines — each performs a single transformation. They run in sequence, and per-processor or pipeline-level <em>on_failure</em> handlers catch errors.</p>
+    <div class="slbl">Interactive Processor Builder</div>
+    <div class="pipeline-demo">
+      <div class="pd-toolbar">
+        <span class="pd-label">Processor Config Generator</span>
+        <button class="pd-btn active" id="pbtn-grok" onclick="setPProc('grok')">Grok</button>
+        <button class="pd-btn" id="pbtn-date" onclick="setPProc('date')">Date</button>
+        <button class="pd-btn" id="pbtn-set" onclick="setPProc('set')">Set</button>
+        <button class="pd-btn" id="pbtn-rename" onclick="setPProc('rename')">Rename</button>
+        <button class="pd-btn" id="pbtn-remove" onclick="setPProc('remove')">Remove</button>
+        <button class="pd-btn" id="pbtn-convert" onclick="setPProc('convert')">Convert</button>
+        <button class="pd-btn" id="pbtn-gsub" onclick="setPProc('gsub')">Gsub</button>
+      </div>
+      <div class="pd-grid"><div class="pd-form" id="pipelineForm"></div><div class="pd-out" id="pipelineOut"><span style="color:#555"># select a processor ↑</span></div></div>
+    </div>
+    <div class="slbl">Essential Processors Reference</div>
+    <table class="tbl"><tr><th>Processor</th><th>Purpose</th><th>Key config</th></tr>
+      <tr><td>grok</td><td>Parse unstructured text with regex-based patterns</td><td>field, patterns, pattern_definitions</td></tr>
+      <tr><td>date</td><td>Parse a date string, set @timestamp</td><td>field, formats, target_field, timezone</td></tr>
+      <tr><td>geoip</td><td>Enrich with geo coordinates from IP address</td><td>field, target_field, database_file</td></tr>
+      <tr><td>set</td><td>Set a field to a static or copied value</td><td>field, value, copy_from, override</td></tr>
+      <tr><td>rename</td><td>Rename a field to a new name</td><td>field, target_field, ignore_missing</td></tr>
+      <tr><td>remove</td><td>Delete fields from the document</td><td>field (single or list), ignore_missing</td></tr>
+      <tr><td>convert</td><td>Change a field's data type</td><td>field, type (integer/float/string/boolean)</td></tr>
+      <tr><td>dissect</td><td>Delimiter-based field extraction (faster than grok)</td><td>field, pattern, append_separator</td></tr>
+      <tr><td>user_agent</td><td>Parse User-Agent string into browser/OS/device</td><td>field, target_field</td></tr>
+      <tr><td>pipeline</td><td>Call another pipeline (pipeline chaining)</td><td>name</td></tr>
+    </table>
+    <div class="slbl">on_failure Handling</div>
+    <div class="code"><button class="copy-btn" onclick="cpCode(this)">COPY</button><span class="cm"># Per-processor error handling</span>
+{
+  <span class="kw">"grok"</span>: {
+    <span class="kw">"field"</span>: <span class="st">"message"</span>, <span class="kw">"patterns"</span>: [<span class="st">"%{COMBINEDAPACHELOG}"</span>],
+    <span class="kw">"on_failure"</span>: [{ <span class="kw">"set"</span>: { <span class="kw">"field"</span>: <span class="st">"parse_error"</span>, <span class="kw">"value"</span>: <span class="st">"{{_ingest.on_failure_message}}"</span> } }]
+  }
+}
+<span class="cm"># Pipeline-level on_failure — runs if any processor fails without its own handler</span>
+{ <span class="kw">"processors"</span>: [...], <span class="kw">"on_failure"</span>: [{ <span class="kw">"set"</span>: { <span class="kw">"field"</span>: <span class="st">"error.type"</span>, <span class="kw">"value"</span>: <span class="st">"pipeline_failure"</span> } }] }</div>
+    <div class="quiz" id="q2"><div class="quiz-hdr">◆ Exam Question</div>
+      <div class="quiz-q">You need to extract the IP address and HTTP status code from a raw log string in the <code>message</code> field. Which processor should you use?</div>
+      <div class="quiz-opts" id="qo2">
+        <div class="qo" onclick="doQ('q2',0,0)"><span class="ql">A</span><div class="qa">grok — define a pattern that extracts named captures from the message field</div></div>
+        <div class="qo" onclick="doQ('q2',1,0)"><span class="ql">B</span><div class="qa">convert — change the message field type to allow sub-field extraction</div></div>
+        <div class="qo" onclick="doQ('q2',2,0)"><span class="ql">C</span><div class="qa">rename — rename the message field to structured_message</div></div>
+        <div class="qo" onclick="doQ('q2',3,0)"><span class="ql">D</span><div class="qa">split — split the message field by spaces</div></div>
+      </div><div class="qfb" id="qf2"></div>
+    </div>
+    <button class="done-btn" onclick="markDone('c2',2,this)">☐ Mark Complete</button>
+  </div>
+</div>
+
+<!-- OBJ 3 -->
+<div class="card" id="c3">
+  <div class="card-hd" onclick="tog('c3')"><span class="card-num">03</span>
+    <div class="card-meta"><div class="card-section">Grok</div><div class="card-title">Use Grok Patterns to Parse Unstructured Data</div><div class="card-tags"><span class="ctag pp">Grok</span><span class="ctag hi">Core Exam</span></div></div>
+    <div class="card-right"><div class="done-check" id="dc3">✓</div><span class="card-chev">▾</span></div>
+  </div>
+  <div class="card-body">
+    <p class="prose"><strong>Grok</strong> is a pattern-matching language built on named regex captures. Patterns use the syntax <code>%{PATTERN_NAME:field_name}</code> or <code>%{PATTERN:field:type}</code> for type coercion. 100+ built-in patterns available.</p>
+    <div class="slbl">Interactive Grok Pattern Tester</div>
+    <div class="grok-demo">
+      <div class="gd-header"><span class="gd-label">Grok Pattern Tester</span><span style="font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.4)">SELECT PRESET OR ENTER YOUR OWN</span></div>
+      <div class="gd-row">
+        <div class="gd-rl">Quick Presets</div>
+        <div class="gd-presets">
+          <button class="gd-preset active" onclick="setGrokPreset('nginx',this)">Nginx Access</button>
+          <button class="gd-preset" onclick="setGrokPreset('apache',this)">Apache Common</button>
+          <button class="gd-preset" onclick="setGrokPreset('syslog',this)">Syslog</button>
+          <button class="gd-preset" onclick="setGrokPreset('app',this)">App Log</button>
+        </div>
+        <div class="gd-rl">Log Line</div>
+        <input class="gd-inp" id="grokLog" placeholder="Paste a raw log line..."/>
+        <div class="gd-rl" style="margin-top:10px">Grok Pattern</div>
+        <input class="gd-inp" id="grokPat" placeholder="%{IP:source.ip} ..."/>
+        <button class="gd-test-btn" style="margin-top:10px" onclick="testGrok()">▶ Test Pattern</button>
+      </div>
+      <div class="gd-result" id="grokResult"><div class="gd-rl">Extracted Fields</div><div class="gd-fields" id="grokFields"></div></div>
+    </div>
+    <div class="slbl">Common Built-in Grok Patterns</div>
+    <table class="tbl"><tr><th>Pattern</th><th>Matches</th><th>Example</th></tr>
+      <tr><td>%{IP:name}</td><td>IPv4 / IPv6 address</td><td>%{IP:source.ip}</td></tr>
+      <tr><td>%{NUMBER:name:type}</td><td>Integer or float, with optional type cast</td><td>%{NUMBER:bytes:int}</td></tr>
+      <tr><td>%{WORD:name}</td><td>Single word (no spaces)</td><td>%{WORD:http_method}</td></tr>
+      <tr><td>%{HTTPDATE:name}</td><td>Apache/Nginx timestamp</td><td>%{HTTPDATE:timestamp}</td></tr>
+      <tr><td>%{LOGLEVEL:name}</td><td>ERROR, WARN, INFO, DEBUG…</td><td>%{LOGLEVEL:log.level}</td></tr>
+      <tr><td>%{GREEDYDATA:name}</td><td>Everything to end of line (greedy)</td><td>%{GREEDYDATA:message}</td></tr>
+      <tr><td>%{DATA:name}</td><td>Shortest match (non-greedy)</td><td>%{DATA:request}</td></tr>
+      <tr><td>%{URIPATH:name}</td><td>URI path portion</td><td>%{URIPATH:url.path}</td></tr>
+    </table>
+    <div class="callout tip"><span class="callout-icon">💡</span><div><strong>Dissect vs Grok:</strong> Use <code>dissect</code> when log format is consistent and delimiter-based (much faster). Use <code>grok</code> for variable-format logs needing regex flexibility.</div></div>
+    <button class="done-btn" onclick="markDone('c3',3,this)">☐ Mark Complete</button>
+  </div>
+</div>
+
+<!-- OBJ 4 -->
+<div class="card" id="c4">
+  <div class="card-hd" onclick="tog('c4')"><span class="card-num">04</span>
+    <div class="card-meta"><div class="card-section">Logstash</div><div class="card-title">Configure Logstash Pipelines for Data Processing</div><div class="card-tags"><span class="ctag ht">Logstash</span><span class="ctag es">Elasticsearch</span></div></div>
+    <div class="card-right"><div class="done-check" id="dc4">✓</div><span class="card-chev">▾</span></div>
+  </div>
+  <div class="card-body">
+    <p class="prose"><strong>Logstash</strong> is a server-side processing pipeline with inputs, filters, and outputs. More powerful than ingest pipelines for complex routing and fan-out, but adds operational overhead. Its pipeline DSL uses <em>input</em>, <em>filter</em>, and <em>output</em> blocks.</p>
+    <div class="slbl">Logstash Pipeline Configuration</div>
+    <div class="code"><button class="copy-btn" onclick="cpCode(this)">COPY</button><span class="cm"># /etc/logstash/conf.d/nginx-pipeline.conf</span>
+<span class="kw">input</span> {
+  <span class="pp">beats</span> { <span class="fd">port</span> => <span class="vl">5044</span>; <span class="fd">ssl</span> => <span class="vl">true</span> }
+}
+<span class="kw">filter</span> {
+  <span class="pp">grok</span>    { <span class="fd">match</span> => { <span class="st">"message"</span> => <span class="st">"%{COMBINEDAPACHELOG}"</span> } }
+  <span class="pp">date</span>    { <span class="fd">match</span> => [<span class="st">"timestamp"</span>, <span class="st">"dd/MMM/yyyy:HH:mm:ss Z"</span>]; <span class="fd">remove_field</span> => [<span class="st">"timestamp"</span>] }
+  <span class="pp">geoip</span>   { <span class="fd">source</span> => <span class="st">"clientip"</span>; <span class="fd">target</span> => <span class="st">"geoip"</span> }
+  <span class="pp">mutate</span>  { <span class="fd">convert</span> => { <span class="st">"response"</span> => <span class="st">"integer"</span> }; <span class="fd">rename</span> => { <span class="st">"clientip"</span> => <span class="st">"source.ip"</span> } }
+}
+<span class="kw">output</span> {
+  <span class="cm"># Conditional routing to different indices</span>
+  <span class="pp">if</span> [response] >= <span class="vl">500</span> {
+    <span class="pp">elasticsearch</span> { <span class="fd">hosts</span> => [<span class="st">"https://es:9200"</span>]; <span class="fd">index</span> => <span class="st">"errors-%{+YYYY.MM.dd}"</span>; <span class="fd">api_key</span> => <span class="st">"${ES_KEY}"</span> }
+  } <span class="pp">else</span> {
+    <span class="pp">elasticsearch</span> { <span class="fd">hosts</span> => [<span class="st">"https://es:9200"</span>]; <span class="fd">index</span> => <span class="st">"nginx-%{+YYYY.MM.dd}"</span>; <span class="fd">api_key</span> => <span class="st">"${ES_KEY}"</span> }
+  }
+}</div>
+    <div class="slbl">Ingest Pipeline vs Logstash</div>
+    <table class="tbl"><tr><th>Feature</th><th>Ingest Pipeline</th><th>Logstash</th></tr>
+      <tr><td>Location</td><td>Inside Elasticsearch</td><td>Separate process/server</td></tr>
+      <tr><td>Config format</td><td>JSON via API or Kibana UI</td><td>.conf DSL files</td></tr>
+      <tr><td>Conditional routing</td><td>Limited (reroute processor)</td><td>Full if/else between outputs</td></tr>
+      <tr><td>Fan-out</td><td>No — single ES output</td><td>Yes — multiple outputs simultaneously</td></tr>
+      <tr><td>Best for</td><td>Simple enrichment and field extraction</td><td>Complex routing, multi-source, fan-out</td></tr>
+    </table>
+    <button class="done-btn" onclick="markDone('c4',4,this)">☐ Mark Complete</button>
+  </div>
+</div>
+
+<!-- OBJ 5 -->
+<div class="card" id="c5">
+  <div class="card-hd" onclick="tog('c5')"><span class="card-num">05</span>
+    <div class="card-meta"><div class="card-section">ECS</div><div class="card-title">Apply the Elastic Common Schema (ECS)</div><div class="card-tags"><span class="ctag ec">ECS</span><span class="ctag hi">Core Exam</span></div></div>
+    <div class="card-right"><div class="done-check" id="dc5">✓</div><span class="card-chev">▾</span></div>
+  </div>
+  <div class="card-body">
+    <p class="prose">The <strong>Elastic Common Schema (ECS)</strong> is a standardized field naming convention. Using ECS field names ensures your data works with all Elastic apps and enables cross-source correlation. All Elastic Beats output ECS-formatted data by default.</p>
+    <div class="callout exam"><span class="callout-icon">🎯</span><div><strong>Exam focus:</strong> Know the major ECS field sets, their correct names, and how to use the rename processor to map custom fields to ECS.</div></div>
+    <div class="slbl">Raw → ECS Field Transformation</div>
+    <div class="ecs-demo">
+      <div class="ecs-header"><span class="ecs-label">Ingest Pipeline ECS Rename Transformation</span></div>
+      <div class="ecs-grid-display">
+        <div class="ecs-col">
+          <div class="ecs-col-hd before">Before — Custom Fields</div>
+          <div class="ecs-row custom"><span class="ecs-field">ip_address</span><span class="ecs-val">203.0.113.45</span><span class="ecs-badge cust">Custom</span></div>
+          <div class="ecs-row custom"><span class="ecs-field">resp_code</span><span class="ecs-val">200</span><span class="ecs-badge cust">Custom</span></div>
+          <div class="ecs-row custom"><span class="ecs-field">req_bytes</span><span class="ecs-val">14523</span><span class="ecs-badge cust">Custom</span></div>
+          <div class="ecs-row custom"><span class="ecs-field">user_agent_str</span><span class="ecs-val">Mozilla/5.0…</span><span class="ecs-badge cust">Custom</span></div>
+          <div class="ecs-row custom"><span class="ecs-field">host_name</span><span class="ecs-val">web-01.prod</span><span class="ecs-badge cust">Custom</span></div>
+          <div class="ecs-row custom"><span class="ecs-field">svc_name</span><span class="ecs-val">nginx</span><span class="ecs-badge cust">Custom</span></div>
+        </div>
+        <div class="ecs-col">
+          <div class="ecs-col-hd after">After — ECS Fields</div>
+          <div class="ecs-row mapped"><span class="ecs-field">source.ip</span><span class="ecs-val">203.0.113.45</span><span class="ecs-badge core">Core</span></div>
+          <div class="ecs-row mapped"><span class="ecs-field">http.response.status_code</span><span class="ecs-val">200</span><span class="ecs-badge core">Core</span></div>
+          <div class="ecs-row mapped"><span class="ecs-field">http.response.bytes</span><span class="ecs-val">14523</span><span class="ecs-badge core">Core</span></div>
+          <div class="ecs-row mapped"><span class="ecs-field">user_agent.original</span><span class="ecs-val">Mozilla/5.0…</span><span class="ecs-badge ext">Extended</span></div>
+          <div class="ecs-row mapped"><span class="ecs-field">host.name</span><span class="ecs-val">web-01.prod</span><span class="ecs-badge core">Core</span></div>
+          <div class="ecs-row mapped"><span class="ecs-field">service.name</span><span class="ecs-val">nginx</span><span class="ecs-badge core">Core</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="slbl">Key ECS Field Sets</div>
+    <table class="tbl"><tr><th>Field Set</th><th>Key Fields</th><th>Used for</th></tr>
+      <tr><td>@timestamp</td><td>@timestamp</td><td>Event time — always required</td></tr>
+      <tr><td>host.*</td><td>host.name, host.ip, host.os.type</td><td>The machine generating the event</td></tr>
+      <tr><td>source.* / destination.*</td><td>source.ip, source.port, source.geo.*</td><td>Network origin/destination</td></tr>
+      <tr><td>service.*</td><td>service.name, service.type, service.version</td><td>Producing service identity</td></tr>
+      <tr><td>http.*</td><td>http.request.method, http.response.status_code, http.response.bytes</td><td>HTTP request/response</td></tr>
+      <tr><td>log.*</td><td>log.level, log.file.path, log.logger</td><td>Log metadata</td></tr>
+      <tr><td>trace.*</td><td>trace.id, transaction.id, span.id</td><td>APM distributed trace correlation</td></tr>
+      <tr><td>error.*</td><td>error.message, error.type, error.stack_trace</td><td>Error / exception context</td></tr>
+    </table>
+    <div class="quiz" id="q5"><div class="quiz-hdr">◆ Exam Question</div>
+      <div class="quiz-q">You extract a client IP into a field called <code>clientip</code>. To comply with ECS and enable cross-source correlation in Kibana, what should you rename it to?</div>
+      <div class="quiz-opts" id="qo5">
+        <div class="qo" onclick="doQ('q5',0,2)"><span class="ql">A</span><div class="qa">ip.address — the ECS standard for any IP address field</div></div>
+        <div class="qo" onclick="doQ('q5',1,2)"><span class="ql">B</span><div class="qa">network.source — the ECS network field for client connections</div></div>
+        <div class="qo" onclick="doQ('q5',2,2)"><span class="ql">C</span><div class="qa">source.ip — the ECS field for the origin IP address of a network connection</div></div>
+        <div class="qo" onclick="doQ('q5',3,2)"><span class="ql">D</span><div class="qa">Keep clientip — ECS doesn't mandate specific IP field names</div></div>
+      </div><div class="qfb" id="qf5"></div>
+    </div>
+    <button class="done-btn" onclick="markDone('c5',5,this)">☐ Mark Complete</button>
+  </div>
+</div>
+
+<!-- OBJ 6 -->
+<div class="card" id="c6">
+  <div class="card-hd" onclick="tog('c6')"><span class="card-num">06</span>
+    <div class="card-meta"><div class="card-section">Data Streams</div><div class="card-title">Create and Configure Data Streams</div><div class="card-tags"><span class="ctag es">Elasticsearch</span><span class="ctag hi">Core Exam</span></div></div>
+    <div class="card-right"><div class="done-check" id="dc6">✓</div><span class="card-chev">▾</span></div>
+  </div>
+  <div class="card-body">
+    <p class="prose">A <strong>data stream</strong> stores time-series data across multiple backing indices transparently. It is the recommended approach for logs, metrics, and traces in Elastic Observability. Documents are always <em>appended</em> to the current write index.</p>
+    <div class="callout exam"><span class="callout-icon">🎯</span><div><strong>Exam objective:</strong> Know data stream naming convention ({type}-{dataset}-{namespace}), how to create them, and their key constraints.</div></div>
+    <div class="slbl">Data Stream API</div>
+    <div class="code"><button class="copy-btn" onclick="cpCode(this)">COPY</button><span class="cm"># Naming: {type}-{dataset}-{namespace}</span>
+logs-nginx.access-production    <span class="cm"># nginx access logs, production env</span>
+metrics-system.cpu-staging       <span class="cm"># system cpu metrics, staging env</span>
+traces-apm.spans-default         <span class="cm"># APM spans, default namespace</span>
+
+<span class="cm"># Create (requires a matching index template with data_stream:{})</span>
+PUT <span class="fd">_data_stream/logs-nginx.access-production</span>
+
+<span class="cm"># Index a document (always append-only, @timestamp required)</span>
+POST <span class="fd">logs-nginx.access-production/_doc</span>
+{ <span class="kw">"@timestamp"</span>: <span class="st">"2026-02-27T10:30:00Z"</span>, <span class="kw">"message"</span>: <span class="st">"..."</span> }
+
+<span class="cm"># View details (backing indices, write index)</span>
+GET <span class="fd">_data_stream/logs-nginx.access-production</span>
+
+<span class="cm"># Manual rollover — creates a new backing write index</span>
+POST <span class="fd">logs-nginx.access-production/_rollover</span></div>
+    <div class="slbl">Data Stream vs Regular Index</div>
+    <table class="tbl"><tr><th>Feature</th><th>Data Stream</th><th>Regular Index</th></tr>
+      <tr><td>Best for</td><td>Time-series: logs, metrics, traces</td><td>Non-time-series: products, users, config</td></tr>
+      <tr><td>Write</td><td>Append-only to current write index</td><td>Create, update, delete any document</td></tr>
+      <tr><td>@timestamp</td><td>Required in every document</td><td>Optional</td></tr>
+      <tr><td>Backing storage</td><td>Multiple hidden .ds-* indices</td><td>Single index</td></tr>
+      <tr><td>ILM</td><td>Native automatic rollover</td><td>Manual ILM attachment</td></tr>
+    </table>
+    <div class="callout warn"><span class="callout-icon">⚠</span><div>Documents in data streams <strong>cannot be updated directly</strong>. Use <code>update_by_query</code> or <code>delete_by_query</code> for modifications.</div></div>
+    <button class="done-btn" onclick="markDone('c6',6,this)">☐ Mark Complete</button>
+  </div>
+</div>
+
+<!-- OBJ 7 -->
+<div class="card" id="c7">
+  <div class="card-hd" onclick="tog('c7')"><span class="card-num">07</span>
+    <div class="card-meta"><div class="card-section">Index Templates</div><div class="card-title">Create and Configure Index Templates</div><div class="card-tags"><span class="ctag es">Elasticsearch</span><span class="ctag hi">Core Exam</span></div></div>
+    <div class="card-right"><div class="done-check" id="dc7">✓</div><span class="card-chev">▾</span></div>
+  </div>
+  <div class="card-body">
+    <p class="prose">An <strong>index template</strong> automatically applies settings, mappings, and aliases when a new index is created matching its pattern. For data streams, a matching template with <code>"data_stream": {}</code> is <em>required before the stream can be created</em>.</p>
+    <div class="slbl">Index Template API</div>
+    <div class="code"><button class="copy-btn" onclick="cpCode(this)">COPY</button>PUT <span class="fd">_index_template/logs-nginx-template</span>
+{
+  <span class="kw">"index_patterns"</span>: [<span class="st">"logs-nginx.*"</span>],   <span class="cm">// matches by wildcard pattern</span>
+  <span class="kw">"data_stream"</span>: {},                      <span class="cm">// enables data stream creation</span>
+  <span class="kw">"priority"</span>: <span class="vl">200</span>,                        <span class="cm">// higher priority wins on conflicts</span>
+  <span class="kw">"composed_of"</span>: [<span class="st">"logs-ecs-mappings"</span>, <span class="st">"logs-default-settings"</span>],
+  <span class="kw">"template"</span>: {
+    <span class="kw">"settings"</span>: {
+      <span class="kw">"number_of_shards"</span>: <span class="vl">1</span>, <span class="kw">"number_of_replicas"</span>: <span class="vl">1</span>,
+      <span class="kw">"index.lifecycle.name"</span>: <span class="st">"logs-default-policy"</span>
+    },
+    <span class="kw">"mappings"</span>: {
+      <span class="kw">"properties"</span>: {
+        <span class="kw">"@timestamp"</span>: { <span class="kw">"type"</span>: <span class="st">"date"</span> },
+        <span class="kw">"source.ip"</span>: { <span class="kw">"type"</span>: <span class="st">"ip"</span> },
+        <span class="kw">"http.response.status_code"</span>: { <span class="kw">"type"</span>: <span class="st">"integer"</span> },
+        <span class="kw">"message"</span>: { <span class="kw">"type"</span>: <span class="st">"text"</span> }
+      }
+    }
+  }
+}</div>
+    <div class="quiz" id="q7"><div class="quiz-hdr">◆ Exam Question</div>
+      <div class="quiz-q">You want to create a data stream named <code>logs-myapp.errors-production</code>. What must already exist in Elasticsearch?</div>
+      <div class="quiz-opts" id="qo7">
+        <div class="qo" onclick="doQ('q7',0,1)"><span class="ql">A</span><div class="qa">An ILM policy — the data stream won't be created without one</div></div>
+        <div class="qo" onclick="doQ('q7',1,1)"><span class="ql">B</span><div class="qa">An index template with index_patterns that matches logs-myapp.errors-production, including "data_stream": {}</div></div>
+        <div class="qo" onclick="doQ('q7',2,1)"><span class="ql">C</span><div class="qa">A rollover alias pointing to an existing index</div></div>
+        <div class="qo" onclick="doQ('q7',3,1)"><span class="ql">D</span><div class="qa">A backing index manually created as .ds-logs-myapp.errors-production-000001</div></div>
+      </div><div class="qfb" id="qf7"></div>
+    </div>
+    <button class="done-btn" onclick="markDone('c7',7,this)">☐ Mark Complete</button>
+  </div>
+</div>
+
+<!-- OBJ 8 -->
+<div class="card" id="c8">
+  <div class="card-hd" onclick="tog('c8')"><span class="card-num">08</span>
+    <div class="card-meta"><div class="card-section">Component Templates</div><div class="card-title">Use Component Templates for Reusable Configuration</div><div class="card-tags"><span class="ctag es">Elasticsearch</span></div></div>
+    <div class="card-right"><div class="done-check" id="dc8">✓</div><span class="card-chev">▾</span></div>
+  </div>
+  <div class="card-body">
+    <p class="prose"><strong>Component templates</strong> are reusable snippets of settings, mappings, or aliases composed into index templates via <code>composed_of</code>. They prevent duplication across many index templates and are the DRY principle applied to Elasticsearch configuration.</p>
+    <div class="slbl">Component Template Pattern</div>
+    <div class="code"><button class="copy-btn" onclick="cpCode(this)">COPY</button><span class="cm"># 1. Create reusable mapping component</span>
+PUT <span class="fd">_component_template/logs-ecs-mappings</span>
+{
+  <span class="kw">"template"</span>: { <span class="kw">"mappings"</span>: { <span class="kw">"properties"</span>: {
+    <span class="kw">"@timestamp"</span>: { <span class="kw">"type"</span>: <span class="st">"date"</span> },
+    <span class="kw">"host.name"</span>:  { <span class="kw">"type"</span>: <span class="st">"keyword"</span> },
+    <span class="kw">"source.ip"</span>:  { <span class="kw">"type"</span>: <span class="st">"ip"</span> },
+    <span class="kw">"message"</span>:    { <span class="kw">"type"</span>: <span class="st">"text"</span> },
+    <span class="kw">"log.level"</span>:  { <span class="kw">"type"</span>: <span class="st">"keyword"</span> }
+  }}}
+}
+<span class="cm"># 2. Create reusable settings component</span>
+PUT <span class="fd">_component_template/logs-default-settings</span>
+{
+  <span class="kw">"template"</span>: { <span class="kw">"settings"</span>: {
+    <span class="kw">"number_of_shards"</span>: <span class="vl">1</span>, <span class="kw">"number_of_replicas"</span>: <span class="vl">1</span>,
+    <span class="kw">"index.lifecycle.name"</span>: <span class="st">"logs-default-policy"</span>
+  }}
+}
+<span class="cm"># 3. Compose into multiple index templates (DRY)</span>
+PUT <span class="fd">_index_template/logs-nginx-template</span>
+{
+  <span class="kw">"index_patterns"</span>: [<span class="st">"logs-nginx.*"</span>], <span class="kw">"data_stream"</span>: {}, <span class="kw">"priority"</span>: <span class="vl">200</span>,
+  <span class="kw">"composed_of"</span>: [<span class="st">"logs-ecs-mappings"</span>, <span class="st">"logs-default-settings"</span>],
+  <span class="cm">// Only add nginx-specific fields here</span>
+  <span class="kw">"template"</span>: { <span class="kw">"mappings"</span>: { <span class="kw">"properties"</span>: {
+    <span class="kw">"http.response.status_code"</span>: { <span class="kw">"type"</span>: <span class="st">"integer"</span> }
+  }}}
+}</div>
+    <div class="callout info"><span class="callout-icon">ℹ</span><div>Component templates in <code>composed_of</code> merge in order. The index template's own <code>template</code> section applies last and overrides earlier components. Elastic ships built-in components like <strong>logs@mappings</strong> and <strong>metrics@settings</strong> you can extend.</div></div>
+    <button class="done-btn" onclick="markDone('c8',8,this)">☐ Mark Complete</button>
+  </div>
+</div>
+
+</div><!-- /cards -->
+
+<div class="cheatsheet">
+  <div class="cs-hd" onclick="toggleCS()"><span class="cs-hd-title">Topic 5 Quick Reference — Structuring Data</span><span class="cs-chev" id="csChev">▾ Expand</span></div>
+  <div class="cs-body" id="csBody">
+    <div class="cs-grid">
+      <div class="cs-item"><div class="cs-t">Pipeline APIs</div><div class="cs-d">PUT _ingest/pipeline/name<br>POST name/_simulate<br>GET _ingest/pipeline/name</div></div>
+      <div class="cs-item"><div class="cs-t">Apply Pipeline</div><div class="cs-d"><strong>index.default_pipeline</strong> (always)<br>?pipeline=name (per-request)<br>Beats: output.elasticsearch.pipeline</div></div>
+      <div class="cs-item"><div class="cs-t">Top Processors</div><div class="cs-d">grok · date · geoip · set<br>rename · remove · convert<br>dissect · user_agent · pipeline</div></div>
+      <div class="cs-item"><div class="cs-t">Grok Syntax</div><div class="cs-d">%{PATTERN:field}<br>%{PATTERN:field:type}<br>%{IP:src} %{NUMBER:port:int}</div></div>
+      <div class="cs-item"><div class="cs-t">Data Stream Naming</div><div class="cs-d"><strong>type-dataset-namespace</strong><br>logs-nginx.access-production<br>metrics-system.cpu-default</div></div>
+      <div class="cs-item"><div class="cs-t">Data Stream APIs</div><div class="cs-d">PUT _data_stream/name<br>GET _data_stream/name<br>POST name/_rollover</div></div>
+      <div class="cs-item"><div class="cs-t">Index Template</div><div class="cs-d">PUT _index_template/name<br>index_patterns + data_stream: {}<br>composed_of: [components]</div></div>
+      <div class="cs-item"><div class="cs-t">Key ECS Fields</div><div class="cs-d">@timestamp · host.name · source.ip<br>service.name · log.level<br>http.response.status_code</div></div>
+    </div>
+  </div>
+</div>
+</div><!-- /wrap -->
+</main>
+
+<footer>
+  <div class="wrap" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;width:100%">
+    <span class="ft">Elastic Cert Observability Eng · Topic 5 · Structuring Data · 8 Objectives</span>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a href="#" class="nav-btn" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">↑ Top</a>
+      <a href="#" class="nav-btn" onclick="alert('Open Topic 4: Uptime');return false;">← Uptime</a>
+      <a href="#" class="nav-btn primary" onclick="alert('Ask Claude for Topic 6: Working with Obs Data!');return false;">Topic 6: Obs Data →</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+// Pipeline builder
+const pDefs={
+  grok:{fields:[{id:'gf',l:'Source Field',t:'i',v:'message'},{id:'gp',l:'Pattern',t:'i',v:'%{IP:source.ip} %{WORD:http.request.method} %{URIPATH:url.path} HTTP/%{NUMBER:version} %{NUMBER:http.response.status_code:int}'},{id:'gi',l:'Ignore Missing',t:'s',o:['false','true']}],gen:v=>`<span class="ok">{</span>\n  <span class="kw">"grok"</span>: {\n    <span class="fd">"field"</span>: <span class="vl">"${v.gf}"</span>,\n    <span class="fd">"patterns"</span>: [<span class="vl">"${v.gp}"</span>],\n    <span class="fd">"ignore_missing"</span>: <span class="vl">${v.gi}</span>\n  }\n<span class="ok">}</span>`},
+  date:{fields:[{id:'df',l:'Source Field',t:'i',v:'timestamp'},{id:'dt',l:'Target Field',t:'i',v:'@timestamp'},{id:'dfmt',l:'Format',t:'i',v:'dd/MMM/yyyy:HH:mm:ss Z'},{id:'dtz',l:'Timezone',t:'i',v:'UTC'}],gen:v=>`<span class="ok">{</span>\n  <span class="kw">"date"</span>: {\n    <span class="fd">"field"</span>: <span class="vl">"${v.df}"</span>,\n    <span class="fd">"target_field"</span>: <span class="vl">"${v.dt}"</span>,\n    <span class="fd">"formats"</span>: [<span class="vl">"${v.dfmt}"</span>],\n    <span class="fd">"timezone"</span>: <span class="vl">"${v.dtz}"</span>\n  }\n<span class="ok">}</span>`},
+  set:{fields:[{id:'sf',l:'Target Field',t:'i',v:'event.dataset'},{id:'sv',l:'Value',t:'i',v:'nginx.access'},{id:'so',l:'Override',t:'s',o:['true','false']}],gen:v=>`<span class="ok">{</span>\n  <span class="kw">"set"</span>: {\n    <span class="fd">"field"</span>: <span class="vl">"${v.sf}"</span>,\n    <span class="fd">"value"</span>: <span class="vl">"${v.sv}"</span>,\n    <span class="fd">"override"</span>: <span class="vl">${v.so}</span>\n  }\n<span class="ok">}</span>`},
+  rename:{fields:[{id:'rf',l:'Source Field',t:'i',v:'clientip'},{id:'rt',l:'Target Field',t:'i',v:'source.ip'},{id:'ri',l:'Ignore Missing',t:'s',o:['true','false']}],gen:v=>`<span class="ok">{</span>\n  <span class="kw">"rename"</span>: {\n    <span class="fd">"field"</span>: <span class="vl">"${v.rf}"</span>,\n    <span class="fd">"target_field"</span>: <span class="vl">"${v.rt}"</span>,\n    <span class="fd">"ignore_missing"</span>: <span class="vl">${v.ri}</span>\n  }\n<span class="ok">}</span>`},
+  remove:{fields:[{id:'rmf',l:'Fields (comma-sep)',t:'i',v:'message,timestamp'},{id:'rmi',l:'Ignore Missing',t:'s',o:['true','false']}],gen:v=>{const f=v.rmf.split(',').map(x=>x.trim());const fs=f.length===1?`<span class="vl">"${f[0]}"</span>`:`[\n      ${f.map(x=>`<span class="vl">"${x}"`).join(',\n      ')}\n    ]`;return`<span class="ok">{</span>\n  <span class="kw">"remove"</span>: {\n    <span class="fd">"field"</span>: ${fs},\n    <span class="fd">"ignore_missing"</span>: <span class="vl">${v.rmi}</span>\n  }\n<span class="ok">}</span>`}},
+  convert:{fields:[{id:'cvf',l:'Field',t:'i',v:'http.response.status_code'},{id:'cvt',l:'Type',t:'s',o:['integer','float','string','boolean','long']},{id:'cvi',l:'Ignore Missing',t:'s',o:['true','false']}],gen:v=>`<span class="ok">{</span>\n  <span class="kw">"convert"</span>: {\n    <span class="fd">"field"</span>: <span class="vl">"${v.cvf}"</span>,\n    <span class="fd">"type"</span>: <span class="vl">"${v.cvt}"</span>,\n    <span class="fd">"ignore_missing"</span>: <span class="vl">${v.cvi}</span>\n  }\n<span class="ok">}</span>`},
+  gsub:{fields:[{id:'gsf',l:'Field',t:'i',v:'message'},{id:'gsp',l:'Pattern (regex)',t:'i',v:'\\d{3}-\\d{2}-\\d{4}'},{id:'gsr',l:'Replacement',t:'i',v:'***-**-****'}],gen:v=>`<span class="ok">{</span>\n  <span class="kw">"gsub"</span>: {\n    <span class="fd">"field"</span>: <span class="vl">"${v.gsf}"</span>,\n    <span class="fd">"pattern"</span>: <span class="vl">"${v.gsp}"</span>,\n    <span class="fd">"replacement"</span>: <span class="vl">"${v.gsr}"</span>\n  }\n<span class="ok">}</span>`},
+};
+let curProc='grok';
+function setPProc(p){
+  curProc=p;
+  Object.keys(pDefs).forEach(k=>{const b=document.getElementById('pbtn-'+k);if(b)b.classList.toggle('active',k===p);});
+  const def=pDefs[p];
+  document.getElementById('pipelineForm').innerHTML=def.fields.map(f=>`
+    <div class="pd-fg"><label class="pd-lbl">${f.l}</label>
+    ${f.t==='s'?`<select class="pd-sel" id="${f.id}">${f.o.map(o=>`<option>${o}</option>`).join('')}</select>`:`<input class="pd-inp" id="${f.id}" value="${f.v||''}"/>`}</div>`).join('')+
+    '<button class="pd-run" onclick="genPipeline()">▶ Generate JSON</button>';
+  genPipeline();
+}
+function genPipeline(){
+  const def=pDefs[curProc];const vals={};
+  def.fields.forEach(f=>{const el=document.getElementById(f.id);if(el)vals[f.id]=el.value;});
+  document.getElementById('pipelineOut').innerHTML=def.gen(vals);
+}
+setPProc('grok');
+
+// Grok tester
+const grokPresets={
+  nginx:{log:'203.0.113.45 - - [27/Feb/2026:10:30:00 +0000] "GET /api/products HTTP/1.1" 200 3421',pat:'%{IP:source.ip} ...',fields:{'source.ip':'203.0.113.45','timestamp':'27/Feb/2026:10:30:00 +0000','http.request.method':'GET','url.path':'/api/products','http.version':'1.1','http.response.status_code':200,'http.response.bytes':3421}},
+  apache:{log:'10.0.0.5 - admin [27/Feb/2026:11:15:42 +0000] "POST /login HTTP/1.1" 302 0',pat:'%{IP:source.ip} ...',fields:{'source.ip':'10.0.0.5','user.name':'admin','timestamp':'27/Feb/2026:11:15:42 +0000','http.request.method':'POST','url.path':'/login','http.response.status_code':302,'http.response.bytes':0}},
+  syslog:{log:'Feb 27 10:30:00 web-01 sshd[1234]: Failed password for root from 198.51.100.1 port 22 ssh2',pat:'%{MONTH} %{MONTHDAY} %{TIME} %{HOSTNAME:host.name} ...',fields:{'month':'Feb','day':'27','time':'10:30:00','host.name':'web-01','process':'sshd','process.pid':1234,'message':'Failed password for root from 198.51.100.1 port 22 ssh2'}},
+  app:{log:'2026-02-27T10:30:00.123Z ERROR [checkout-service] Payment failed for order 9981: card_declined',pat:'%{TIMESTAMP_ISO8601:@timestamp} %{LOGLEVEL:log.level} [%{DATA:service.name}] %{GREEDYDATA:message}',fields:{'@timestamp':'2026-02-27T10:30:00.123Z','log.level':'ERROR','service.name':'checkout-service','message':'Payment failed for order 9981: card_declined'}},
+};
+let activePreset='nginx';
+function setGrokPreset(k,btn){
+  activePreset=k;
+  document.querySelectorAll('.gd-preset').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const p=grokPresets[k];
+  document.getElementById('grokLog').value=p.log;
+  document.getElementById('grokPat').value=p.pat;
+  document.getElementById('grokResult').classList.remove('show');
+}
+function testGrok(){
+  const p=grokPresets[activePreset];
+  document.getElementById('grokResult').classList.add('show');
+  document.getElementById('grokFields').innerHTML=Object.entries(p.fields).map(([k,v])=>`<div class="gd-field"><span class="gd-fname">${k}</span><span class="gd-fval">${v}</span></div>`).join('');
+}
+const ng=grokPresets['nginx'];
+document.getElementById('grokLog').value=ng.log;
+document.getElementById('grokPat').value=ng.pat;
+
+// Quiz
+const qA={
+  q2:{c:0,ok:'✓ Correct! The grok processor uses named regex patterns (%{PATTERN:field}) to extract structured fields from unstructured text.',fail:'✗ grok is correct — it applies %{PATTERN:field} patterns to extract named captures from a text field like message.'},
+  q5:{c:2,ok:'✓ Correct! source.ip is the ECS standard field for the network origin IP address. Using ECS names enables all Kibana apps to correlate data automatically.',fail:'✗ Correct answer: source.ip. ECS specifies exact field names — using them enables cross-source correlation across all Elastic apps without custom config.'},
+  q7:{c:1,ok:'✓ Correct! A matching index template with "data_stream": {} and index_patterns covering the data stream name must exist before the data stream can be created.',fail:'✗ A matching index template (with data_stream: {} and matching index_patterns) is required. ILM and aliases are optional.'},
+};
+function doQ(qid,sel,correct){
+  const n=qid.replace('q','');
+  const opts=document.getElementById('qo'+n);
+  if(opts.querySelector('.locked'))return;
+  opts.querySelectorAll('.qo').forEach((o,i)=>{o.classList.add('locked');if(i===correct)o.classList.add('correct');else if(i===sel&&sel!==correct)o.classList.add('wrong');});
+  const fb=document.getElementById('qf'+n);
+  fb.className='qfb show '+(sel===correct?'correct':'wrong');
+  fb.textContent=qA[qid][sel===correct?'ok':'fail'];
+}
+function tog(id){document.getElementById(id).classList.toggle('open')}
+let dc=0;const T=8;
+function markDone(cardId,objIdx,btn){
+  const c=document.getElementById(cardId);
+  if(c.classList.contains('done'))return;
+  c.classList.add('done');btn.classList.add('marked');btn.textContent='✓ Complete';dc++;
+  const oi=document.getElementById('oi'+objIdx);if(oi)oi.classList.add('done-item');
+  document.getElementById('pFill').style.width=(dc/T*100)+'%';
+  document.getElementById('pNum').textContent=dc+'/'+T;
+}
+function toggleCS(){
+  const b=document.getElementById('csBody');const ch=document.getElementById('csChev');
+  ch.textContent=b.classList.toggle('open')?'▴ Collapse':'▾ Expand';
+}
+function cpCode(btn){
+  const txt=btn.parentElement.innerText.replace('COPY','').trim();
+  navigator.clipboard.writeText(txt).catch(()=>{});
+  btn.textContent='✓';setTimeout(()=>btn.textContent='COPY',1500);
+}
+</script>
+</body>
+</html>

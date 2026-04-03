@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elastic Certified Observability Engineer — Topic 1: Metrics</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,700;1,400&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,700&family=Mulish:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #0b0f0b;
+  --bg2:       #111611;
+  --surface:   #151d15;
+  --surface2:  #1c271c;
+  --border:    #1e3020;
+  --border2:   #2d4a2d;
+  --text:      #d4f0d4;
+  --text-dim:  #8ab88a;
+  --text-muted:#4a7a4a;
+  --green:     #4ade80;
+  --green2:    #86efac;
+  --lime:      #a3e635;
+  --amber:     #fbbf24;
+  --red:       #f87171;
+  --blue:      #60a5fa;
+  --elastic:   #ff6900;
+  --white:     #f0f8f0;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Mulish',sans-serif;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ── HEXAGONAL BG PATTERN ── */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100'%3E%3Cpath d='M28 66L0 50V16L28 0l28 16v34L28 66zM28 100L0 84V50l28-16 28 16v34L28 100z' fill='none' stroke='%231e3020' stroke-width='1'/%3E%3C/svg%3E");
+  background-size:56px 100px;
+  pointer-events:none;z-index:0;opacity:.5;
+}
+
+/* ── GLOWING ACCENT LINE ── */
+.top-accent{
+  height:3px;
+  background:linear-gradient(90deg,transparent,var(--green),var(--lime),var(--green),transparent);
+  position:relative;z-index:2;
+}
+
+.wrap{max-width:1080px;margin:0 auto;padding:0 32px;position:relative;z-index:1}
+
+/* ── CERT NAV BAR ── */
+.cert-nav{
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  padding:10px 32px;
+  display:flex;align-items:center;gap:16px;
+  flex-wrap:wrap;
+  position:relative;z-index:2;
+}
+.cert-name{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;letter-spacing:2px;
+  color:var(--text-muted);text-transform:uppercase;
+}
+.cert-sep{color:var(--border2);font-size:14px}
+.cert-exam{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;letter-spacing:1px;
+  color:var(--green);
+}
+.cert-divider{flex:1}
+.topic-pills{display:flex;gap:6px;flex-wrap:wrap}
+.tpill{
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  padding:4px 12px;border:1px solid var(--border2);
+  color:var(--text-muted);cursor:pointer;background:none;
+  transition:all .2s;letter-spacing:.5px;
+  white-space:nowrap;
+}
+.tpill:hover{border-color:var(--green);color:var(--green)}
+.tpill.active{border-color:var(--green);color:var(--green);background:rgba(74,222,128,.08)}
+.tpill.done{border-color:var(--lime);color:var(--lime)}
+
+/* ── HEADER ── */
+header{
+  padding:52px 0 44px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:48px;
+  position:relative;z-index:1;
+}
+.topic-eyebrow{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;letter-spacing:3px;
+  color:var(--green);margin-bottom:16px;
+  display:flex;align-items:center;gap:10px;
+  text-transform:uppercase;
+}
+.topic-eyebrow::before{
+  content:'▶';font-size:8px;
+  animation:blink 1.2s step-end infinite;
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+h1{
+  font-family:'Fraunces',serif;
+  font-size:clamp(48px,8vw,88px);
+  font-weight:900;line-height:.95;
+  letter-spacing:-2px;
+  margin-bottom:18px;
+  color:var(--white);
+}
+h1 .topic-num{
+  display:block;
+  font-size:.55em;
+  color:var(--text-muted);
+  letter-spacing:-1px;
+  font-weight:300;
+  font-style:italic;
+}
+h1 .topic-title{
+  display:block;
+  color:var(--green);
+  text-shadow:0 0 40px rgba(74,222,128,.25);
+}
+
+.header-desc{
+  font-size:15px;color:var(--text-dim);
+  max-width:640px;line-height:1.75;
+  margin-bottom:28px;font-weight:300;
+}
+
+/* progress */
+.prog-strip{
+  display:flex;align-items:center;gap:16px;
+  background:var(--surface);border:1px solid var(--border);
+  padding:12px 20px;flex-wrap:wrap;
+}
+.prog-lbl{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--text-muted)}
+.prog-bar{flex:1;min-width:140px;height:2px;background:var(--border2);overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--lime));transition:width .5s;width:0%;box-shadow:0 0 8px rgba(74,222,128,.5)}
+.prog-num{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--green);white-space:nowrap}
+
+/* ── OBJECTIVE CARDS ── */
+.obj-list{display:flex;flex-direction:column;gap:2px;margin-bottom:56px}
+
+.obj{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-left:3px solid transparent;
+  transition:border-color .2s;
+  animation:floatIn .4s ease both;
+}
+.obj:nth-child(1){animation-delay:.04s}
+.obj:nth-child(2){animation-delay:.09s}
+.obj:nth-child(3){animation-delay:.14s}
+.obj:nth-child(4){animation-delay:.19s}
+.obj:nth-child(5){animation-delay:.24s}
+.obj:nth-child(6){animation-delay:.29s}
+.obj:nth-child(7){animation-delay:.34s}
+.obj:nth-child(8){animation-delay:.39s}
+@keyframes floatIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+.obj:hover{border-color:var(--border2)}
+.obj.open{border-left-color:var(--green)}
+.obj.done{border-left-color:var(--lime)}
+
+.obj-hd{
+  display:flex;align-items:center;gap:14px;
+  padding:16px 22px;cursor:pointer;user-select:none;
+}
+.obj-hd:hover{background:rgba(74,222,128,.03)}
+.obj-idx{
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  color:var(--text-muted);min-width:24px;letter-spacing:1px;
+}
+.obj-name{flex:1;font-size:15px;font-weight:700;color:var(--text)}
+.obj-tags{display:flex;gap:5px}
+.ot{
+  font-family:'JetBrains Mono',monospace;font-size:9px;
+  padding:2px 7px;border:1px solid;letter-spacing:.5px;
+  text-transform:uppercase;
+}
+.ot.beat{border-color:rgba(74,222,128,.4);color:var(--green)}
+.ot.kibana{border-color:rgba(96,165,250,.4);color:var(--blue)}
+.ot.ml{border-color:rgba(251,191,36,.4);color:var(--amber)}
+.ot.agent{border-color:rgba(163,230,53,.4);color:var(--lime)}
+.ot.config{border-color:rgba(248,113,113,.4);color:var(--red)}
+
+.done-tag{
+  font-family:'JetBrains Mono',monospace;font-size:9px;
+  padding:2px 8px;border:1px solid rgba(163,230,53,.4);
+  color:var(--lime);letter-spacing:1px;display:none;
+}
+.obj.done .done-tag{display:block}
+.obj-chev{color:var(--text-muted);font-size:11px;transition:transform .25s}
+.obj.open .obj-chev{transform:rotate(180deg)}
+
+.obj-body{
+  display:none;padding:0 22px 26px;
+  border-top:1px solid var(--border);
+  animation:slideIn .3s ease;
+}
+.obj.open .obj-body{display:block}
+@keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+
+/* section label */
+.slbl{
+  font-family:'JetBrains Mono',monospace;font-size:9px;
+  letter-spacing:3px;text-transform:uppercase;
+  color:var(--green);margin-top:22px;margin-bottom:10px;
+  display:flex;align-items:center;gap:8px;
+}
+.slbl::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* prose */
+.prose{
+  font-size:14px;color:var(--text-dim);
+  line-height:1.8;margin-bottom:12px;font-weight:300;
+}
+.prose strong{color:var(--text);font-weight:700}
+.prose code{
+  font-family:'JetBrains Mono',monospace;font-size:12px;
+  background:var(--bg2);padding:1px 7px;
+  color:var(--green);border:1px solid var(--border2);
+}
+
+/* code block */
+.code{
+  background:var(--bg);border:1px solid var(--border2);
+  padding:16px 18px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;line-height:1.75;
+  overflow-x:auto;margin-bottom:14px;
+  position:relative;
+  border-left:3px solid var(--green);
+}
+.code .cm {color:var(--text-muted)}
+.code .kw {color:var(--lime)}
+.code .st {color:var(--green2)}
+.code .fd {color:var(--blue)}
+.code .vl {color:var(--amber)}
+.code .hl {color:var(--green)}
+.copy-btn{
+  position:absolute;top:8px;right:8px;
+  background:var(--border);border:none;
+  color:var(--text-muted);
+  font-family:'JetBrains Mono',monospace;font-size:9px;
+  padding:3px 8px;cursor:pointer;transition:all .2s;letter-spacing:.5px;
+}
+.copy-btn:hover{background:var(--green);color:var(--bg)}
+
+/* callouts */
+.box{
+  display:flex;gap:13px;padding:13px 16px;
+  margin-bottom:13px;font-size:13px;line-height:1.7;
+  color:var(--text-dim);font-weight:300;
+}
+.box.exam{background:rgba(255,105,0,.07);border-left:3px solid var(--elastic)}
+.box.tip {background:rgba(74,222,128,.06);border-left:3px solid var(--green)}
+.box.warn{background:rgba(251,191,36,.06);border-left:3px solid var(--amber)}
+.box.info{background:rgba(96,165,250,.06);border-left:3px solid var(--blue)}
+.box-icon{font-size:15px;flex-shrink:0;margin-top:2px}
+.box strong{color:var(--text)}
+
+/* table */
+.tbl{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px}
+.tbl th{
+  text-align:left;padding:7px 12px;
+  background:var(--surface2);
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--green);border-bottom:1px solid var(--border2);font-weight:400;
+}
+.tbl td{
+  padding:9px 12px;border-bottom:1px solid var(--border);
+  color:var(--text-dim);vertical-align:top;line-height:1.5;font-weight:300;
+}
+.tbl td:first-child{
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+  color:var(--lime);white-space:nowrap;
+}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:rgba(74,222,128,.03)}
+
+/* steps */
+.steps{display:flex;flex-direction:column;margin-bottom:14px}
+.step{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border)}
+.step:last-child{border-bottom:none}
+.snum{
+  width:26px;height:26px;background:var(--border2);
+  color:var(--green);display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+  flex-shrink:0;margin-top:1px;
+}
+.scontent .stitle{font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px}
+.scontent .sdesc{font-size:13px;color:var(--text-dim);line-height:1.5;font-weight:300}
+.scontent .sdesc code{
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+  background:var(--bg);padding:1px 6px;color:var(--green);border:1px solid var(--border2);
+}
+
+/* quiz */
+.quiz{
+  background:var(--surface2);border:1px solid var(--border2);
+  padding:18px;margin-top:10px;
+}
+.quiz-q{font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px;line-height:1.55}
+.quiz-opts{display:flex;flex-direction:column;gap:7px}
+.qo{
+  display:flex;align-items:flex-start;gap:11px;
+  padding:10px 15px;background:var(--surface);
+  border:1px solid var(--border);cursor:pointer;
+  transition:all .2s;font-size:13px;color:var(--text-dim);line-height:1.45;font-weight:300;
+}
+.qo:hover:not(.locked){border-color:var(--green);color:var(--text);background:rgba(74,222,128,.04)}
+.qo.correct{border-color:var(--green);background:rgba(74,222,128,.07);color:var(--text)}
+.qo.wrong   {border-color:var(--red);  background:rgba(248,113,113,.07);color:var(--text-muted)}
+.qo.locked  {cursor:default}
+.ql{font-family:'JetBrains Mono',monospace;font-size:11px;min-width:18px;color:var(--text-muted);margin-top:1px}
+.qo.correct .ql{color:var(--green)}
+.qo.wrong   .ql{color:var(--red)}
+.qfb{
+  margin-top:11px;padding:11px 15px;
+  font-size:12px;font-family:'JetBrains Mono',monospace;
+  line-height:1.65;display:none;font-weight:300;
+}
+.qfb.show{display:block}
+.qfb.correct{background:rgba(74,222,128,.08);border-left:3px solid var(--green);color:var(--text-dim)}
+.qfb.wrong  {background:rgba(248,113,113,.08);border-left:3px solid var(--red);  color:var(--text-dim)}
+
+/* done button */
+.done-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  margin-top:18px;background:transparent;
+  border:1px solid rgba(163,230,53,.4);
+  color:var(--lime);
+  font-family:'Mulish',sans-serif;font-weight:700;font-size:13px;
+  padding:8px 18px;cursor:pointer;transition:all .2s;
+}
+.done-btn:hover{background:rgba(163,230,53,.07);box-shadow:0 0 12px rgba(163,230,53,.15)}
+.done-btn.marked{background:rgba(163,230,53,.1)}
+
+/* ── INTERACTIVE DEMOS ── */
+/* Metrics map demo */
+.infra-map{
+  background:var(--bg);border:1px solid var(--border2);
+  overflow:hidden;margin-bottom:14px;
+}
+.infra-toolbar{
+  background:var(--surface2);border-bottom:1px solid var(--border);
+  padding:9px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.infra-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);flex:1;letter-spacing:1px}
+.sel{
+  background:var(--surface);border:1px solid var(--border2);
+  color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;
+  padding:4px 10px;outline:none;cursor:pointer;transition:border-color .2s;
+}
+.sel:focus{border-color:var(--green)}
+.infra-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:1px;background:var(--border);
+  padding:1px;
+}
+.infra-tile{
+  background:var(--surface);padding:12px 14px;
+  cursor:pointer;transition:all .2s;
+  position:relative;overflow:hidden;
+}
+.infra-tile:hover{background:var(--surface2)}
+.infra-tile::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  transition:background .3s;
+}
+.infra-tile.healthy::before{background:var(--green)}
+.infra-tile.warn::before{background:var(--amber)}
+.infra-tile.crit::before{background:var(--red)}
+.tile-name{
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+  color:var(--text-dim);margin-bottom:6px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.tile-metrics{display:flex;flex-direction:column;gap:3px}
+.tile-metric{
+  display:flex;justify-content:space-between;align-items:center;
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+}
+.tile-metric-name{color:var(--text-muted)}
+.tile-metric-val{font-weight:700}
+.tile-metric-val.ok{color:var(--green)}
+.tile-metric-val.warn{color:var(--amber)}
+.tile-metric-val.crit{color:var(--red)}
+
+/* Metricbeat config builder */
+.cfg-builder{
+  background:var(--bg);border:1px solid var(--border2);
+  overflow:hidden;margin-bottom:14px;
+}
+.cfg-toolbar{
+  background:var(--surface2);border-bottom:1px solid var(--border);
+  padding:9px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.cfg-editor{
+  display:grid;grid-template-columns:1fr 1fr;gap:0;
+}
+.cfg-form{
+  padding:16px;border-right:1px solid var(--border);
+}
+.cfg-form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.cfg-label{
+  font-family:'JetBrains Mono',monospace;font-size:9px;
+  letter-spacing:2px;color:var(--green);text-transform:uppercase;
+}
+.cfg-input,.cfg-sel{
+  background:var(--surface2);border:1px solid var(--border2);
+  color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;
+  padding:7px 10px;outline:none;transition:border-color .2s;
+}
+.cfg-input:focus,.cfg-sel:focus{border-color:var(--green)}
+.cfg-generate{
+  background:var(--green);border:none;
+  color:var(--bg);font-family:'Mulish',sans-serif;
+  font-weight:800;font-size:12px;letter-spacing:.5px;
+  padding:8px;cursor:pointer;width:100%;transition:all .2s;
+  margin-top:4px;
+}
+.cfg-generate:hover{background:var(--green2)}
+.cfg-output{
+  padding:16px;font-family:'JetBrains Mono',monospace;
+  font-size:11px;line-height:1.7;color:var(--text-dim);
+  overflow:auto;max-height:320px;background:var(--bg);
+}
+.cfg-output .y-key{color:var(--lime)}
+.cfg-output .y-val{color:var(--green2)}
+.cfg-output .y-str{color:var(--green)}
+.cfg-output .y-bool{color:var(--amber)}
+.cfg-output .y-num{color:var(--blue)}
+.cfg-output .y-com{color:var(--text-muted)}
+
+/* Metrics chart demo */
+.metrics-chart{
+  background:var(--bg);border:1px solid var(--border2);
+  overflow:hidden;margin-bottom:14px;
+}
+.mc-toolbar{
+  background:var(--surface2);border-bottom:1px solid var(--border);
+  padding:9px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+
+/* ── CHEATSHEET ── */
+.cheatsheet{
+  background:var(--surface);border:1px solid var(--border2);
+  overflow:hidden;margin-bottom:56px;
+}
+.cs-hd{
+  padding:16px 22px;cursor:pointer;
+  display:flex;align-items:center;gap:14px;
+  background:var(--surface2);border-bottom:1px solid var(--border);
+}
+.cs-hd-title{
+  font-family:'Fraunces',serif;font-size:20px;
+  font-weight:700;color:var(--text);flex:1;
+}
+.cs-chev{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);transition:transform .25s}
+.cs-body{display:none;padding:22px}
+.cs-body.open{display:block}
+.cs-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+  gap:10px;margin-bottom:18px;
+}
+.cs-item{
+  background:var(--bg2);border:1px solid var(--border);
+  padding:13px 15px;
+}
+.cs-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:5px}
+.cs-detail{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);line-height:1.6}
+
+/* ── FOOTER ── */
+footer{
+  background:var(--bg2);border-top:1px solid var(--border);
+  padding:28px 32px;display:flex;
+  justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:14px;position:relative;z-index:1;
+}
+.ft{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:1.5px}
+.nav-btn{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--surface);border:1px solid var(--border2);
+  color:var(--text-dim);font-family:'Mulish',sans-serif;
+  font-weight:700;font-size:13px;padding:9px 18px;
+  cursor:pointer;text-decoration:none;transition:all .2s;
+}
+.nav-btn:hover{border-color:var(--green);color:var(--green)}
+.nav-btn.primary{background:var(--green);border-color:var(--green);color:var(--bg);font-weight:800}
+.nav-btn.primary:hover{background:var(--green2)}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2)}
+</style>
+</head>
+<body>
+
+<div class="top-accent"></div>
+
+<!-- ── CERT NAV ── -->
+<div class="cert-nav">
+  <span class="cert-name">Elastic Certified Observability Engineer</span>
+  <span class="cert-sep">›</span>
+  <span class="cert-exam">Exam Prep Series</span>
+  <div class="cert-divider"></div>
+  <div class="topic-pills">
+    <button class="tpill active">01 · Metrics</button>
+    <button class="tpill" onclick="alert('Generate Topic 2: Logging!')">02 · Logging</button>
+    <button class="tpill" onclick="alert('Generate Topic 3: APM!')">03 · APM</button>
+    <button class="tpill" onclick="alert('Generate Topic 4: Uptime!')">04 · Uptime</button>
+    <button class="tpill" onclick="alert('Generate Topic 5: Structuring Data!')">05 · Structuring Data</button>
+    <button class="tpill" onclick="alert('Generate Topic 6: Working with Obs Data!')">06 · Obs Data</button>
+    <button class="tpill" onclick="alert('Generate Topic 7: Managing Data!')">07 · Managing Data</button>
+  </div>
+</div>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="wrap">
+    <div class="topic-eyebrow">Observability Engineer · Topic 01 of 07</div>
+    <h1>
+      <span class="topic-num">Infrastructure</span>
+      <span class="topic-title">Metrics</span>
+    </h1>
+    <p class="header-desc">Collect, analyze and visualize infrastructure metrics using Metricbeat, Elastic Agent, and the Kibana Metrics app. Understand how to monitor hosts, containers, and services at scale.</p>
+    <div class="prog-strip">
+      <span class="prog-lbl">Progress</span>
+      <div class="prog-bar"><div class="prog-fill" id="pFill"></div></div>
+      <span class="prog-num" id="pNum">0 / 8 objectives</span>
+    </div>
+  </div>
+</header>
+
+<main>
+<div class="wrap">
+<div class="obj-list" id="objList">
+
+  <!-- ══ OBJ 1 ══ -->
+  <div class="obj open" id="o1">
+    <div class="obj-hd" onclick="tog('o1')">
+      <span class="obj-idx">01</span>
+      <span class="obj-name">Use the Metrics App to Analyze Infrastructure</span>
+      <div class="obj-tags"><span class="ot kibana">Kibana</span></div>
+      <span class="done-tag">✓ DONE</span>
+      <span class="obj-chev">▾</span>
+    </div>
+    <div class="obj-body">
+      <p class="prose">The <strong>Metrics app</strong> (now part of Kibana Observability) provides a unified view of infrastructure metrics. It displays hosts, containers, pods, and services as tiles colour-coded by health, and lets you drill into any entity for detailed time-series charts.</p>
+
+      <div class="box exam"><span class="box-icon">🎯</span><div><strong>Exam objective:</strong> "Use the Metrics app in Kibana to analyze and answer questions about metrics collected in Elasticsearch." You must be able to navigate the Inventory view, filter it, drill into a host, and read metrics off the charts to answer specific questions.</div></div>
+
+      <div class="slbl">Metrics App Layout</div>
+      <div class="code">
+<span class="cm"># Navigation: Kibana → Observability → Infrastructure</span>
+
+<span class="kw">INVENTORY VIEW</span>  (default)
+  Shows all hosts/pods/containers/services as tiles
+  Color = health status based on metric thresholds
+  <span class="fd">Group by</span>: cloud provider, region, AZ, service type
+  <span class="fd">Sort by</span>: CPU %, Memory %, Network Inbound/Outbound, Disk I/O
+
+<span class="kw">METRICS EXPLORER</span>
+  Build custom time-series charts
+  Select metric fields, aggregate (avg/max/sum), split by field
+  Good for: custom queries not in Inventory
+
+<span class="kw">HOST/POD DETAIL</span>  (click any tile)
+  CPU Usage, Memory, Load, Network, Disk
+  Time-series charts with anomaly detection overlay
+  Logs correlation panel at the bottom
+      </div>
+
+      <div class="slbl">Interactive Infrastructure Inventory Demo</div>
+      <div class="infra-map">
+        <div class="infra-toolbar">
+          <span class="infra-label">INFRASTRUCTURE INVENTORY · HOSTS</span>
+          <select class="sel" onchange="filterMetrics(this.value)">
+            <option value="all">All hosts</option>
+            <option value="healthy">Healthy only</option>
+            <option value="warn">Warnings</option>
+            <option value="crit">Critical</option>
+          </select>
+          <select class="sel" onchange="sortMetrics(this.value)">
+            <option value="cpu">Sort: CPU %</option>
+            <option value="mem">Sort: Memory %</option>
+            <option value="name">Sort: Name A-Z</option>
+          </select>
+        </div>
+        <div class="infra-grid" id="infraGrid"></div>
+      </div>
+      <p class="prose" style="margin-top:8px">Click any tile above to simulate drilling into a host — in the real Metrics app, you get full time-series charts for CPU, memory, network and disk.</p>
+
+      <div class="slbl">Key Metrics to Know</div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <tr><th>Metric</th><th>Field</th><th>What it shows</th></tr>
+          <tr><td>CPU Usage %</td><td><code style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--lime)">system.cpu.total.pct</code></td><td>Percentage of CPU in use across all cores</td></tr>
+          <tr><td>Memory Usage %</td><td><code style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--lime)">system.memory.actual.used.pct</code></td><td>% of RAM currently used</td></tr>
+          <tr><td>Network In</td><td><code style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--lime)">system.network.in.bytes</code></td><td>Bytes received per second</td></tr>
+          <tr><td>Network Out</td><td><code style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--lime)">system.network.out.bytes</code></td><td>Bytes sent per second</td></tr>
+          <tr><td>Disk Read</td><td><code style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--lime)">system.diskio.read.bytes</code></td><td>Disk read throughput</td></tr>
+          <tr><td>Load (1m)</td><td><code style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--lime)">system.load.1</code></td><td>1-minute load average</td></tr>
+        </table>
+      </div>
+      <button class="done-btn" onclick="markDone('o1',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ══ OBJ 2 ══ -->
+  <div class="obj" id="o2">
+    <div class="obj-hd" onclick="tog('o2')">
+      <span class="obj-idx">02</span>
+      <span class="obj-name">Enable and Analyze Predefined ML Jobs for Metrics</span>
+      <div class="obj-tags"><span class="ot ml">ML</span><span class="ot kibana">Kibana</span></div>
+      <span class="done-tag">✓ DONE</span>
+      <span class="obj-chev">▾</span>
+    </div>
+    <div class="obj-body">
+      <p class="prose">The Metrics app ships with <strong>predefined Machine Learning jobs</strong> that detect anomalies in your infrastructure metrics automatically — no ML expertise required. You just click "Enable" and they start running against your data.</p>
+
+      <div class="box exam"><span class="box-icon">🎯</span><div><strong>Exam objective:</strong> "Use the Metrics app to enable and analyze the predefined machine learning jobs." Know how to navigate to them, enable them, and interpret the anomaly results in the UI.</div></div>
+
+      <div class="slbl">Predefined Metrics ML Jobs</div>
+      <table class="tbl">
+        <tr><th>ML Job</th><th>What it detects</th><th>Detector</th></tr>
+        <tr><td>metrics_hosts_memory_usage</td><td>Unusual memory usage per host</td><td>mean(system.memory.actual.used.pct) per host</td></tr>
+        <tr><td>metrics_hosts_network_in</td><td>Unusual inbound network traffic</td><td>max(system.network.in.bytes) per host</td></tr>
+        <tr><td>metrics_hosts_network_out</td><td>Unusual outbound network traffic</td><td>max(system.network.out.bytes) per host</td></tr>
+        <tr><td>metrics_k8s_memory_usage</td><td>Unusual memory in Kubernetes pods</td><td>mean(kubernetes.pod.memory.usage.bytes) per pod</td></tr>
+        <tr><td>metrics_k8s_network_in</td><td>Unusual Kubernetes pod network traffic</td><td>max(kubernetes.pod.network.rx.bytes) per pod</td></tr>
+      </table>
+
+      <div class="slbl">How to Enable Predefined ML Jobs</div>
+      <div class="steps">
+        <div class="step"><div class="snum">1</div><div class="scontent"><div class="stitle">Open the Metrics Inventory or Explorer</div><div class="sdesc">Kibana → Observability → Infrastructure</div></div></div>
+        <div class="step"><div class="snum">2</div><div class="scontent"><div class="stitle">Click "Enable anomaly detection"</div><div class="sdesc">Found on the host tile detail view, or via the ML settings in the Metrics app toolbar.</div></div></div>
+        <div class="step"><div class="snum">3</div><div class="scontent"><div class="stitle">Select the jobs to enable</div><div class="sdesc">Pick from the list of predefined jobs for your data type (hosts, Kubernetes, Docker).</div></div></div>
+        <div class="step"><div class="snum">4</div><div class="scontent"><div class="stitle">Wait for results</div><div class="sdesc">Jobs run on historical data first (datafeed), then continue in real-time. Anomaly scores appear on the inventory tiles.</div></div></div>
+        <div class="step"><div class="snum">5</div><div class="scontent"><div class="stitle">Analyze anomalies</div><div class="sdesc">Tiles with anomalies show a warning indicator. Click a tile → "Anomaly detection" tab to see the detailed anomaly timeline.</div></div></div>
+      </div>
+
+      <div class="box tip"><span class="box-icon">💡</span><div>Anomalies are displayed directly on the Inventory tile as a small warning icon. Click into the host and switch to the <strong>Anomaly detection</strong> tab to see the anomaly score timeline alongside the raw metric values.</div></div>
+      <button class="done-btn" onclick="markDone('o2',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ══ OBJ 3 ══ -->
+  <div class="obj" id="o3">
+    <div class="obj-hd" onclick="tog('o3')">
+      <span class="obj-idx">03</span>
+      <span class="obj-name">Configure Metricbeat to Collect Metrics</span>
+      <div class="obj-tags"><span class="ot beat">Metricbeat</span><span class="ot config">Config</span></div>
+      <span class="done-tag">✓ DONE</span>
+      <span class="obj-chev">▾</span>
+    </div>
+    <div class="obj-body">
+      <p class="prose"><strong>Metricbeat</strong> is a lightweight shipper that collects system and service metrics from hosts and ships them to Elasticsearch. It uses <strong>modules</strong> (system, docker, kubernetes, nginx, mysql…) and <strong>metricsets</strong> (sub-datasets within a module).</p>
+
+      <div class="box exam"><span class="box-icon">🎯</span><div><strong>Exam tasks include:</strong> Configuring Metricbeat modules, setting up output to Elasticsearch, enabling and disabling specific metricsets, and configuring the collection interval.</div></div>
+
+      <div class="slbl">Interactive Metricbeat Config Builder</div>
+      <div class="cfg-builder">
+        <div class="cfg-toolbar">
+          <span class="infra-label">METRICBEAT.YML GENERATOR</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--green)">INTERACTIVE</span>
+        </div>
+        <div class="cfg-editor">
+          <div class="cfg-form">
+            <div class="cfg-form-group">
+              <label class="cfg-label">Module</label>
+              <select class="cfg-sel" id="cfgModule" onchange="genConfig()">
+                <option value="system">system</option>
+                <option value="docker">docker</option>
+                <option value="kubernetes">kubernetes</option>
+                <option value="nginx">nginx</option>
+                <option value="mysql">mysql</option>
+                <option value="redis">redis</option>
+              </select>
+            </div>
+            <div class="cfg-form-group">
+              <label class="cfg-label">Collection Period</label>
+              <select class="cfg-sel" id="cfgPeriod" onchange="genConfig()">
+                <option value="10s">10s</option>
+                <option value="30s">30s</option>
+                <option value="1m" selected>1m</option>
+                <option value="5m">5m</option>
+              </select>
+            </div>
+            <div class="cfg-form-group">
+              <label class="cfg-label">Elasticsearch Host</label>
+              <input class="cfg-input" id="cfgES" value="http://localhost:9200" oninput="genConfig()"/>
+            </div>
+            <div class="cfg-form-group">
+              <label class="cfg-label">Index Name</label>
+              <input class="cfg-input" id="cfgIdx" value="metricbeat-*" oninput="genConfig()"/>
+            </div>
+            <div class="cfg-form-group">
+              <label class="cfg-label">Add Processors</label>
+              <select class="cfg-sel" id="cfgProc" onchange="genConfig()">
+                <option value="none">None</option>
+                <option value="geoip">Add GeoIP</option>
+                <option value="dns">Reverse DNS</option>
+                <option value="drop">Drop fields</option>
+              </select>
+            </div>
+            <button class="cfg-generate" onclick="genConfig()">⚙ Generate Config</button>
+          </div>
+          <div class="cfg-output" id="cfgOut">
+            <span style="color:var(--text-muted)">← Configure settings and click Generate</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="slbl">Key Metricbeat Commands</div>
+      <div class="code">
+<button class="copy-btn" onclick="cpCode(this)">copy</button>
+<span class="cm"># Enable a module</span>
+metricbeat modules enable <span class="vl">docker</span>
+
+<span class="cm"># List enabled modules</span>
+metricbeat modules list
+
+<span class="cm"># Test configuration</span>
+metricbeat test config -e
+
+<span class="cm"># Test Elasticsearch connection</span>
+metricbeat test output
+
+<span class="cm"># Run setup (creates dashboards, ILM policy, index template)</span>
+metricbeat setup -e
+
+<span class="cm"># Start Metricbeat</span>
+systemctl start metricbeat
+      </div>
+
+      <div class="box warn"><span class="box-icon">⚠️</span><div>Always run <code>metricbeat test config -e</code> before starting — syntax errors in the YAML will prevent Metricbeat from launching and the error messages give you the exact line to fix.</div></div>
+      <button class="done-btn" onclick="markDone('o3',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ══ OBJ 4 ══ -->
+  <div class="obj" id="o4">
+    <div class="obj-hd" onclick="tog('o4')">
+      <span class="obj-idx">04</span>
+      <span class="obj-name">Metricbeat Modules &amp; Metricsets</span>
+      <div class="obj-tags"><span class="ot beat">Metricbeat</span></div>
+      <span class="done-tag">✓ DONE</span>
+      <span class="obj-chev">▾</span>
+    </div>
+    <div class="obj-body">
+      <p class="prose">A <strong>module</strong> groups related metrics from a single technology (e.g. MySQL). Each module contains <strong>metricsets</strong> — specific datasets within that technology. You enable/disable metricsets to control what gets collected.</p>
+
+      <div class="slbl">Common Modules &amp; Their Metricsets</div>
+      <table class="tbl">
+        <tr><th>Module</th><th>Key Metricsets</th><th>Data collected</th></tr>
+        <tr><td>system</td><td>cpu, memory, network, diskio, filesystem, process, load</td><td>Host OS metrics</td></tr>
+        <tr><td>docker</td><td>container, cpu, memory, network, diskio, info</td><td>Docker container metrics</td></tr>
+        <tr><td>kubernetes</td><td>node, pod, container, state_node, state_pod, event</td><td>K8s cluster metrics</td></tr>
+        <tr><td>nginx</td><td>stubstatus</td><td>Active connections, requests/sec</td></tr>
+        <tr><td>mysql</td><td>status, galera_status, query_cache</td><td>DB queries, connections, InnoDB</td></tr>
+        <tr><td>redis</td><td>info, key, keyspace</td><td>Cache hits, memory, replication</td></tr>
+        <tr><td>aws</td><td>ec2, rds, s3, sqs, billing, cloudwatch</td><td>AWS service metrics via CloudWatch</td></tr>
+      </table>
+
+      <div class="code">
+<button class="copy-btn" onclick="cpCode(this)">copy</button>
+<span class="cm"># modules.d/system.yml — example configuration</span>
+<span class="y-key">- module</span><span class="y-val">: system</span>
+  <span class="y-key">metricsets</span><span class="y-val">:</span>
+    <span class="y-val">- cpu</span>
+    <span class="y-val">- memory</span>
+    <span class="y-val">- network</span>
+    <span class="y-val">- diskio</span>
+    <span class="y-val">- filesystem</span>
+    <span class="y-val">- process</span>
+  <span class="y-key">enabled</span><span class="y-val">:</span> <span class="y-bool">true</span>
+  <span class="y-key">period</span><span class="y-val">: 10s</span>
+  <span class="y-key">processes</span><span class="y-val">: ['.*']</span>   <span class="cm"># collect metrics for all processes</span>
+  <span class="y-key">cpu.metrics</span><span class="y-val">: ["percentages","normalized_percentages"]</span>
+      </div>
+
+      <div class="slbl">Practice Quiz</div>
+      <div class="quiz" id="q4">
+        <div class="quiz-q">You only want Metricbeat to collect CPU and memory metrics from the <code>system</code> module — not disk or network. How do you configure this?</div>
+        <div class="quiz-opts" id="qo4">
+          <div class="qo" onclick="doQ('q4',0,2)"><span class="ql">A</span><span>Set <code>enabled: false</code> on the entire system module</span></div>
+          <div class="qo" onclick="doQ('q4',1,2)"><span class="ql">B</span><span>Delete the entire modules.d/system.yml file</span></div>
+          <div class="qo" onclick="doQ('q4',2,2)"><span class="ql">C</span><span>In modules.d/system.yml, list only <code>cpu</code> and <code>memory</code> under <code>metricsets</code></span></div>
+          <div class="qo" onclick="doQ('q4',3,2)"><span class="ql">D</span><span>Use a KQL filter in Kibana to exclude disk and network fields</span></div>
+        </div>
+        <div class="qfb" id="qf4"></div>
+      </div>
+      <button class="done-btn" onclick="markDone('o4',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ══ OBJ 5 ══ -->
+  <div class="obj" id="o5">
+    <div class="obj-hd" onclick="tog('o5')">
+      <span class="obj-idx">05</span>
+      <span class="obj-name">Configure Metricbeat for Stack Monitoring</span>
+      <div class="obj-tags"><span class="ot beat">Metricbeat</span><span class="ot kibana">Kibana</span></div>
+      <span class="done-tag">✓ DONE</span>
+      <span class="obj-chev">▾</span>
+    </div>
+    <div class="obj-body">
+      <p class="prose"><strong>Stack Monitoring</strong> uses Metricbeat to monitor the Elastic Stack itself — Elasticsearch nodes, Kibana instances, Logstash, and Beats. This is the <em>recommended</em> approach (replacing the older internal collection method).</p>
+
+      <div class="box exam"><span class="box-icon">🎯</span><div><strong>Exam objective:</strong> "Configure Metricbeat to gather Stack Monitoring data." You need to know how to enable the <code>elasticsearch</code>, <code>kibana</code>, and <code>logstash</code> modules on Metricbeat and point them at your Stack components.</div></div>
+
+      <div class="code">
+<button class="copy-btn" onclick="cpCode(this)">copy</button>
+<span class="cm"># Step 1: Enable the elasticsearch-xpack module on Metricbeat</span>
+metricbeat modules enable <span class="vl">elasticsearch-xpack</span>
+
+<span class="cm"># modules.d/elasticsearch-xpack.yml</span>
+<span class="y-key">- module</span><span class="y-val">: elasticsearch</span>
+  <span class="y-key">xpack.enabled</span><span class="y-val">:</span> <span class="y-bool">true</span>
+  <span class="y-key">period</span><span class="y-val">: 10s</span>
+  <span class="y-key">hosts</span><span class="y-val">:</span>
+    <span class="y-val">- https://localhost:9200</span>
+  <span class="y-key">username</span><span class="y-val">: "remote_monitoring_user"</span>
+  <span class="y-key">password</span><span class="y-val">: "YOUR_PASSWORD"</span>
+
+<span class="cm"># Step 2: Enable kibana-xpack module</span>
+metricbeat modules enable <span class="vl">kibana-xpack</span>
+
+<span class="cm"># modules.d/kibana-xpack.yml</span>
+<span class="y-key">- module</span><span class="y-val">: kibana</span>
+  <span class="y-key">xpack.enabled</span><span class="y-val">:</span> <span class="y-bool">true</span>
+  <span class="y-key">period</span><span class="y-val">: 10s</span>
+  <span class="y-key">hosts</span><span class="y-val">:</span>
+    <span class="y-val">- "http://localhost:5601"</span>
+
+<span class="cm"># Step 3: Output Metricbeat data to the MONITORING cluster</span>
+<span class="cm"># (best practice: use a separate monitoring cluster)</span>
+<span class="y-key">output.elasticsearch</span><span class="y-val">:</span>
+  <span class="y-key">hosts</span><span class="y-val">: ["https://monitoring-cluster:9200"]</span>
+      </div>
+
+      <div class="box info"><span class="box-icon">ℹ️</span><div>Use the built-in <code>remote_monitoring_user</code> account for Stack Monitoring — it has exactly the privileges needed. Avoid using the <code>elastic</code> superuser for this purpose.</div></div>
+      <button class="done-btn" onclick="markDone('o5',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ══ OBJ 6 ══ -->
+  <div class="obj" id="o6">
+    <div class="obj-hd" onclick="tog('o6')">
+      <span class="obj-idx">06</span>
+      <span class="obj-name">Use Elastic Agent for Metrics Collection</span>
+      <div class="obj-tags"><span class="ot agent">Elastic Agent</span><span class="ot kibana">Fleet</span></div>
+      <span class="done-tag">✓ DONE</span>
+      <span class="obj-chev">▾</span>
+    </div>
+    <div class="obj-body">
+      <p class="prose"><strong>Elastic Agent</strong> is the unified, single-agent approach that replaces running separate Beats. One Agent replaces Metricbeat + Filebeat + Heartbeat. It is managed centrally through <strong>Fleet</strong> in Kibana using <strong>integrations</strong> and <strong>Agent policies</strong>.</p>
+
+      <div class="slbl">Elastic Agent vs Metricbeat</div>
+      <table class="tbl">
+        <tr><th>Aspect</th><th>Metricbeat</th><th>Elastic Agent</th></tr>
+        <tr><td>Installation</td><td>One per data type (Beat)</td><td>Single agent for everything</td></tr>
+        <tr><td>Management</td><td>Local config files (YAML)</td><td>Centralized via Fleet in Kibana</td></tr>
+        <tr><td>Updates</td><td>Manual per host</td><td>Remote upgrade from Fleet</td></tr>
+        <tr><td>Config changes</td><td>Edit YAML, restart</td><td>Push policy from Kibana, no restart</td></tr>
+        <tr><td>Metrics integrations</td><td>Modules</td><td>Integrations (System, Docker, K8s…)</td></tr>
+        <tr><td>Preferred for new deployments</td><td>Legacy/direct control</td><td>✅ Recommended</td></tr>
+      </table>
+
+      <div class="slbl">Fleet-Managed Agent Workflow</div>
+      <div class="steps">
+        <div class="step"><div class="snum">1</div><div class="scontent"><div class="stitle">Set up Fleet server</div><div class="sdesc">Kibana → Fleet → Settings → Add Fleet Server. Generates enrollment URL and token.</div></div></div>
+        <div class="step"><div class="snum">2</div><div class="scontent"><div class="stitle">Create an Agent Policy</div><div class="sdesc">Kibana → Fleet → Agent policies → Create policy. A policy groups integrations together.</div></div></div>
+        <div class="step"><div class="snum">3</div><div class="scontent"><div class="stitle">Add integrations to the policy</div><div class="sdesc">Click the policy → Add integration → e.g. <code>System</code>, <code>Docker</code>, <code>Kubernetes</code>. Configure period, metricsets.</div></div></div>
+        <div class="step"><div class="snum">4</div><div class="scontent"><div class="stitle">Enroll the Elastic Agent on each host</div><div class="sdesc">Run the enrollment command from the Fleet UI: <code>elastic-agent install --url=... --enrollment-token=...</code></div></div></div>
+        <div class="step"><div class="snum">5</div><div class="scontent"><div class="stitle">Monitor agent status in Fleet</div><div class="sdesc">All enrolled agents appear in Kibana → Fleet → Agents. Green = healthy, sending data.</div></div></div>
+      </div>
+
+      <div class="slbl">Practice Quiz</div>
+      <div class="quiz" id="q6">
+        <div class="quiz-q">You need to change the collection period for the System integration on 50 hosts managed by Elastic Agent Fleet. What is the most efficient approach?</div>
+        <div class="quiz-opts" id="qo6">
+          <div class="qo" onclick="doQ('q6',0,1)"><span class="ql">A</span><span>SSH into each of the 50 hosts and edit the YAML config file</span></div>
+          <div class="qo" onclick="doQ('q6',1,1)"><span class="ql">B</span><span>Edit the Agent Policy in Kibana Fleet — the change automatically propagates to all enrolled agents</span></div>
+          <div class="qo" onclick="doQ('q6',2,1)"><span class="ql">C</span><span>Reinstall Elastic Agent on all 50 hosts with the new configuration</span></div>
+          <div class="qo" onclick="doQ('q6',3,1)"><span class="ql">D</span><span>Create a new Fleet Server with the updated period and re-enroll all agents</span></div>
+        </div>
+        <div class="qfb" id="qf6"></div>
+      </div>
+      <button class="done-btn" onclick="markDone('o6',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ══ OBJ 7 ══ -->
+  <div class="obj" id="o7">
+    <div class="obj-hd" onclick="tog('o7')">
+      <span class="obj-idx">07</span>
+      <span class="obj-name">Metrics Explorer &amp; Custom Visualizations</span>
+      <div class="obj-tags"><span class="ot kibana">Kibana</span></div>
+      <span class="done-tag">✓ DONE</span>
+      <span class="obj-chev">▾</span>
+    </div>
+    <div class="obj-body">
+      <p class="prose">The <strong>Metrics Explorer</strong> (within Observability → Infrastructure) lets you build custom time-series metric charts without needing to go to Lens or TSVB. It's designed specifically for infrastructure metrics with built-in field suggestions.</p>
+
+      <div class="code">
+<span class="cm"># Metrics Explorer features</span>
+<span class="kw">Metrics</span>:  Choose fields to plot
+  — Pick any numeric field from Metricbeat/Agent indices
+  — Choose aggregation: avg, max, min, sum, rate, cardinality
+
+<span class="kw">Split by</span>:  Group by a keyword field
+  — <span class="vl">host.name</span>          → one line per host
+  — <span class="vl">cloud.region</span>      → one line per AWS region
+  — <span class="vl">kubernetes.pod.name</span> → one line per pod
+
+<span class="kw">Filter by</span>:  KQL filter to scope data
+  — e.g. <span class="st">cloud.provider : "aws"</span>
+
+<span class="kw">Chart type</span>:  Line, Area, Bar
+<span class="kw">Timerange</span>:  From the global time picker
+      </div>
+
+      <div class="box tip"><span class="box-icon">💡</span><div>To get the rate of change (e.g. network bytes per second from a cumulative counter), use the <strong>Rate</strong> aggregation in Metrics Explorer — it automatically calculates the derivative for you. No Painless scripting needed.</div></div>
+      <button class="done-btn" onclick="markDone('o7',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+  <!-- ══ OBJ 8 ══ -->
+  <div class="obj" id="o8">
+    <div class="obj-hd" onclick="tog('o8')">
+      <span class="obj-idx">08</span>
+      <span class="obj-name">Alerting on Metrics Data</span>
+      <div class="obj-tags"><span class="ot kibana">Kibana</span><span class="ot config">Alerting</span></div>
+      <span class="done-tag">✓ DONE</span>
+      <span class="obj-chev">▾</span>
+    </div>
+    <div class="obj-body">
+      <p class="prose">Kibana's <strong>Alerting</strong> framework lets you create rules that trigger actions (email, Slack, PagerDuty, webhook) when metric thresholds are crossed. The Metrics app has built-in rule types specifically for infrastructure metrics.</p>
+
+      <div class="slbl">Metrics Alert Rule Types</div>
+      <table class="tbl">
+        <tr><th>Rule Type</th><th>Triggers when</th><th>Example use</th></tr>
+        <tr><td>Inventory (Metric threshold)</td><td>A metric on a host/pod/container exceeds a threshold</td><td>CPU &gt; 90% for 5 minutes on any host</td></tr>
+        <tr><td>Custom threshold</td><td>Any Elasticsearch query result meets a condition</td><td>95th percentile of response_time &gt; 500ms</td></tr>
+        <tr><td>Anomaly detection (ML)</td><td>ML anomaly score exceeds a set level</td><td>Anomaly score &gt; 75 on memory usage</td></tr>
+      </table>
+
+      <div class="code">
+<button class="copy-btn" onclick="cpCode(this)">copy</button>
+<span class="cm"># Creating a Metric Threshold Alert</span>
+<span class="kw">Navigate to:</span>
+  Kibana → Observability → Alerts → Manage Rules → Create Rule
+
+<span class="kw">Rule type:</span> <span class="vl">Inventory (Metric threshold)</span>
+
+<span class="kw">Conditions:</span>
+  Metric: <span class="st">system.cpu.total.pct</span>
+  Aggregation: <span class="vl">Average</span>
+  Threshold: <span class="vl">is above 0.90</span>   <span class="cm"># 90%</span>
+  For the last: <span class="vl">5 minutes</span>
+  Group by: <span class="vl">host.name</span>     <span class="cm"># alert per-host</span>
+
+<span class="kw">Actions (on alert):</span>
+  Connector: <span class="vl">Email</span> / <span class="vl">Slack</span> / <span class="vl">PagerDuty</span>
+  Message template: uses Mustache variables
+    e.g. <span class="st">"CPU alert: {{context.group}} exceeded 90%"</span>
+      </div>
+
+      <div class="slbl">Practice Quiz</div>
+      <div class="quiz" id="q8">
+        <div class="quiz-q">You create a Metric Threshold alert for CPU &gt; 90% grouped by <code>host.name</code>. If 3 different hosts all exceed 90%, how many alert notifications will be sent?</div>
+        <div class="quiz-opts" id="qo8">
+          <div class="qo" onclick="doQ('q8',0,2)"><span class="ql">A</span><span>1 notification covering all 3 hosts in one message</span></div>
+          <div class="qo" onclick="doQ('q8',1,2)"><span class="ql">B</span><span>0 — alerts only fire after the time window has passed for ALL hosts simultaneously</span></div>
+          <div class="qo" onclick="doQ('q8',2,2)"><span class="ql">C</span><span>3 separate notifications — one per host, since the rule is grouped by host.name</span></div>
+          <div class="qo" onclick="doQ('q8',3,2)"><span class="ql">D</span><span>Depends on the connector type — email sends 1, Slack sends 3</span></div>
+        </div>
+        <div class="qfb" id="qf8"></div>
+      </div>
+      <button class="done-btn" onclick="markDone('o8',this)">☐ Mark as Understood</button>
+    </div>
+  </div>
+
+</div><!-- /obj-list -->
+
+<!-- ── CHEATSHEET ── -->
+<div class="cheatsheet">
+  <div class="cs-hd" onclick="toggleCS()">
+    <span class="cs-hd-title">📋 Topic 1 Cheatsheet — Metrics Quick Reference</span>
+    <span class="cs-chev" id="csChev">▾ expand</span>
+  </div>
+  <div class="cs-body" id="csBody">
+    <div class="cs-grid">
+      <div class="cs-item"><div class="cs-title">Metrics App Navigation</div><div class="cs-detail">Kibana → Observability → Infrastructure<br>Inventory: tiles by host/pod/container<br>Metrics Explorer: custom charts</div></div>
+      <div class="cs-item"><div class="cs-title">Metricbeat Setup Flow</div><div class="cs-detail">1. Install metricbeat<br>2. Enable modules<br>3. Configure metricbeat.yml<br>4. metricbeat setup -e<br>5. Start service</div></div>
+      <div class="cs-item"><div class="cs-title">Key System Metricsets</div><div class="cs-detail">cpu · memory · network<br>diskio · filesystem · process<br>load · socket · users</div></div>
+      <div class="cs-item"><div class="cs-title">Elastic Agent vs Metricbeat</div><div class="cs-detail">Agent = single binary, Fleet-managed<br>Metricbeat = dedicated Beat, file config<br>Agent is preferred for new deployments</div></div>
+      <div class="cs-item"><div class="cs-title">Stack Monitoring Modules</div><div class="cs-detail">elasticsearch-xpack<br>kibana-xpack<br>logstash-xpack<br>Use remote_monitoring_user</div></div>
+      <div class="cs-item"><div class="cs-title">Predefined ML Jobs</div><div class="cs-detail">Enabled via Inventory tile<br>Detect: memory, network anomalies<br>Scores shown on tile indicators</div></div>
+      <div class="cs-item"><div class="cs-title">Alert Rule Types (Metrics)</div><div class="cs-detail">Inventory threshold<br>Custom threshold<br>ML anomaly rule</div></div>
+      <div class="cs-item"><div class="cs-title">Metricbeat Test Commands</div><div class="cs-detail">metricbeat test config -e<br>metricbeat test output<br>metricbeat modules list</div></div>
+    </div>
+    <div class="slbl">Key Field Names to Know</div>
+    <div class="code" style="margin-bottom:0">
+<span class="cm"># System metrics fields</span>
+<span class="st">system.cpu.total.pct</span>              <span class="cm"># CPU usage (0.0–1.0)</span>
+<span class="st">system.memory.actual.used.pct</span>     <span class="cm"># Memory used %</span>
+<span class="st">system.memory.actual.used.bytes</span>   <span class="cm"># Memory used bytes</span>
+<span class="st">system.network.in.bytes</span>           <span class="cm"># Network received (cumulative)</span>
+<span class="st">system.network.out.bytes</span>          <span class="cm"># Network sent (cumulative)</span>
+<span class="st">system.diskio.read.bytes</span>          <span class="cm"># Disk read (cumulative)</span>
+<span class="st">system.diskio.write.bytes</span>         <span class="cm"># Disk write (cumulative)</span>
+<span class="st">system.load.1</span>                     <span class="cm"># 1-minute load average</span>
+<span class="st">host.name</span>                         <span class="cm"># Host identifier</span>
+<span class="st">service.type</span>                      <span class="cm"># e.g. "system", "docker"</span>
+    </div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+</main>
+
+<footer>
+  <div class="wrap" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;width:100%">
+    <span class="ft">ELASTIC CERTIFIED OBSERVABILITY ENGINEER · TOPIC 1 · METRICS · 8 OBJECTIVES</span>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <a href="#" class="nav-btn" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">↑ Top</a>
+      <a href="#" class="nav-btn primary" onclick="alert('Ask Claude to generate Topic 2: Logging!');return false;">Topic 2: Logging →</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ── INFRA TILES ──
+const hosts=[
+  {name:'web-01.prod',cpu:23,mem:45,net:'12 MB/s',status:'healthy'},
+  {name:'web-02.prod',cpu:67,mem:72,net:'18 MB/s',status:'warn'},
+  {name:'web-03.prod',cpu:12,mem:38,net:'8 MB/s', status:'healthy'},
+  {name:'api-01.prod',cpu:88,mem:91,net:'34 MB/s',status:'crit'},
+  {name:'api-02.prod',cpu:55,mem:62,net:'22 MB/s',status:'warn'},
+  {name:'db-01.prod', cpu:34,mem:78,net:'5 MB/s', status:'healthy'},
+  {name:'db-02.prod', cpu:41,mem:82,net:'4 MB/s', status:'warn'},
+  {name:'cache-01',   cpu:18,mem:44,net:'28 MB/s',status:'healthy'},
+  {name:'cache-02',   cpu:22,mem:51,net:'31 MB/s',status:'healthy'},
+  {name:'worker-01',  cpu:76,mem:58,net:'9 MB/s', status:'warn'},
+  {name:'worker-02',  cpu:95,mem:87,net:'11 MB/s',status:'crit'},
+  {name:'monitor-01', cpu:8, mem:32,net:'2 MB/s', status:'healthy'},
+];
+
+let currentFilter='all', currentSort='cpu';
+
+function renderTiles(data){
+  const grid=document.getElementById('infraGrid');
+  grid.innerHTML=data.map(h=>{
+    const cpuCls=h.cpu>85?'crit':h.cpu>60?'warn':'ok';
+    const memCls=h.mem>80?'crit':h.mem>65?'warn':'ok';
+    return `<div class="infra-tile ${h.status}" onclick="tileClick('${h.name}',${h.cpu},${h.mem})">
+      <div class="tile-name">${h.name}</div>
+      <div class="tile-metrics">
+        <div class="tile-metric">
+          <span class="tile-metric-name">CPU</span>
+          <span class="tile-metric-val ${cpuCls}">${h.cpu}%</span>
+        </div>
+        <div class="tile-metric">
+          <span class="tile-metric-name">MEM</span>
+          <span class="tile-metric-val ${memCls}">${h.mem}%</span>
+        </div>
+        <div class="tile-metric">
+          <span class="tile-metric-name">NET</span>
+          <span class="tile-metric-val ok">${h.net}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterMetrics(f){
+  currentFilter=f;
+  applyFilter();
+}
+function sortMetrics(s){
+  currentSort=s;
+  applyFilter();
+}
+function applyFilter(){
+  let data=[...hosts];
+  if(currentFilter!=='all') data=data.filter(h=>h.status===currentFilter);
+  if(currentSort==='cpu')  data.sort((a,b)=>b.cpu-a.cpu);
+  if(currentSort==='mem')  data.sort((a,b)=>b.mem-a.mem);
+  if(currentSort==='name') data.sort((a,b)=>a.name.localeCompare(b.name));
+  renderTiles(data);
+}
+function tileClick(name,cpu,mem){
+  alert(`Drill-in: ${name}\n\nIn the real Metrics app, you'd see:\n• CPU: ${cpu}% (time-series chart)\n• Memory: ${mem}%\n• Network I/O\n• Disk I/O\n• Process list\n• Correlated logs\n• Anomaly detection panel`);
+}
+
+// ── CONFIG GENERATOR ──
+const moduleDefs={
+  system:{
+    metricsets:['cpu','memory','network','diskio','filesystem','process','load'],
+    extra:'  processes: [\'.*\']\n  cpu.metrics: ["percentages"]'
+  },
+  docker:{
+    metricsets:['container','cpu','memory','network','diskio','info'],
+    extra:'  hosts: ["unix:///var/run/docker.sock"]'
+  },
+  kubernetes:{
+    metricsets:['node','pod','container','state_node','state_pod'],
+    extra:'  hosts: ["https://${NODE_NAME}:10250"]\n  bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token'
+  },
+  nginx:{
+    metricsets:['stubstatus'],
+    extra:'  hosts: ["http://127.0.0.1/nginx_status"]'
+  },
+  mysql:{
+    metricsets:['status','query_cache'],
+    extra:'  hosts: ["root:secret@tcp(127.0.0.1:3306)/"]'
+  },
+  redis:{
+    metricsets:['info','keyspace'],
+    extra:'  hosts: ["127.0.0.1:6379"]'
+  }
+};
+
+const procDefs={
+  none:'',
+  geoip:'\nprocessors:\n  - add_fields:\n      target: \'\'\n      fields:\n        ip: \'{{ .source.ip }}\'\n  - geoip:\n      field: source.ip\n      target_field: source.geo',
+  dns:'\nprocessors:\n  - dns:\n      type: reverse\n      fields:\n        source.ip: source.hostname',
+  drop:'\nprocessors:\n  - drop_fields:\n      fields: ["host.os.codename","agent.ephemeral_id"]\n      ignore_missing: true'
+};
+
+function genConfig(){
+  const mod=document.getElementById('cfgModule').value;
+  const period=document.getElementById('cfgPeriod').value;
+  const es=document.getElementById('cfgES').value||'http://localhost:9200';
+  const idx=document.getElementById('cfgIdx').value||'metricbeat';
+  const proc=document.getElementById('cfgProc').value;
+  const def=moduleDefs[mod];
+  const ms=def.metricsets.map(m=>`    - ${m}`).join('\n');
+
+  const cfg=`<span class="y-com"># metricbeat.yml — generated config</span>
+
+<span class="y-key">metricbeat.modules</span>:
+<span class="y-key">- module</span>: <span class="y-str">${mod}</span>
+  <span class="y-key">metricsets</span>:
+${ms.split('\n').map(l=>`  <span class="y-val">${l.trim()}</span>`).join('\n')}
+  <span class="y-key">enabled</span>: <span class="y-bool">true</span>
+  <span class="y-key">period</span>: <span class="y-num">${period}</span>
+${def.extra.split('\n').map(l=>`  <span class="y-com">${l}</span>`).join('\n')}
+
+<span class="y-key">output.elasticsearch</span>:
+  <span class="y-key">hosts</span>: [<span class="y-str">"${es}"</span>]
+  <span class="y-key">index</span>: <span class="y-str">"${idx.replace('*','%{[agent.version]}-')}"</span>
+
+<span class="y-key">setup.kibana</span>:
+  <span class="y-key">host</span>: <span class="y-str">"http://localhost:5601"</span>
+
+<span class="y-key">setup.ilm.enabled</span>: <span class="y-bool">true</span>
+<span class="y-key">setup.template.settings</span>:
+  <span class="y-key">index.number_of_shards</span>: <span class="y-num">1</span>${procDefs[proc]?'\n'+procDefs[proc].split('\n').map(l=>`<span class="y-com">${l}</span>`).join('\n'):''}`;
+
+  document.getElementById('cfgOut').innerHTML=cfg;
+}
+
+// ── TOGGLE ──
+function tog(id){
+  document.getElementById(id).classList.toggle('open');
+}
+
+// ── MARK DONE ──
+let dc=0;const T=8;
+function markDone(id,btn){
+  const c=document.getElementById(id);
+  if(c.classList.contains('done'))return;
+  c.classList.add('done');btn.classList.add('marked');btn.textContent='✓ Understood';dc++;
+  document.getElementById('pFill').style.width=(dc/T*100)+'%';
+  document.getElementById('pNum').textContent=dc+' / '+T+' objectives';
+}
+
+// ── QUIZ ──
+const qA={
+  q4:{c:2,ok:'✓ Correct! In modules.d/system.yml, you list only the metricsets you want under the metricsets key. Metricbeat will only collect those specific datasets.',fail:'✗ The correct approach is to edit modules.d/system.yml and list only cpu and memory under metricsets. The module stays enabled, but only those metricsets run.'},
+  q6:{c:1,ok:'✓ Correct! Fleet is the power of Elastic Agent — edit the policy once in Kibana and it automatically propagates to all 50 enrolled agents without touching a single host.',fail:'✗ With Fleet-managed Elastic Agent, you edit the Agent Policy in Kibana Fleet. The update propagates automatically to all enrolled agents — no SSH needed.'},
+  q8:{c:2,ok:'✓ Correct! When a rule is grouped by host.name, each host generates its own alert instance. 3 hosts crossing the threshold = 3 separate alert notifications.',fail:'✗ When grouped by a field (host.name), each unique value that meets the condition generates a separate alert notification. So 3 hosts = 3 notifications.'},
+};
+
+function doQ(qid,sel,correct){
+  const opts=document.getElementById('qo'+qid.replace('q',''));
+  if(opts.querySelector('.locked'))return;
+  opts.querySelectorAll('.qo').forEach((o,i)=>{
+    o.classList.add('locked');
+    if(i===correct)o.classList.add('correct');
+    else if(i===sel&&sel!==correct)o.classList.add('wrong');
+  });
+  const fb=document.getElementById('qf'+qid.replace('q',''));
+  const ok=sel===correct;
+  fb.className='qfb show '+(ok?'correct':'wrong');
+  fb.textContent=qA[qid][ok?'ok':'fail'];
+}
+
+// ── CHEATSHEET ──
+function toggleCS(){
+  const b=document.getElementById('csBody');
+  const ch=document.getElementById('csChev');
+  const open=b.classList.toggle('open');
+  ch.textContent=open?'▴ collapse':'▾ expand';
+}
+
+function cpCode(btn){
+  const pre=btn.parentElement;
+  const txt=pre.innerText.replace('copy','').trim();
+  navigator.clipboard.writeText(txt).catch(()=>{});
+  btn.textContent='✓';setTimeout(()=>btn.textContent='copy',1500);
+}
+
+// ── INIT ──
+renderTiles(hosts.sort((a,b)=>b.cpu-a.cpu));
+genConfig();
+</script>
+</body>
+</html>

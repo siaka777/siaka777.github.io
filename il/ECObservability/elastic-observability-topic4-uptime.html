@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elastic Certified Observability Engineer — Topic 4: Uptime</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Oswald:wght@300;400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #06080f;
+  --bg2:      #090c15;
+  --surface:  #0d1120;
+  --surface2: #111828;
+  --surface3: #151f30;
+  --border:   #1a2540;
+  --border2:  #243355;
+  --text:     #e8dfc0;
+  --text-dim: #a09070;
+  --text-mute:#4a4030;
+  --amber:    #ffb830;
+  --amber2:   #e69820;
+  --green:    #39ff8a;
+  --green2:   #22cc66;
+  --red:      #ff3d3d;
+  --cyan:     #30d8e8;
+  --white:    #f0ead8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Share Tech Mono',monospace;min-height:100vh;overflow-x:hidden;position:relative;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.15) 2px,rgba(0,0,0,.15) 4px);}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 50% 50% at 15% 50%,rgba(255,184,48,.04) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 85% 20%,rgba(57,255,138,.03) 0%,transparent 60%);}
+
+.status-bar{background:var(--bg2);border-bottom:1px solid var(--border2);padding:7px 28px;display:flex;align-items:center;gap:14px;position:relative;z-index:2;flex-wrap:wrap;}
+.sb-clock{font-size:11px;letter-spacing:1px;color:var(--amber);display:flex;align-items:center;gap:8px;}
+.sb-blink{animation:blink 1s step-end infinite;color:var(--green)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.sb-center{flex:1;text-align:center;font-size:10px;letter-spacing:3px;color:var(--text-mute)}
+.sb-right{font-size:10px;letter-spacing:2px;color:var(--text-mute)}
+
+.topnav{background:var(--surface);border-bottom:2px solid var(--amber2);padding:0 28px;display:flex;align-items:stretch;position:relative;z-index:2;overflow-x:auto;}
+.cert-crumb{font-size:10px;letter-spacing:3px;color:var(--amber);text-transform:uppercase;padding:12px 20px 12px 0;margin-right:20px;border-right:1px solid var(--border2);white-space:nowrap;flex-shrink:0;align-self:center;}
+.topic-tabs{display:flex;gap:0}
+.ttab{font-family:'Oswald',sans-serif;font-size:12px;font-weight:400;letter-spacing:1px;padding:12px 16px;color:var(--text-mute);background:none;border:none;cursor:pointer;transition:all .2s;white-space:nowrap;border-right:1px solid var(--border);text-transform:uppercase;position:relative;}
+.ttab:hover{color:var(--text-dim);background:rgba(255,184,48,.04)}
+.ttab.done{color:var(--green2)}
+.ttab.done::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--green2);}
+.ttab.active{color:var(--amber);background:rgba(255,184,48,.06)}
+.ttab.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--amber);box-shadow:0 0 8px var(--amber);}
+
+header{padding:52px 0 44px;border-bottom:1px solid var(--border);margin-bottom:44px;position:relative;z-index:1;overflow:hidden;}
+header::before{content:'UPTIME MONITORING SYSTEM v4.2.1';position:absolute;top:16px;right:28px;font-size:9px;letter-spacing:4px;color:var(--text-mute);}
+.wrap{max-width:1100px;margin:0 auto;padding:0 28px;position:relative;z-index:1}
+
+.header-tag{font-size:10px;letter-spacing:4px;text-transform:uppercase;color:var(--amber);margin-bottom:18px;display:flex;align-items:center;gap:12px;}
+.tag-box{background:var(--amber);color:var(--bg);padding:2px 8px;font-size:9px;letter-spacing:2px;font-weight:700;}
+h1{font-family:'Oswald',sans-serif;font-size:clamp(64px,11vw,120px);line-height:.85;letter-spacing:-1px;font-weight:700;text-transform:uppercase;margin-bottom:18px;color:var(--white);text-shadow:0 0 40px rgba(255,184,48,.2);}
+h1 em{color:var(--amber);font-style:normal}
+.header-sub{font-family:'Libre Baskerville',serif;font-style:italic;font-size:15px;color:var(--text-dim);line-height:1.7;max-width:580px;margin-bottom:28px;font-weight:400;}
+.progress-wrap{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--border2);padding:11px 18px;max-width:520px;}
+.prog-label{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text-mute)}
+.prog-track{flex:1;height:3px;background:var(--border2)}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--amber),var(--green));transition:width .5s ease;width:0%;box-shadow:0 0 8px rgba(255,184,48,.5)}
+.prog-count{font-size:11px;color:var(--amber);white-space:nowrap}
+
+.cards{display:flex;flex-direction:column;gap:1px;margin-bottom:52px}
+.card{background:var(--surface);border:1px solid var(--border);border-left:3px solid transparent;transition:all .2s;animation:slideIn .4s ease both;}
+.card:nth-child(1){animation-delay:.05s}.card:nth-child(2){animation-delay:.10s}.card:nth-child(3){animation-delay:.15s}.card:nth-child(4){animation-delay:.20s}.card:nth-child(5){animation-delay:.25s}.card:nth-child(6){animation-delay:.30s}
+@keyframes slideIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+.card:hover{border-color:var(--border2);background:var(--surface2)}
+.card.open{border-left-color:var(--amber);background:var(--surface2)}
+.card.done{border-left-color:var(--green2)}
+.card-hd{display:flex;align-items:center;gap:14px;padding:16px 22px;cursor:pointer;user-select:none;}
+.card-hd:hover{background:rgba(255,184,48,.03)}
+.card-n{font-family:'Oswald',sans-serif;font-size:32px;font-weight:700;color:var(--text-mute);min-width:42px;line-height:1;}
+.card.open .card-n{color:var(--amber);text-shadow:0 0 12px rgba(255,184,48,.4)}
+.card.done .card-n{color:var(--green2)}
+.card-info{flex:1}
+.card-eyebrow{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--amber);margin-bottom:3px;}
+.card.done .card-eyebrow{color:var(--green2)}
+.card-title{font-family:'Oswald',sans-serif;font-size:16px;font-weight:500;color:var(--text);text-transform:uppercase;letter-spacing:.5px;line-height:1.3;}
+.card-tags{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap}
+.ctag{font-size:9px;letter-spacing:2px;padding:2px 7px;border:1px solid;text-transform:uppercase;}
+.ctag.hb{border-color:rgba(255,184,48,.4);color:var(--amber)}
+.ctag.kb{border-color:rgba(48,216,232,.4);color:var(--cyan)}
+.ctag.cfg{border-color:rgba(57,255,138,.4);color:var(--green)}
+.ctag.hi{border-color:rgba(255,61,61,.4);color:var(--red)}
+.done-pip{width:8px;height:8px;border-radius:50%;background:var(--green2);box-shadow:0 0 8px var(--green2);display:none;flex-shrink:0;}
+.card.done .done-pip{display:block}
+.card-chev{font-size:11px;color:var(--text-mute);transition:transform .25s;flex-shrink:0}
+.card.open .card-chev{transform:rotate(180deg);color:var(--amber)}
+.card-body{display:none;padding:0 22px 26px;border-top:1px solid var(--border);animation:fadeIn .25s ease;}
+.card.open .card-body{display:block}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+.slbl{font-size:9px;letter-spacing:4px;text-transform:uppercase;color:var(--amber);margin:20px 0 10px;display:flex;align-items:center;gap:10px;}
+.slbl::after{content:'';flex:1;height:1px;background:var(--border)}
+.slbl .pip{width:5px;height:5px;background:var(--amber);flex-shrink:0;transform:rotate(45deg)}
+.prose{font-size:13px;color:var(--text-dim);line-height:1.85;margin-bottom:12px;font-family:'Libre Baskerville',serif}
+.prose strong{color:var(--text);font-weight:700}
+.prose em{color:var(--amber);font-style:italic}
+.prose code{font-family:'Share Tech Mono',monospace;font-size:11.5px;background:var(--surface3);padding:1px 6px;color:var(--amber);border:1px solid var(--border2);}
+.code{background:#04060e;border:1px solid var(--border);border-left:2px solid var(--amber);padding:14px 16px;font-family:'Share Tech Mono',monospace;font-size:12px;line-height:1.7;overflow-x:auto;margin-bottom:12px;position:relative;}
+.code .cm{color:var(--text-mute)}.code .kw{color:var(--amber)}.code .st{color:var(--green)}.code .vl{color:var(--cyan)}.code .fd{color:var(--text)}.code .hl{color:var(--red)}
+.copy-btn{position:absolute;top:7px;right:7px;background:var(--border);border:none;color:var(--text-mute);font-family:'Share Tech Mono',monospace;font-size:9px;padding:3px 8px;cursor:pointer;transition:all .2s;}
+.copy-btn:hover{background:var(--amber);color:var(--bg)}
+.callout{display:flex;gap:12px;padding:12px 16px;border-left:2px solid;margin-bottom:12px;font-family:'Share Tech Mono',monospace;font-size:12px;line-height:1.65;color:var(--text-dim);}
+.callout.exam{border-color:var(--red);background:rgba(255,61,61,.06)}
+.callout.tip{border-color:var(--green);background:rgba(57,255,138,.05)}
+.callout.warn{border-color:var(--amber);background:rgba(255,184,48,.05)}
+.callout.info{border-color:var(--cyan);background:rgba(48,216,232,.05)}
+.callout-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+.callout strong{color:var(--text)}
+.tbl{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px;font-family:'Share Tech Mono',monospace}
+.tbl th{text-align:left;padding:7px 12px;background:var(--surface3);font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--amber);border-bottom:1px solid var(--border2);font-weight:400;}
+.tbl td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text-dim);vertical-align:top;line-height:1.5;}
+.tbl td:first-child{color:var(--cyan)}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:rgba(255,184,48,.03)}
+.steps{display:flex;flex-direction:column;margin-bottom:12px}
+.step{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.step:last-child{border-bottom:none}
+.snum{width:26px;height:26px;border:1px solid var(--amber);color:var(--amber);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;margin-top:2px;}
+.sc .st{font-family:'Oswald',sans-serif;font-size:14px;font-weight:500;color:var(--text);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.sc .sd{font-size:12px;color:var(--text-dim);line-height:1.6;font-family:'Share Tech Mono',monospace}
+.sc .sd code{background:var(--surface3);padding:1px 5px;color:var(--amber);border:1px solid var(--border2)}
+.quiz{background:var(--surface3);border:1px solid var(--border2);padding:18px;margin-top:10px}
+.quiz-hdr{font-size:9px;letter-spacing:4px;text-transform:uppercase;color:var(--amber);margin-bottom:9px}
+.quiz-q{font-family:'Libre Baskerville',serif;font-size:14px;color:var(--text);margin-bottom:12px;line-height:1.6;font-style:italic}
+.quiz-opts{display:flex;flex-direction:column;gap:6px}
+.qo{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);cursor:pointer;transition:all .2s;font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text-dim);line-height:1.4;}
+.qo:hover:not(.locked){border-color:var(--amber);color:var(--text);background:rgba(255,184,48,.04)}
+.qo.correct{border-color:var(--green);background:rgba(57,255,138,.06);color:var(--text)}
+.qo.wrong{border-color:var(--red);background:rgba(255,61,61,.06);color:var(--text-dim)}
+.qo.locked{cursor:default}
+.ql{font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;min-width:18px;color:var(--text-mute);line-height:1.2}
+.qo.correct .ql{color:var(--green)}.qo.wrong .ql{color:var(--red)}
+.qfb{margin-top:10px;padding:11px 14px;font-family:'Share Tech Mono',monospace;font-size:11px;line-height:1.6;display:none}
+.qfb.show{display:block}
+.qfb.correct{background:rgba(57,255,138,.07);border-left:2px solid var(--green);color:var(--text-dim)}
+.qfb.wrong{background:rgba(255,61,61,.07);border-left:2px solid var(--red);color:var(--text-dim)}
+.done-btn{display:inline-flex;align-items:center;gap:8px;margin-top:16px;background:transparent;border:1px solid rgba(57,255,138,.4);color:var(--green2);font-family:'Oswald',sans-serif;font-weight:500;font-size:13px;letter-spacing:1px;text-transform:uppercase;padding:7px 16px;cursor:pointer;transition:all .2s;}
+.done-btn:hover{background:rgba(57,255,138,.07);box-shadow:0 0 12px rgba(57,255,138,.15)}
+.done-btn.marked{background:rgba(57,255,138,.1)}
+
+/* Monitor Board */
+.status-board{background:#04060e;border:1px solid var(--border2);overflow:hidden;margin-bottom:12px;}
+.sb-header{background:var(--surface2);border-bottom:1px solid var(--border2);padding:8px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.sb-h-label{font-size:10px;letter-spacing:3px;color:var(--text-mute);flex:1;text-transform:uppercase}
+.sb-stat{display:flex;gap:16px;flex-wrap:wrap}
+.sb-s{display:flex;flex-direction:column;align-items:center;gap:1px}
+.sb-sv{font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;line-height:1}
+.sb-sl{font-size:9px;letter-spacing:2px;color:var(--text-mute);text-transform:uppercase}
+.sb-up{color:var(--green)}.sb-dn{color:var(--red)}.sb-pg{color:var(--amber)}
+.monitor-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1px;background:var(--border);}
+.monitor{background:var(--surface);padding:12px 14px;cursor:pointer;transition:background .15s;position:relative;overflow:hidden;}
+.monitor::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;}
+.monitor.up::before{background:var(--green);box-shadow:0 0 8px var(--green)}
+.monitor.down::before{background:var(--red);box-shadow:0 0 8px var(--red)}
+.monitor.degraded::before{background:var(--amber);box-shadow:0 0 8px var(--amber)}
+.monitor:hover{background:var(--surface2)}
+.mon-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.mon-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.monitor.up .mon-dot{background:var(--green);box-shadow:0 0 6px var(--green);animation:mpulse 2s ease-in-out infinite}
+.monitor.down .mon-dot{background:var(--red);box-shadow:0 0 6px var(--red);animation:mpulse .8s ease-in-out infinite}
+.monitor.degraded .mon-dot{background:var(--amber);box-shadow:0 0 6px var(--amber);animation:mpulse 1.5s ease-in-out infinite}
+@keyframes mpulse{0%,100%{opacity:1}50%{opacity:.3}}
+.mon-name{font-family:'Oswald',sans-serif;font-size:13px;font-weight:500;color:var(--text);text-transform:uppercase;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mon-status{font-size:10px;letter-spacing:2px;text-transform:uppercase}
+.monitor.up .mon-status{color:var(--green)}.monitor.down .mon-status{color:var(--red)}.monitor.degraded .mon-status{color:var(--amber)}
+.mon-meta{display:flex;gap:10px;font-size:10px;color:var(--text-mute);flex-wrap:wrap;margin-bottom:5px}
+.mon-bar{height:18px;background:var(--surface3);position:relative;overflow:hidden;display:flex;}
+.mon-seg{height:100%}
+.seg-up{background:rgba(57,255,138,.35)}.seg-dn{background:rgba(255,61,61,.5)}.seg-deg{background:rgba(255,184,48,.4)}
+.mon-avail{font-size:10px;color:var(--text-mute);margin-top:3px;text-align:right}
+
+/* Timeline */
+.hb-timeline{background:#04060e;border:1px solid var(--border2);overflow:hidden;margin-bottom:12px;}
+.hbt-header{background:var(--surface2);border-bottom:1px solid var(--border);padding:8px 14px;display:flex;align-items:center;gap:10px;}
+.hbt-label{font-size:10px;letter-spacing:3px;color:var(--text-mute);flex:1;text-transform:uppercase}
+.hbt-sel{background:var(--surface);border:1px solid var(--border2);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:11px;padding:4px 8px;outline:none;}
+.hbt-body{padding:14px 16px}
+.hbt-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.hbt-name{font-size:11px;color:var(--text-dim);min-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hbt-ticks{display:flex;gap:2px;flex:1;align-items:center}
+.tick{width:8px;height:20px;flex-shrink:0;border-radius:1px;cursor:default;transition:opacity .2s;}
+.tick:hover{opacity:.7}
+.tick.up{background:var(--green);opacity:.55}.tick.dn{background:var(--red)}.tick.deg{background:var(--amber);opacity:.65}.tick.na{background:var(--border2);opacity:.4}
+.hbt-latest{font-size:10px;min-width:50px;text-align:right}
+
+/* TLS */
+.tls-demo{background:var(--surface);border:1px solid var(--border2);overflow:hidden;margin-bottom:12px;}
+.tls-toolbar{background:var(--surface3);border-bottom:1px solid var(--border);padding:9px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.tls-label{font-size:10px;letter-spacing:3px;color:var(--text-mute);flex:1;text-transform:uppercase}
+.tls-btn{background:var(--amber2);border:none;color:var(--bg);font-family:'Oswald',sans-serif;font-weight:600;font-size:12px;letter-spacing:1px;text-transform:uppercase;padding:6px 14px;cursor:pointer;transition:all .2s;}
+.tls-btn:hover{background:var(--amber);box-shadow:0 0 12px rgba(255,184,48,.3)}
+.tls-results{padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.tls-cert{background:var(--bg2);border:1px solid;padding:12px 14px;font-family:'Share Tech Mono',monospace;}
+.tls-cert.ok{border-color:rgba(57,255,138,.35)}.tls-cert.warn{border-color:rgba(255,184,48,.35)}.tls-cert.crit{border-color:rgba(255,61,61,.35)}
+.tc-domain{font-family:'Oswald',sans-serif;font-size:13px;font-weight:500;color:var(--text);text-transform:uppercase;margin-bottom:6px;letter-spacing:.5px}
+.tc-row{display:flex;justify-content:space-between;font-size:10px;color:var(--text-mute);margin-bottom:3px}
+.tc-val.ok{color:var(--green)}.tc-val.warn{color:var(--amber)}.tc-val.crit{color:var(--red)}
+
+/* Cheatsheet */
+.cheatsheet{background:var(--surface);border:1px solid var(--border2);overflow:hidden;margin-bottom:52px;}
+.cs-hd{padding:16px 22px;cursor:pointer;display:flex;align-items:center;gap:12px;background:var(--surface2);border-bottom:1px solid var(--border);}
+.cs-hd-title{font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;color:var(--text);flex:1;text-transform:uppercase;letter-spacing:1px;}
+.cs-chev{font-size:11px;color:var(--text-mute);transition:transform .2s;letter-spacing:2px}
+.cs-body{display:none;padding:22px}
+.cs-body.open{display:block}
+.cs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin-bottom:16px;}
+.cs-item{background:var(--bg2);border:1px solid var(--border);padding:12px 14px}
+.cs-t{font-family:'Oswald',sans-serif;font-size:13px;font-weight:500;color:var(--text);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.cs-d{font-size:11px;color:var(--text-mute);line-height:1.65;font-family:'Share Tech Mono',monospace}
+.cs-d strong{color:var(--amber)}
+
+footer{border-top:2px solid var(--amber2);background:var(--bg2);padding:24px 28px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;position:relative;z-index:1;}
+.ft{font-size:10px;letter-spacing:2px;color:var(--text-mute);text-transform:uppercase}
+.nav-btn{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border2);color:var(--text-dim);font-family:'Oswald',sans-serif;font-weight:500;font-size:12px;letter-spacing:1px;text-transform:uppercase;padding:8px 16px;cursor:pointer;text-decoration:none;transition:all .2s;}
+.nav-btn:hover{border-color:var(--amber);color:var(--amber)}
+.nav-btn.primary{background:var(--amber2);border-color:var(--amber);color:var(--bg);font-weight:700;}
+.nav-btn.primary:hover{background:var(--amber);box-shadow:0 0 16px rgba(255,184,48,.3)}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border2)}
+</style>
+</head>
+<body>
+
+<div class="status-bar">
+  <div class="sb-clock"><span class="sb-blink">●</span> SYSTEM ACTIVE — <span id="clockTime">--:--:--</span> UTC</div>
+  <div class="sb-center">ELASTIC OBSERVABILITY MONITORING STATION — SECTOR 04</div>
+  <div class="sb-right">UPTIME MODULE ONLINE</div>
+</div>
+
+<div class="topnav">
+  <span class="cert-crumb">OBSERVABILITY ENG</span>
+  <div class="topic-tabs">
+    <button class="ttab done">01 METRICS ✓</button>
+    <button class="ttab done">02 LOGGING ✓</button>
+    <button class="ttab done">03 APM ✓</button>
+    <button class="ttab active">04 UPTIME</button>
+    <button class="ttab">05 STRUCT DATA</button>
+    <button class="ttab">06 OBS DATA</button>
+    <button class="ttab">07 MGMT</button>
+  </div>
+</div>
+
+<header>
+  <div class="wrap">
+    <div class="header-tag"><span class="tag-box">TOPIC 04 / 07</span> Availability Monitoring · Synthetic Checks · TLS</div>
+    <h1>UP<em>TIME</em></h1>
+    <p class="header-sub">Monitor service availability, detect outages, validate certificates, and track SLA compliance using Heartbeat, the Elastic Synthetics agent, and the Uptime app in Kibana.</p>
+    <div class="progress-wrap">
+      <span class="prog-label">Progress</span>
+      <div class="prog-track"><div class="prog-fill" id="pFill"></div></div>
+      <span class="prog-count" id="pNum">0 / 6 objectives</span>
+    </div>
+  </div>
+</header>
+
+<main><div class="wrap">
+<div class="cards">
+
+<!-- OBJ 1 -->
+<div class="card open" id="c1">
+  <div class="card-hd" onclick="tog('c1')">
+    <span class="card-n">01</span>
+    <div class="card-info">
+      <div class="card-eyebrow">Uptime / Synthetics App</div>
+      <div class="card-title">Use the Uptime App to Monitor Availability</div>
+      <div class="card-tags"><span class="ctag kb">Kibana</span><span class="ctag hi">Core Exam</span></div>
+    </div>
+    <div class="done-pip"></div><span class="card-chev">▾</span>
+  </div>
+  <div class="card-body">
+    <p class="prose">The <strong>Uptime app</strong> (Kibana → Observability → Uptime) and the newer <strong>Synthetics app</strong> display the availability and response time of all monitored endpoints. You can filter monitors by status, tag, location, and type, and drill in to see historical availability and ping results.</p>
+    <div class="callout exam"><span class="callout-icon">⚡</span><div><strong>Exam objective:</strong> "Use the Uptime app to analyze and answer questions about uptime data." Expect tasks like: find which monitor is down, check availability percentage, read a ping result, check TLS expiry.</div></div>
+
+    <div class="slbl"><span class="pip"></span>Live Monitor Status Board</div>
+    <div class="status-board">
+      <div class="sb-header">
+        <span class="sb-h-label">MONITOR STATUS — ALL LOCATIONS</span>
+        <div class="sb-stat">
+          <div class="sb-s"><div class="sb-sv sb-up" id="sbUp">—</div><div class="sb-sl">UP</div></div>
+          <div class="sb-s"><div class="sb-sv sb-dn" id="sbDn">—</div><div class="sb-sl">DOWN</div></div>
+          <div class="sb-s"><div class="sb-sv sb-pg" id="sbDeg">—</div><div class="sb-sl">DEGRADED</div></div>
+        </div>
+      </div>
+      <div class="monitor-grid" id="monitorGrid"></div>
+    </div>
+
+    <div class="slbl"><span class="pip"></span>Uptime App Navigation</div>
+    <table class="tbl">
+      <tr><th>View</th><th>Purpose</th></tr>
+      <tr><td>Overview</td><td>All monitors — status at a glance, filter UP/DOWN, search by name/tag</td></tr>
+      <tr><td>Monitor detail</td><td>Click a monitor → availability graph, ping results, TLS cert, location map</td></tr>
+      <tr><td>Certificates</td><td>All TLS certs with expiry dates, filter by days-until-expiry threshold</td></tr>
+      <tr><td>Alerts</td><td>Create monitor status alerts — notify when a monitor goes down</td></tr>
+    </table>
+    <button class="done-btn" onclick="markDone('c1',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+<!-- OBJ 2 -->
+<div class="card" id="c2">
+  <div class="card-hd" onclick="tog('c2')">
+    <span class="card-n">02</span>
+    <div class="card-info">
+      <div class="card-eyebrow">Heartbeat</div>
+      <div class="card-title">Configure Heartbeat for Active Monitoring</div>
+      <div class="card-tags"><span class="ctag hb">Heartbeat</span><span class="ctag cfg">Config</span></div>
+    </div>
+    <div class="done-pip"></div><span class="card-chev">▾</span>
+  </div>
+  <div class="card-body">
+    <p class="prose"><strong>Heartbeat</strong> is an Elastic Beat that actively probes endpoints at a scheduled interval. It supports three monitor types: <em>HTTP</em> (checks web services), <em>TCP</em> (raw port connectivity), and <em>ICMP</em> (ping). Results are sent to Elasticsearch and appear in the Uptime app.</p>
+
+    <div class="slbl"><span class="pip"></span>Heartbeat Configuration</div>
+    <div class="code">
+<button class="copy-btn" onclick="cpCode(this)">COPY</button>
+<span class="cm"># heartbeat.yml — monitor definitions</span>
+
+<span class="kw">heartbeat.monitors</span>:
+
+  <span class="cm"># HTTP monitor — checks a web endpoint</span>
+  - <span class="fd">type</span>: <span class="st">http</span>
+    <span class="fd">id</span>: <span class="st">production-homepage</span>
+    <span class="fd">name</span>: <span class="st">"Production Homepage"</span>
+    <span class="fd">urls</span>: [<span class="st">"https://www.example.com"</span>]
+    <span class="fd">schedule</span>: <span class="vl">'@every 1m'</span>
+    <span class="fd">check.response</span>:
+      <span class="fd">status</span>: [<span class="vl">200</span>]
+      <span class="fd">body.contains</span>: [<span class="st">"Welcome"</span>]
+    <span class="fd">tags</span>: [<span class="st">"production"</span>, <span class="st">"web"</span>]
+
+  <span class="cm"># TCP monitor — checks a port is open</span>
+  - <span class="fd">type</span>: <span class="st">tcp</span>
+    <span class="fd">id</span>: <span class="st">db-port-check</span>
+    <span class="fd">name</span>: <span class="st">"Postgres Port 5432"</span>
+    <span class="fd">hosts</span>: [<span class="st">"db-01.prod:5432"</span>]
+    <span class="fd">schedule</span>: <span class="vl">'@every 30s'</span>
+
+  <span class="cm"># ICMP monitor — ping check (requires root)</span>
+  - <span class="fd">type</span>: <span class="st">icmp</span>
+    <span class="fd">id</span>: <span class="st">gateway-ping</span>
+    <span class="fd">name</span>: <span class="st">"API Gateway Ping"</span>
+    <span class="fd">hosts</span>: [<span class="st">"10.0.1.1"</span>]
+    <span class="fd">schedule</span>: <span class="vl">'@every 10s'</span>
+
+<span class="kw">output.elasticsearch</span>:
+  <span class="fd">hosts</span>: [<span class="st">"https://es-cluster:9200"</span>]
+  <span class="fd">username</span>: <span class="st">"heartbeat_writer"</span>
+  <span class="fd">password</span>: <span class="st">"${HEARTBEAT_PWD}"</span>
+    </div>
+
+    <div class="slbl"><span class="pip"></span>Monitor Types</div>
+    <table class="tbl">
+      <tr><th>Type</th><th>Protocol</th><th>What it checks</th><th>Key config</th></tr>
+      <tr><td>http</td><td>HTTP/S</td><td>Response status, body content, response time, TLS cert</td><td>urls, check.response.status, check.response.body</td></tr>
+      <tr><td>tcp</td><td>TCP</td><td>Port is open, optional send/receive string matching</td><td>hosts (host:port), check.send, check.receive</td></tr>
+      <tr><td>icmp</td><td>ICMP</td><td>Host responds to ping, round-trip time</td><td>hosts (IP or hostname)</td></tr>
+    </table>
+    <div class="callout warn"><span class="callout-icon">⚠</span><div><strong>ICMP requires root/elevated privileges</strong> to send raw ICMP packets. HTTP and TCP monitors do not.</div></div>
+
+    <div class="slbl"><span class="pip"></span>Key Heartbeat Commands</div>
+    <div class="code">
+<button class="copy-btn" onclick="cpCode(this)">COPY</button>
+heartbeat <span class="kw">test</span> config  -c heartbeat.yml   <span class="cm"># validate config file</span>
+heartbeat <span class="kw">test</span> output -c heartbeat.yml   <span class="cm"># test ES connectivity</span>
+heartbeat <span class="kw">run</span>  --once  -c heartbeat.yml   <span class="cm"># run once (testing)</span>
+heartbeat <span class="kw">setup</span> -e                          <span class="cm"># load templates + dashboards</span>
+    </div>
+
+    <div class="slbl"><span class="pip"></span>Practice Quiz</div>
+    <div class="quiz" id="q2">
+      <div class="quiz-hdr">◆ EXAM QUESTION</div>
+      <div class="quiz-q">You need to verify that PostgreSQL is accepting connections on port 5432. You do NOT need to validate HTTP responses or TLS. Which Heartbeat monitor type should you use?</div>
+      <div class="quiz-opts" id="qo2">
+        <div class="qo" onclick="doQ('q2',0,1)"><span class="ql">A</span><span>http — to check the database admin web interface</span></div>
+        <div class="qo" onclick="doQ('q2',1,1)"><span class="ql">B</span><span>tcp — probes the port for connectivity without needing HTTP or ICMP</span></div>
+        <div class="qo" onclick="doQ('q2',2,1)"><span class="ql">C</span><span>icmp — ping the host to verify it's reachable</span></div>
+        <div class="qo" onclick="doQ('q2',3,1)"><span class="ql">D</span><span>http with check.request.method: "TCP"</span></div>
+      </div>
+      <div class="qfb" id="qf2"></div>
+    </div>
+    <button class="done-btn" onclick="markDone('c2',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+<!-- OBJ 3 -->
+<div class="card" id="c3">
+  <div class="card-hd" onclick="tog('c3')">
+    <span class="card-n">03</span>
+    <div class="card-info">
+      <div class="card-eyebrow">Elastic Synthetics</div>
+      <div class="card-title">Configure Elastic Synthetics for Browser Testing</div>
+      <div class="card-tags"><span class="ctag hb">Synthetics</span><span class="ctag cfg">Config</span></div>
+    </div>
+    <div class="done-pip"></div><span class="card-chev">▾</span>
+  </div>
+  <div class="card-body">
+    <p class="prose"><strong>Elastic Synthetics</strong> uses a real Chromium browser (via Playwright) to run scripted user journeys — simulating login flows, form submissions, multi-page flows. This goes beyond simple ping checks to validate end-to-end user experience.</p>
+    <div class="callout exam"><span class="callout-icon">⚡</span><div><strong>Exam focus:</strong> Know the difference between Heartbeat (active ping/HTTP) and Elastic Synthetics (browser-based scripted journeys). Know how to enable and configure them in the Synthetics app UI.</div></div>
+
+    <div class="slbl"><span class="pip"></span>Heartbeat vs Synthetics</div>
+    <table class="tbl">
+      <tr><th>Feature</th><th>Heartbeat</th><th>Elastic Synthetics</th></tr>
+      <tr><td>Check type</td><td>HTTP ping, TCP port, ICMP ping</td><td>Real browser (Chromium/Playwright)</td></tr>
+      <tr><td>Use case</td><td>Is the URL up? What's the status code?</td><td>Can a user log in? Does checkout work?</td></tr>
+      <tr><td>Config</td><td>heartbeat.yml</td><td>Synthetics app UI OR @elastic/synthetics project</td></tr>
+      <tr><td>Script</td><td>No scripting needed</td><td>JavaScript/TypeScript Playwright scripts</td></tr>
+      <tr><td>Screenshots</td><td>No</td><td>Yes — screenshots at each step</td></tr>
+      <tr><td>TLS cert check</td><td>Yes (built-in)</td><td>Yes</td></tr>
+    </table>
+
+    <div class="slbl"><span class="pip"></span>Adding a Browser Monitor in Kibana</div>
+    <div class="steps">
+      <div class="step"><div class="snum">1</div><div class="sc"><div class="st">Navigate to Synthetics App</div><div class="sd">Kibana → Observability → Synthetics → Add Monitor</div></div></div>
+      <div class="step"><div class="snum">2</div><div class="sc"><div class="st">Choose Monitor Type</div><div class="sd"><code>Lightweight</code> (HTTP/TCP/ICMP) or <code>Browser</code> (Playwright script)</div></div></div>
+      <div class="step"><div class="snum">3</div><div class="sc"><div class="st">Set Schedule & Locations</div><div class="sd">Check frequency (1m / 3m / 5m / 10m / 15m / 30m / 1h) and testing locations</div></div></div>
+      <div class="step"><div class="snum">4</div><div class="sc"><div class="st">Write or Paste Playwright Script</div><div class="sd">Uses <code>journey</code> + <code>step</code> API. Each step takes a screenshot automatically.</div></div></div>
+    </div>
+
+    <div class="code">
+<button class="copy-btn" onclick="cpCode(this)">COPY</button>
+<span class="cm">// Elastic Synthetics browser journey script</span>
+<span class="kw">import</span> { journey, step, expect } <span class="kw">from</span> <span class="st">'@elastic/synthetics'</span>;
+
+<span class="vl">journey</span>(<span class="st">'Login and view dashboard'</span>, ({ page }) => {
+
+  <span class="vl">step</span>(<span class="st">'Load login page'</span>, <span class="kw">async</span> () => {
+    <span class="kw">await</span> page.goto(<span class="st">'https://app.example.com/login'</span>);
+    <span class="kw">await</span> expect(page).toHaveTitle(<span class="st">/Login/</span>);
+  });
+
+  <span class="vl">step</span>(<span class="st">'Enter credentials'</span>, <span class="kw">async</span> () => {
+    <span class="kw">await</span> page.fill(<span class="st">'[name=username]'</span>, <span class="st">'testuser'</span>);
+    <span class="kw">await</span> page.fill(<span class="st">'[name=password]'</span>, <span class="st">'${SYNTHETICS_PWD}'</span>);
+    <span class="kw">await</span> page.click(<span class="st">'button[type=submit]'</span>);
+  });
+
+  <span class="vl">step</span>(<span class="st">'Verify dashboard loads'</span>, <span class="kw">async</span> () => {
+    <span class="kw">await</span> page.waitForSelector(<span class="st">'.dashboard-widget'</span>);
+    <span class="kw">await</span> expect(page.locator(<span class="st">'h1'</span>)).toHaveText(<span class="st">'Welcome back'</span>);
+  });
+
+});
+    </div>
+    <button class="done-btn" onclick="markDone('c3',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+<!-- OBJ 4 -->
+<div class="card" id="c4">
+  <div class="card-hd" onclick="tog('c4')">
+    <span class="card-n">04</span>
+    <div class="card-info">
+      <div class="card-eyebrow">Advanced Config</div>
+      <div class="card-title">TLS Validation and Advanced HTTP Monitor Options</div>
+      <div class="card-tags"><span class="ctag hb">Heartbeat</span><span class="ctag hi">Core Exam</span></div>
+    </div>
+    <div class="done-pip"></div><span class="card-chev">▾</span>
+  </div>
+  <div class="card-body">
+    <p class="prose">Beyond basic YAML config, Heartbeat supports powerful per-monitor features: <em>response validation</em>, <em>TLS settings</em>, <em>authentication</em>, <em>custom headers</em>, and <em>proxy</em> configuration.</p>
+
+    <div class="slbl"><span class="pip"></span>Advanced HTTP Monitor Config</div>
+    <div class="code">
+<button class="copy-btn" onclick="cpCode(this)">COPY</button>
+- <span class="fd">type</span>: <span class="st">http</span>
+  <span class="fd">id</span>: <span class="st">api-health</span>
+  <span class="fd">name</span>: <span class="st">"API Health Check"</span>
+  <span class="fd">urls</span>: [<span class="st">"https://api.example.com/health"</span>]
+  <span class="fd">schedule</span>: <span class="vl">'@every 30s'</span>
+
+  <span class="fd">check.request</span>:
+    <span class="fd">method</span>: <span class="st">POST</span>
+    <span class="fd">headers</span>:
+      <span class="st">'Authorization'</span>: <span class="st">'Bearer ${HEALTH_TOKEN}'</span>
+      <span class="st">'Content-Type'</span>: <span class="st">'application/json'</span>
+    <span class="fd">body</span>: <span class="st">'{"check": "full"}'</span>
+
+  <span class="fd">check.response</span>:
+    <span class="fd">status</span>: [<span class="vl">200</span>, <span class="vl">204</span>]
+    <span class="fd">body.contains</span>: [<span class="st">"\"status\":\"ok\""</span>]
+
+  <span class="cm"># TLS — for internal CA or custom certs</span>
+  <span class="fd">ssl</span>:
+    <span class="fd">certificate_authorities</span>: [<span class="st">"/etc/ssl/ca.crt"</span>]
+    <span class="fd">verification_mode</span>: <span class="vl">full</span>   <span class="cm"># full / strict / certificate / none</span>
+
+  <span class="fd">timeout</span>: <span class="vl">15s</span>
+    </div>
+
+    <div class="slbl"><span class="pip"></span>TLS Certificate Monitoring Dashboard</div>
+    <div class="tls-demo">
+      <div class="tls-toolbar">
+        <span class="tls-label">TLS CERTIFICATES — EXPIRY STATUS</span>
+        <button class="tls-btn" onclick="refreshTLS()">REFRESH STATUS</button>
+      </div>
+      <div class="tls-results" id="tlsResults"></div>
+    </div>
+
+    <table class="tbl">
+      <tr><th>ssl Setting</th><th>Values</th><th>Purpose</th></tr>
+      <tr><td>verification_mode</td><td>full, strict, certificate, none</td><td>How strictly to validate the server cert — use full for production</td></tr>
+      <tr><td>certificate_authorities</td><td>["/path/to/ca.crt"]</td><td>Custom CA certs for private/internal TLS endpoints</td></tr>
+      <tr><td>certificate + key</td><td>client cert paths</td><td>Client certificate for mutual TLS (mTLS)</td></tr>
+    </table>
+
+    <div class="slbl"><span class="pip"></span>Practice Quiz</div>
+    <div class="quiz" id="q4">
+      <div class="quiz-hdr">◆ EXAM QUESTION</div>
+      <div class="quiz-q">Your HTTP monitor fails with an SSL error because the endpoint uses a self-signed certificate from an internal CA. What should you configure to fix this without disabling TLS?</div>
+      <div class="quiz-opts" id="qo4">
+        <div class="qo" onclick="doQ('q4',0,2)"><span class="ql">A</span><span>Set ssl.verification_mode: none — disables all TLS validation</span></div>
+        <div class="qo" onclick="doQ('q4',1,2)"><span class="ql">B</span><span>Switch to a tcp monitor — it doesn't validate TLS certificates</span></div>
+        <div class="qo" onclick="doQ('q4',2,2)"><span class="ql">C</span><span>Set ssl.certificate_authorities to include the path to your internal CA certificate</span></div>
+        <div class="qo" onclick="doQ('q4',3,2)"><span class="ql">D</span><span>Set ssl.verification_mode: certificate and remove the CA path setting</span></div>
+      </div>
+      <div class="qfb" id="qf4"></div>
+    </div>
+    <button class="done-btn" onclick="markDone('c4',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+<!-- OBJ 5 -->
+<div class="card" id="c5">
+  <div class="card-hd" onclick="tog('c5')">
+    <span class="card-n">05</span>
+    <div class="card-info">
+      <div class="card-eyebrow">Ping Data</div>
+      <div class="card-title">Understand Heartbeat Ping Documents & Timeline</div>
+      <div class="card-tags"><span class="ctag kb">Kibana</span><span class="ctag hb">Heartbeat</span></div>
+    </div>
+    <div class="done-pip"></div><span class="card-chev">▾</span>
+  </div>
+  <div class="card-body">
+    <p class="prose">Each time Heartbeat probes an endpoint, it writes a <strong>ping document</strong> to Elasticsearch. The Uptime app visualizes these over time. On a monitor's detail page you can see the availability graph, ping results list, duration trends, and — for HTTP monitors — full response details and TLS cert info.</p>
+
+    <div class="slbl"><span class="pip"></span>Interactive Ping Timeline — Last 60 Checks</div>
+    <div class="hb-timeline">
+      <div class="hbt-header">
+        <span class="hbt-label">PING HISTORY — SELECT SCENARIO</span>
+        <select class="hbt-sel" onchange="renderTimeline(this.value)">
+          <option value="mostly_up">Mostly UP</option>
+          <option value="incident">Active Incident</option>
+          <option value="flapping">Flapping</option>
+        </select>
+      </div>
+      <div class="hbt-body" id="timelineBody"></div>
+    </div>
+
+    <div class="slbl"><span class="pip"></span>Key Fields in Ping Documents</div>
+    <div class="code">
+<span class="cm"># Sample Heartbeat ping document</span>
+{
+  <span class="fd">"@timestamp"</span>: <span class="st">"2026-02-27T10:30:00Z"</span>,
+  <span class="fd">"monitor.id"</span>: <span class="st">"production-homepage"</span>,
+  <span class="fd">"monitor.name"</span>: <span class="st">"Production Homepage"</span>,
+  <span class="fd">"monitor.type"</span>: <span class="st">"http"</span>,
+  <span class="fd">"monitor.status"</span>: <span class="vl">"up"</span>,        <span class="cm">← "up" or "down"</span>
+  <span class="fd">"monitor.duration.us"</span>: <span class="vl">142000</span>,  <span class="cm">← microseconds</span>
+  <span class="fd">"url.full"</span>: <span class="st">"https://www.example.com"</span>,
+  <span class="fd">"http.response.status_code"</span>: <span class="vl">200</span>,
+  <span class="fd">"tls.certificate.not_after"</span>: <span class="st">"2026-06-15T00:00:00Z"</span>,
+  <span class="fd">"observer.geo.name"</span>: <span class="st">"us-east-1"</span>  <span class="cm">← probe location</span>
+}
+    </div>
+
+    <div class="callout info"><span class="callout-icon">ℹ</span><div>Index patterns: <strong>heartbeat-*</strong> (standalone Heartbeat) or <strong>logs-uptime.*-*</strong> (Fleet/Agent-managed). The Uptime app handles both automatically.</div></div>
+    <button class="done-btn" onclick="markDone('c5',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+<!-- OBJ 6 -->
+<div class="card" id="c6">
+  <div class="card-hd" onclick="tog('c6')">
+    <span class="card-n">06</span>
+    <div class="card-info">
+      <div class="card-eyebrow">Uptime Alerting</div>
+      <div class="card-title">Create Uptime Alerts for Monitor Status & TLS Expiry</div>
+      <div class="card-tags"><span class="ctag cfg">Alerting</span><span class="ctag kb">Kibana</span></div>
+    </div>
+    <div class="done-pip"></div><span class="card-chev">▾</span>
+  </div>
+  <div class="card-body">
+    <p class="prose">Uptime alerting integrates with Kibana Alerting to fire when a monitor goes down or when a TLS certificate is approaching expiry. Alerts can notify via Slack, PagerDuty, email, webhook, and other connectors.</p>
+
+    <div class="code">
+<button class="copy-btn" onclick="cpCode(this)">COPY</button>
+<span class="cm"># Uptime rule types</span>
+<span class="kw">Navigate:</span> Kibana → Observability → Uptime → Alerts → Create alert
+
+<span class="kw">RULE TYPE 1: Monitor Status</span>
+  Fires when monitors report DOWN
+  Config: consecutive checks, time window
+  Filter by: monitor ID, tag, location
+  Example: "Alert if any monitor tagged 'production'
+            is DOWN for 3 consecutive checks"
+
+<span class="kw">RULE TYPE 2: TLS Certificate</span>
+  Fires when a cert is approaching expiry
+  Config: threshold (days until expiry)
+  Example: "Alert if TLS cert expires in &lt; 30 days"
+  Applies to ALL monitors — no per-monitor config
+
+<span class="cm"># Action/notification example</span>
+<span class="fd">Connector</span>: PagerDuty
+<span class="fd">Message</span>: "Monitor {{context.monitorName}} is DOWN.
+           URL: {{context.monitorUrl}}"
+    </div>
+
+    <div class="slbl"><span class="pip"></span>Practice Quiz</div>
+    <div class="quiz" id="q6">
+      <div class="quiz-hdr">◆ EXAM QUESTION</div>
+      <div class="quiz-q">You need a PagerDuty alert when any monitor tagged "critical" goes DOWN for 2 consecutive checks. Which rule type and filter configuration is correct?</div>
+      <div class="quiz-opts" id="qo6">
+        <div class="qo" onclick="doQ('q6',0,3)"><span class="ql">A</span><span>TLS Certificate rule — filter by "critical" tag, set threshold to 2 days</span></div>
+        <div class="qo" onclick="doQ('q6',1,3)"><span class="ql">B</span><span>Monitor Status rule — no filtering needed, PagerDuty fires for all monitors</span></div>
+        <div class="qo" onclick="doQ('q6',2,3)"><span class="ql">C</span><span>Create a Watcher — Uptime doesn't natively support PagerDuty</span></div>
+        <div class="qo" onclick="doQ('q6',3,3)"><span class="ql">D</span><span>Monitor Status rule — filter by tag "critical", set 2 consecutive checks, PagerDuty action connector</span></div>
+      </div>
+      <div class="qfb" id="qf6"></div>
+    </div>
+    <button class="done-btn" onclick="markDone('c6',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+</div><!-- /cards -->
+
+<!-- CHEATSHEET -->
+<div class="cheatsheet">
+  <div class="cs-hd" onclick="toggleCS()">
+    <span class="cs-hd-title">■ Topic 4 Quick Reference — Uptime & Synthetics</span>
+    <span class="cs-chev" id="csChev">▾ EXPAND</span>
+  </div>
+  <div class="cs-body" id="csBody">
+    <div class="cs-grid">
+      <div class="cs-item"><div class="cs-t">Monitor Types</div><div class="cs-d"><strong>http</strong> — URL status + body check<br><strong>tcp</strong> — port connectivity<br><strong>icmp</strong> — ping (needs root)</div></div>
+      <div class="cs-item"><div class="cs-t">Heartbeat Schedule</div><div class="cs-d"><strong>@every 1m</strong> · @every 30s<br>Cron: 0 */6 * * *<br>Set per-monitor in heartbeat.yml</div></div>
+      <div class="cs-item"><div class="cs-t">HTTP Validation</div><div class="cs-d">check.response.status: [200]<br>check.response.body.contains: [...]<br>check.request.headers: {...}</div></div>
+      <div class="cs-item"><div class="cs-t">TLS Settings</div><div class="cs-d">ssl.verification_mode: full<br>ssl.certificate_authorities: [path]<br>Uptime app → Certificates tab</div></div>
+      <div class="cs-item"><div class="cs-t">Synthetics vs Heartbeat</div><div class="cs-d">Heartbeat = ping/port checks<br>Synthetics = browser (Playwright)<br>Scripts use journey + step API</div></div>
+      <div class="cs-item"><div class="cs-t">Alert Rules</div><div class="cs-d"><strong>Monitor Status</strong> — monitor down<br><strong>TLS Certificate</strong> — cert expiry<br>Filter by tag or monitor ID</div></div>
+      <div class="cs-item"><div class="cs-t">Heartbeat Commands</div><div class="cs-d">heartbeat test config<br>heartbeat test output<br>heartbeat setup -e</div></div>
+      <div class="cs-item"><div class="cs-t">Index Patterns</div><div class="cs-d">heartbeat-* (standalone)<br>logs-uptime.*-* (Fleet/Agent)<br>Uptime app handles both</div></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+</main>
+
+<footer>
+  <div class="wrap" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;width:100%">
+    <span class="ft">Elastic Cert Observability Eng · Topic 4 · Uptime & Synthetics · 6 Objectives</span>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a href="#" class="nav-btn" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">↑ TOP</a>
+      <a href="#" class="nav-btn" onclick="alert('Open Topic 3: APM');return false;">← APM</a>
+      <a href="#" class="nav-btn primary" onclick="alert('Ask Claude for Topic 5: Structuring Data!');return false;">TOPIC 5: STRUCT DATA →</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+// CLOCK
+function updateClock(){
+  const n=new Date();
+  document.getElementById('clockTime').textContent=
+    n.getUTCHours().toString().padStart(2,'0')+':'+
+    n.getUTCMinutes().toString().padStart(2,'0')+':'+
+    n.getUTCSeconds().toString().padStart(2,'0');
+}
+updateClock();setInterval(updateClock,1000);
+
+// MONITORS
+const monitors=[
+  {name:'Production Homepage',type:'http',url:'www.example.com',status:'up',avail:99.98,dur:'142ms',segs:[0,0,0,0,0,0,0,0,0,0]},
+  {name:'API Gateway Health', type:'http',url:'api.example.com/health',status:'up',avail:99.91,dur:'89ms',segs:[0,0,0,0,0,0,0,0,0,0]},
+  {name:'Payment Service',    type:'http',url:'payments.example.com',status:'down',avail:98.2,dur:'N/A',segs:[0,0,0,1,1,1,0,0,1,1]},
+  {name:'Postgres Port 5432', type:'tcp', url:'db-01.prod:5432',status:'up',avail:100,dur:'4ms',segs:[0,0,0,0,0,0,0,0,0,0]},
+  {name:'Cache Redis',        type:'tcp', url:'cache-01:6379',status:'up',avail:100,dur:'2ms',segs:[0,0,0,0,0,0,0,0,0,0]},
+  {name:'API Gateway Ping',   type:'icmp',url:'10.0.1.1',status:'degraded',avail:99.1,dur:'22ms',segs:[0,0,2,0,0,2,0,0,0,0]},
+  {name:'Search Service',     type:'http',url:'search.example.com',status:'up',avail:99.85,dur:'55ms',segs:[0,0,0,0,0,0,0,0,0,0]},
+  {name:'Admin Portal',       type:'http',url:'admin.example.com',status:'up',avail:99.99,dur:'198ms',segs:[0,0,0,0,0,0,0,0,0,0]},
+];
+function renderMonitors(){
+  let up=0,dn=0,deg=0;
+  monitors.forEach(m=>{if(m.status==='up')up++;else if(m.status==='down')dn++;else deg++;});
+  document.getElementById('sbUp').textContent=up;
+  document.getElementById('sbDn').textContent=dn;
+  document.getElementById('sbDeg').textContent=deg;
+  document.getElementById('monitorGrid').innerHTML=monitors.map(m=>`
+    <div class="monitor ${m.status}">
+      <div class="mon-top">
+        <div class="mon-dot"></div>
+        <div class="mon-name">${m.name}</div>
+        <div class="mon-status">${m.status.toUpperCase()}</div>
+      </div>
+      <div class="mon-meta"><span>${m.type.toUpperCase()}</span><span>${m.url}</span><span>${m.dur}</span></div>
+      <div class="mon-bar">${m.segs.map(s=>`<div class="mon-seg ${s===0?'seg-up':s===1?'seg-dn':'seg-deg'}" style="width:10%"></div>`).join('')}</div>
+      <div class="mon-avail">Availability: ${m.avail}%</div>
+    </div>`).join('');
+}
+renderMonitors();
+
+// TIMELINE
+const scenarios={
+  mostly_up:{monitors:[
+    {name:'production-homepage',ticks:Array(60).fill(0).map(()=>Math.random()<.99?'up':'dn')},
+    {name:'api-gateway',ticks:Array(60).fill(0).map(()=>Math.random()<.995?'up':'dn')},
+    {name:'payment-service',ticks:Array(60).fill(0).map((v,i)=>i>=50?'dn':Math.random()<.99?'up':'deg')},
+    {name:'search-service',ticks:Array(60).fill('up')},
+  ]},
+  incident:{monitors:[
+    {name:'production-homepage',ticks:Array(60).fill(0).map((v,i)=>i>=42?'dn':'up')},
+    {name:'api-gateway',ticks:Array(60).fill(0).map((v,i)=>i>=42?'dn':'up')},
+    {name:'payment-service',ticks:Array(60).fill(0).map((v,i)=>i>=40?'dn':'up')},
+    {name:'search-service',ticks:Array(60).fill('up')},
+  ]},
+  flapping:{monitors:[
+    {name:'production-homepage',ticks:Array(60).fill(0).map((v,i)=>i%4===0?'dn':'up')},
+    {name:'api-gateway',ticks:Array(60).fill(0).map(()=>Math.random()<.7?'up':'deg')},
+    {name:'payment-service',ticks:Array(60).fill(0).map(()=>Math.random()<.5?'up':'dn')},
+    {name:'search-service',ticks:Array(60).fill('up')},
+  ]}
+};
+function renderTimeline(s){
+  const data=scenarios[s];
+  document.getElementById('timelineBody').innerHTML=data.monitors.map(m=>{
+    const last=m.ticks[m.ticks.length-1];
+    const col=last==='up'?'var(--green)':last==='dn'?'var(--red)':'var(--amber)';
+    return `<div class="hbt-row">
+      <div class="hbt-name">${m.name}</div>
+      <div class="hbt-ticks">${m.ticks.map(t=>`<div class="tick ${t}" title="${t.toUpperCase()}"></div>`).join('')}</div>
+      <div class="hbt-latest" style="color:${col}">${last.toUpperCase()}</div>
+    </div>`;
+  }).join('');
+}
+renderTimeline('mostly_up');
+
+// TLS
+const tlsCerts=[
+  {domain:'www.example.com',expiry:245,valid:true},
+  {domain:'api.example.com',expiry:12,valid:true},
+  {domain:'admin.example.com',expiry:3,valid:true},
+  {domain:'auth.example.com',expiry:89,valid:true},
+  {domain:'old.example.com',expiry:-4,valid:false},
+  {domain:'payments.example.com',expiry:28,valid:true},
+];
+function refreshTLS(){
+  document.getElementById('tlsResults').innerHTML=tlsCerts.map(c=>{
+    const cls=!c.valid?'crit':c.expiry<7?'crit':c.expiry<30?'warn':'ok';
+    const expiryText=!c.valid?'EXPIRED '+Math.abs(c.expiry)+'d ago':c.expiry+'d remaining';
+    return `<div class="tls-cert ${cls}">
+      <div class="tc-domain">${c.domain}</div>
+      <div class="tc-row"><span>Status</span><span class="tc-val ${!c.valid?'crit':'ok'}">${c.valid?'VALID':'EXPIRED'}</span></div>
+      <div class="tc-row"><span>Expiry</span><span class="tc-val ${cls}">${expiryText}</span></div>
+      <div class="tc-row"><span>Alert</span><span class="tc-val ${cls}">${cls==='crit'?'CRITICAL':cls==='warn'?'WARN':'OK'}</span></div>
+    </div>`;
+  }).join('');
+}
+refreshTLS();
+
+// QUIZ
+const qA={
+  q2:{c:1,ok:'✓ CORRECT — TCP monitors check raw port connectivity. No HTTP protocol or elevated ICMP privileges needed. Perfect for database port checks.',fail:'✗ Use tcp for a raw port check. HTTP requires an HTTP server; ICMP only checks host reachability, not port 5432 specifically.'},
+  q4:{c:2,ok:'✓ CORRECT — ssl.certificate_authorities tells Heartbeat to trust your internal CA when validating the cert. This keeps TLS validation active without disabling it.',fail:'✗ The fix is ssl.certificate_authorities with the path to your internal CA. Setting verification_mode: none disables ALL TLS checking (bad practice). Switching to TCP loses HTTP validation.'},
+  q6:{c:3,ok:'✓ CORRECT — Monitor Status rule, filtered by tag "critical", configured for 2 consecutive down checks, with a PagerDuty action connector.',fail:'✗ Correct answer: Monitor Status rule (not TLS cert), filter by tag "critical", set consecutive check count to 2, add PagerDuty as the action. TLS Certificate is for cert expiry, not monitor availability.'},
+};
+function doQ(qid,sel,correct){
+  const n=qid.replace('q','');
+  const opts=document.getElementById('qo'+n);
+  if(opts.querySelector('.locked'))return;
+  opts.querySelectorAll('.qo').forEach((o,i)=>{
+    o.classList.add('locked');
+    if(i===correct)o.classList.add('correct');
+    else if(i===sel&&sel!==correct)o.classList.add('wrong');
+  });
+  const fb=document.getElementById('qf'+n);
+  fb.className='qfb show '+(sel===correct?'correct':'wrong');
+  fb.textContent=qA[qid][sel===correct?'ok':'fail'];
+}
+
+// TOGGLE
+function tog(id){document.getElementById(id).classList.toggle('open')}
+
+// MARK DONE
+let dc=0;const T=6;
+function markDone(id,btn){
+  const c=document.getElementById(id);
+  if(c.classList.contains('done'))return;
+  c.classList.add('done');btn.classList.add('marked');btn.textContent='✓ UNDERSTOOD';dc++;
+  document.getElementById('pFill').style.width=(dc/T*100)+'%';
+  document.getElementById('pNum').textContent=dc+' / '+T+' objectives';
+}
+
+// CHEATSHEET
+function toggleCS(){
+  const b=document.getElementById('csBody');
+  const ch=document.getElementById('csChev');
+  ch.textContent=b.classList.toggle('open')?'▴ COLLAPSE':'▾ EXPAND';
+}
+
+function cpCode(btn){
+  const txt=btn.parentElement.innerText.replace('COPY','').trim();
+  navigator.clipboard.writeText(txt).catch(()=>{});
+  btn.textContent='✓';setTimeout(()=>btn.textContent='COPY',1500);
+}
+</script>
+</body>
+</html>

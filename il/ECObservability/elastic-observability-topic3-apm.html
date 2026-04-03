@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elastic Certified Observability Engineer — Topic 3: APM</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Azeret+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #111113;
+  --bg2:      #17171a;
+  --surface:  #1e1e23;
+  --surface2: #25252c;
+  --surface3: #2c2c35;
+  --border:   #2e2e3a;
+  --border2:  #3d3d4f;
+  --text:     #e8e4f0;
+  --text-dim: #9990b0;
+  --text-mute:#524e65;
+  --violet:   #b388ff;
+  --violet2:  #9c6aff;
+  --gold:     #ffd166;
+  --gold2:    #e6b84a;
+  --teal:     #06d6a0;
+  --coral:    #ff6b6b;
+  --blue:     #74b9ff;
+  --elastic:  #ff6900;
+  --white:    #f0ecff;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'DM Sans',sans-serif;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ── GLASS GRAIN OVERLAY ── */
+body::before{
+  content:'';
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(179,136,255,.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 80%, rgba(255,209,102,.04) 0%, transparent 60%);
+}
+
+/* ── TOP RULE ── */
+.top-rule{
+  height:1px;
+  background:linear-gradient(90deg,transparent,var(--violet),var(--gold),var(--violet),transparent);
+  position:relative;z-index:2;
+}
+
+.wrap{max-width:1100px;margin:0 auto;padding:0 36px;position:relative;z-index:1}
+
+/* ── TOP NAV ── */
+.topnav{
+  padding:14px 36px;
+  display:flex;align-items:center;gap:0;
+  background:rgba(17,17,19,.8);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  position:relative;z-index:2;
+  overflow-x:auto;
+}
+.cert-crumb{
+  font-family:'Azeret Mono',monospace;
+  font-size:10px;letter-spacing:2px;
+  color:var(--text-mute);text-transform:uppercase;
+  padding-right:20px;margin-right:20px;
+  border-right:1px solid var(--border2);
+  white-space:nowrap;flex-shrink:0;
+}
+.topic-tabs{display:flex;gap:2px;flex:1;flex-wrap:nowrap}
+.ttab{
+  font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;
+  padding:6px 14px;color:var(--text-mute);background:none;
+  border:none;cursor:pointer;transition:all .2s;
+  white-space:nowrap;position:relative;
+}
+.ttab::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;
+  height:2px;background:transparent;transition:background .2s;
+}
+.ttab:hover{color:var(--text-dim)}
+.ttab.done{color:var(--teal)}
+.ttab.done::after{background:var(--teal)}
+.ttab.active{color:var(--violet)}
+.ttab.active::after{background:var(--violet)}
+
+/* ── HEADER ── */
+header{
+  padding:56px 0 48px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:48px;
+  position:relative;z-index:1;
+}
+.header-eyebrow{
+  font-family:'Azeret Mono',monospace;
+  font-size:11px;letter-spacing:3px;text-transform:uppercase;
+  color:var(--violet);margin-bottom:20px;
+  display:flex;align-items:center;gap:12px;
+}
+.header-eyebrow::before{
+  content:'';width:32px;height:1px;
+  background:linear-gradient(90deg,transparent,var(--violet));
+}
+h1{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(56px,9vw,104px);
+  line-height:.88;letter-spacing:-2px;
+  margin-bottom:22px;
+}
+h1 .label{
+  display:block;
+  font-style:italic;font-weight:400;
+  color:var(--text-dim);font-size:.38em;
+  letter-spacing:0;margin-bottom:4px;
+}
+h1 .title{
+  display:block;color:var(--white);font-weight:700;
+}
+h1 .title em{color:var(--violet);font-style:italic}
+.header-desc{
+  font-size:15px;color:var(--text-dim);
+  max-width:600px;line-height:1.75;
+  margin-bottom:28px;font-weight:300;
+}
+.prog-bar-wrap{
+  display:flex;align-items:center;gap:16px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  padding:13px 20px;flex-wrap:wrap;
+}
+.prog-lbl{
+  font-family:'Azeret Mono',monospace;font-size:10px;
+  letter-spacing:2px;text-transform:uppercase;color:var(--text-mute);
+}
+.prog-track{flex:1;min-width:120px;height:2px;background:var(--border2);overflow:hidden}
+.prog-fill{
+  height:100%;
+  background:linear-gradient(90deg,var(--violet),var(--gold));
+  transition:width .6s cubic-bezier(.4,0,.2,1);
+  width:0%;box-shadow:0 0 10px rgba(179,136,255,.4);
+}
+.prog-num{
+  font-family:'Azeret Mono',monospace;font-size:12px;
+  color:var(--gold);white-space:nowrap;
+}
+
+/* ── CARDS ── */
+.cards{display:flex;flex-direction:column;gap:2px;margin-bottom:56px}
+
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-left:2px solid transparent;
+  transition:all .2s;
+  animation:riseUp .45s cubic-bezier(.4,0,.2,1) both;
+}
+.card:nth-child(1){animation-delay:.04s}.card:nth-child(2){animation-delay:.09s}
+.card:nth-child(3){animation-delay:.14s}.card:nth-child(4){animation-delay:.19s}
+.card:nth-child(5){animation-delay:.24s}.card:nth-child(6){animation-delay:.29s}
+.card:nth-child(7){animation-delay:.34s}.card:nth-child(8){animation-delay:.39s}
+@keyframes riseUp{
+  from{opacity:0;transform:translateY(12px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.card:hover{border-color:var(--border2);background:var(--surface2)}
+.card.open{border-left-color:var(--violet);background:var(--surface2)}
+.card.done{border-left-color:var(--teal)}
+
+.card-hd{
+  display:flex;align-items:center;gap:16px;
+  padding:18px 24px;cursor:pointer;user-select:none;
+}
+.card-hd:hover{background:rgba(179,136,255,.03)}
+.card-n{
+  font-family:'Cormorant Garamond',serif;
+  font-size:28px;font-weight:700;color:var(--text-mute);
+  min-width:38px;line-height:1;font-style:italic;
+}
+.card.open .card-n{color:var(--violet)}
+.card.done .card-n{color:var(--teal)}
+.card-info{flex:1}
+.card-subtitle{
+  font-family:'Azeret Mono',monospace;font-size:10px;
+  letter-spacing:2px;text-transform:uppercase;
+  color:var(--violet);margin-bottom:4px;
+}
+.card-title{font-size:16px;font-weight:600;color:var(--text);line-height:1.3}
+.card-tags{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.ctag{
+  font-family:'Azeret Mono',monospace;font-size:9px;
+  letter-spacing:1px;padding:2px 8px;border:1px solid;
+  text-transform:uppercase;
+}
+.ctag.apm{border-color:rgba(179,136,255,.4);color:var(--violet)}
+.ctag.kb {border-color:rgba(116,185,255,.4);color:var(--blue)}
+.ctag.cfg{border-color:rgba(255,209,102,.4);color:var(--gold)}
+.ctag.rum{border-color:rgba(6,214,160,.4);  color:var(--teal)}
+.ctag.hi {border-color:rgba(255,105,0,.4);  color:var(--elastic)}
+.done-pip{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--teal);box-shadow:0 0 8px var(--teal);
+  display:none;flex-shrink:0;
+}
+.card.done .done-pip{display:block}
+.card-chev{
+  font-size:12px;color:var(--text-mute);
+  transition:transform .25s;flex-shrink:0;
+}
+.card.open .card-chev{transform:rotate(180deg);color:var(--violet)}
+
+.card-body{
+  display:none;padding:0 24px 28px;
+  border-top:1px solid var(--border);
+  animation:fadeSlide .3s ease;
+}
+.card.open .card-body{display:block}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+
+/* section label */
+.slbl{
+  font-family:'Azeret Mono',monospace;font-size:9px;
+  letter-spacing:3px;text-transform:uppercase;
+  color:var(--violet);margin:22px 0 10px;
+  display:flex;align-items:center;gap:10px;
+}
+.slbl::after{content:'';flex:1;height:1px;background:var(--border)}
+.slbl .dot{
+  width:4px;height:4px;background:var(--violet);
+  border-radius:50%;box-shadow:0 0 6px var(--violet);flex-shrink:0;
+}
+
+/* prose */
+.prose{
+  font-size:14px;color:var(--text-dim);line-height:1.8;
+  margin-bottom:14px;font-weight:300;
+}
+.prose strong{color:var(--text);font-weight:600}
+.prose em{color:var(--violet);font-style:italic}
+.prose code{
+  font-family:'Azeret Mono',monospace;font-size:12px;
+  background:var(--surface3);padding:1px 7px;
+  color:var(--gold);border:1px solid var(--border2);
+}
+
+/* code */
+.code{
+  background:#0d0d10;
+  border:1px solid var(--border);
+  border-left:2px solid var(--violet);
+  padding:16px 18px;
+  font-family:'Azeret Mono',monospace;
+  font-size:12px;line-height:1.75;
+  overflow-x:auto;margin-bottom:14px;
+  position:relative;
+}
+.code .cm{color:var(--text-mute)}
+.code .kw{color:var(--gold)}
+.code .st{color:var(--teal)}
+.code .fd{color:var(--blue)}
+.code .vl{color:var(--violet)}
+.code .hl{color:var(--coral)}
+.copy-btn{
+  position:absolute;top:8px;right:8px;
+  background:var(--border);border:none;
+  color:var(--text-mute);
+  font-family:'Azeret Mono',monospace;font-size:9px;
+  padding:3px 9px;cursor:pointer;transition:all .2s;letter-spacing:.5px;
+}
+.copy-btn:hover{background:var(--violet);color:var(--bg)}
+
+/* callout */
+.callout{
+  display:flex;gap:14px;padding:14px 18px;
+  border-left:2px solid;margin-bottom:14px;
+  font-size:13px;line-height:1.7;color:var(--text-dim);font-weight:300;
+}
+.callout.exam{border-color:var(--elastic);background:rgba(255,105,0,.06)}
+.callout.tip {border-color:var(--teal);  background:rgba(6,214,160,.05)}
+.callout.warn{border-color:var(--gold);  background:rgba(255,209,102,.05)}
+.callout.info{border-color:var(--blue);  background:rgba(116,185,255,.05)}
+.callout-icon{font-size:16px;flex-shrink:0;margin-top:2px}
+.callout strong{color:var(--text)}
+
+/* table */
+.tbl{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px}
+.tbl th{
+  text-align:left;padding:8px 14px;
+  background:var(--surface3);
+  font-family:'Azeret Mono',monospace;
+  font-size:9px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--violet);border-bottom:1px solid var(--border2);font-weight:400;
+}
+.tbl td{
+  padding:9px 14px;border-bottom:1px solid var(--border);
+  color:var(--text-dim);vertical-align:top;line-height:1.5;font-weight:300;
+}
+.tbl td:first-child{
+  font-family:'Azeret Mono',monospace;font-size:11px;
+  color:var(--gold);
+}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:rgba(179,136,255,.03)}
+
+/* steps */
+.steps{display:flex;flex-direction:column;margin-bottom:14px}
+.step{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border)}
+.step:last-child{border-bottom:none}
+.snum{
+  width:28px;height:28px;
+  border:1px solid var(--violet);color:var(--violet);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Azeret Mono',monospace;font-size:11px;
+  flex-shrink:0;margin-top:1px;
+  box-shadow:0 0 8px rgba(179,136,255,.2);
+}
+.sc .st{font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px}
+.sc .sd{font-size:13px;color:var(--text-dim);line-height:1.5;font-weight:300}
+.sc .sd code{
+  font-family:'Azeret Mono',monospace;font-size:11px;
+  background:var(--surface3);padding:1px 6px;
+  color:var(--gold);border:1px solid var(--border2);
+}
+
+/* quiz */
+.quiz{
+  background:var(--surface3);border:1px solid var(--border2);
+  padding:20px;margin-top:10px;
+}
+.quiz-hdr{
+  font-family:'Azeret Mono',monospace;font-size:9px;
+  letter-spacing:3px;text-transform:uppercase;
+  color:var(--violet);margin-bottom:10px;
+}
+.quiz-q{font-size:14px;font-weight:600;color:var(--text);margin-bottom:14px;line-height:1.55}
+.quiz-opts{display:flex;flex-direction:column;gap:7px}
+.qo{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:11px 16px;background:var(--surface);
+  border:1px solid var(--border);cursor:pointer;
+  transition:all .2s;font-size:13px;color:var(--text-dim);
+  line-height:1.45;font-weight:300;
+}
+.qo:hover:not(.locked){border-color:var(--violet);color:var(--text);background:rgba(179,136,255,.05)}
+.qo.correct{border-color:var(--teal);background:rgba(6,214,160,.07);color:var(--text)}
+.qo.wrong  {border-color:var(--coral);background:rgba(255,107,107,.07);color:var(--text-dim)}
+.qo.locked {cursor:default}
+.ql{
+  font-family:'Cormorant Garamond',serif;font-style:italic;
+  font-size:18px;min-width:20px;color:var(--text-mute);margin-top:1px;line-height:1;
+}
+.qo.correct .ql{color:var(--teal)}
+.qo.wrong   .ql{color:var(--coral)}
+.qfb{
+  margin-top:11px;padding:12px 16px;
+  font-size:13px;font-family:'Azeret Mono',monospace;
+  line-height:1.6;display:none;font-weight:300;
+}
+.qfb.show{display:block}
+.qfb.correct{background:rgba(6,214,160,.08);border-left:2px solid var(--teal);color:var(--text-dim)}
+.qfb.wrong  {background:rgba(255,107,107,.08);border-left:2px solid var(--coral);color:var(--text-dim)}
+
+/* done btn */
+.done-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  margin-top:18px;background:transparent;
+  border:1px solid rgba(6,214,160,.4);
+  color:var(--teal);font-family:'DM Sans',sans-serif;
+  font-weight:600;font-size:13px;
+  padding:8px 18px;cursor:pointer;transition:all .2s;
+}
+.done-btn:hover{background:rgba(6,214,160,.08);box-shadow:0 0 14px rgba(6,214,160,.15)}
+.done-btn.marked{background:rgba(6,214,160,.12)}
+
+/* ═══════════════════════════
+   INTERACTIVE DEMOS
+═══════════════════════════ */
+
+/* Trace waterfall demo */
+.trace-demo{
+  background:#0d0d10;border:1px solid var(--border);
+  overflow:hidden;margin-bottom:14px;
+}
+.trace-toolbar{
+  background:var(--surface2);border-bottom:1px solid var(--border);
+  padding:9px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.trace-lbl{
+  font-family:'Azeret Mono',monospace;font-size:10px;
+  letter-spacing:1.5px;color:var(--text-mute);flex:1;
+}
+.trace-btn{
+  font-family:'Azeret Mono',monospace;font-size:10px;
+  padding:4px 12px;border:1px solid var(--border2);
+  background:none;color:var(--text-mute);cursor:pointer;
+  transition:all .2s;letter-spacing:.5px;
+}
+.trace-btn:hover,.trace-btn.active{
+  border-color:var(--violet);color:var(--violet);
+  background:rgba(179,136,255,.06);
+}
+.trace-summary{
+  display:flex;gap:20px;padding:12px 16px;
+  border-bottom:1px solid var(--border);
+  flex-wrap:wrap;
+}
+.trace-stat{display:flex;flex-direction:column;gap:2px}
+.ts-val{
+  font-family:'Cormorant Garamond',serif;
+  font-size:24px;font-weight:700;color:var(--text);line-height:1;
+}
+.ts-lbl{
+  font-family:'Azeret Mono',monospace;font-size:9px;
+  letter-spacing:1.5px;color:var(--text-mute);text-transform:uppercase;
+}
+.waterfall{padding:14px 16px}
+.wf-row{
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:6px;
+  animation:wfIn .3s ease both;
+}
+@keyframes wfIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+.wf-name{
+  font-family:'Azeret Mono',monospace;font-size:11px;
+  color:var(--text-dim);min-width:220px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.wf-name .service{color:var(--violet);margin-right:4px;font-size:10px}
+.wf-track{flex:1;position:relative;height:18px}
+.wf-bar{
+  height:16px;border-radius:0;position:absolute;top:1px;
+  display:flex;align-items:center;padding:0 6px;
+  font-family:'Azeret Mono',monospace;font-size:9px;
+  color:rgba(255,255,255,.8);white-space:nowrap;overflow:hidden;
+  min-width:4px;cursor:default;transition:opacity .2s;
+}
+.wf-bar:hover{opacity:.85}
+.wf-dur{
+  font-family:'Azeret Mono',monospace;font-size:10px;
+  color:var(--text-mute);min-width:60px;text-align:right;
+}
+.wf-err{color:var(--coral)!important}
+
+/* Service map */
+.smap-demo{
+  background:#0d0d10;border:1px solid var(--border);
+  overflow:hidden;margin-bottom:14px;
+}
+.smap-area{padding:20px;position:relative;min-height:200px}
+
+/* APM agent config builder */
+.agent-builder{
+  background:var(--surface);border:1px solid var(--border2);
+  overflow:hidden;margin-bottom:14px;
+}
+.ab-toolbar{
+  background:var(--surface3);border-bottom:1px solid var(--border);
+  padding:10px 16px;display:flex;align-items:center;gap:10px;
+}
+.ab-title{
+  font-family:'Azeret Mono',monospace;font-size:10px;
+  letter-spacing:2px;color:var(--text-mute);flex:1;text-transform:uppercase;
+}
+.ab-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.ab-form{padding:16px;border-right:1px solid var(--border)}
+.ab-fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.ab-lbl{
+  font-family:'Azeret Mono',monospace;font-size:9px;
+  letter-spacing:2px;text-transform:uppercase;color:var(--violet);
+}
+.ab-sel,.ab-inp{
+  background:var(--surface2);border:1px solid var(--border2);
+  color:var(--text);font-family:'Azeret Mono',monospace;font-size:12px;
+  padding:7px 10px;outline:none;transition:border-color .2s;
+}
+.ab-sel:focus,.ab-inp:focus{border-color:var(--violet);box-shadow:0 0 8px rgba(179,136,255,.15)}
+.ab-run{
+  background:var(--violet);border:none;color:var(--bg);
+  font-family:'DM Sans',sans-serif;font-weight:700;
+  font-size:13px;padding:9px;cursor:pointer;width:100%;
+  transition:all .2s;margin-top:4px;
+}
+.ab-run:hover{background:var(--violet2);box-shadow:0 0 16px rgba(179,136,255,.3)}
+.ab-out{
+  padding:16px;font-family:'Azeret Mono',monospace;
+  font-size:11px;line-height:1.7;color:var(--text-dim);
+  background:#0d0d10;overflow:auto;max-height:320px;
+}
+.ab-out .y-k{color:var(--gold)}
+.ab-out .y-v{color:var(--teal)}
+.ab-out .y-s{color:var(--violet)}
+.ab-out .y-b{color:var(--coral)}
+.ab-out .y-c{color:var(--text-mute)}
+.ab-out .y-n{color:var(--blue)}
+
+/* RUM demo */
+.rum-demo{
+  background:#0d0d10;border:1px solid var(--border);
+  overflow:hidden;margin-bottom:14px;
+}
+.rum-metrics{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
+  gap:1px;background:var(--border);margin-bottom:1px;
+}
+.rum-metric{
+  background:var(--surface2);padding:14px 16px;
+}
+.rm-val{
+  font-family:'Cormorant Garamond',serif;
+  font-size:28px;font-weight:700;color:var(--text);line-height:1;
+  margin-bottom:4px;
+}
+.rm-val.ok{color:var(--teal)}
+.rm-val.warn{color:var(--gold)}
+.rm-val.bad{color:var(--coral)}
+.rm-lbl{
+  font-family:'Azeret Mono',monospace;font-size:9px;
+  letter-spacing:1.5px;color:var(--text-mute);text-transform:uppercase;
+}
+
+/* ── CHEATSHEET ── */
+.cheatsheet{
+  background:var(--surface);border:1px solid var(--border2);
+  overflow:hidden;margin-bottom:56px;
+}
+.cs-hd{
+  padding:18px 24px;cursor:pointer;
+  display:flex;align-items:center;gap:14px;
+  background:linear-gradient(90deg,var(--surface3),var(--surface));
+  border-bottom:1px solid var(--border);
+}
+.cs-hd-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:22px;font-weight:700;color:var(--text);flex:1;
+  font-style:italic;
+}
+.cs-chev{
+  font-family:'Azeret Mono',monospace;font-size:11px;
+  color:var(--text-mute);transition:transform .2s;
+}
+.cs-body{display:none;padding:24px}
+.cs-body.open{display:block}
+.cs-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+  gap:10px;margin-bottom:18px;
+}
+.cs-item{
+  background:var(--bg2);border:1px solid var(--border);padding:13px 15px;
+}
+.cs-t{font-size:13px;font-weight:600;color:var(--text);margin-bottom:5px}
+.cs-d{
+  font-family:'Azeret Mono',monospace;font-size:11px;
+  color:var(--text-mute);line-height:1.6;
+}
+
+/* ── FOOTER ── */
+footer{
+  border-top:1px solid var(--border);
+  background:var(--bg2);
+  padding:28px 36px;display:flex;
+  justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:14px;position:relative;z-index:1;
+}
+.ft{
+  font-family:'Azeret Mono',monospace;font-size:10px;
+  color:var(--text-mute);letter-spacing:1.5px;
+}
+.nav-btn{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--surface);border:1px solid var(--border2);
+  color:var(--text-dim);font-family:'DM Sans',sans-serif;
+  font-weight:600;font-size:13px;padding:9px 18px;
+  cursor:pointer;text-decoration:none;transition:all .2s;
+}
+.nav-btn:hover{border-color:var(--violet);color:var(--violet)}
+.nav-btn.primary{
+  background:linear-gradient(135deg,var(--violet2),var(--violet));
+  border-color:var(--violet);color:var(--bg);font-weight:700;
+}
+.nav-btn.primary:hover{box-shadow:0 4px 20px rgba(179,136,255,.3)}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2)}
+</style>
+</head>
+<body>
+
+<div class="top-rule"></div>
+
+<!-- ── TOP NAV ── -->
+<div class="topnav">
+  <span class="cert-crumb">Observability Engineer</span>
+  <div class="topic-tabs">
+    <button class="ttab done">01 Metrics ✓</button>
+    <button class="ttab done">02 Logging ✓</button>
+    <button class="ttab active">03 APM</button>
+    <button class="ttab">04 Uptime</button>
+    <button class="ttab">05 Structuring Data</button>
+    <button class="ttab">06 Obs Data</button>
+    <button class="ttab">07 Managing Data</button>
+  </div>
+</div>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="wrap">
+    <div class="header-eyebrow">Application Performance Monitoring · Topic 03 of 07</div>
+    <h1>
+      <span class="label">Topic Three</span>
+      <span class="title">A<em>PM</em></span>
+    </h1>
+    <p class="header-desc">Instrument your applications, collect distributed traces, visualize service dependencies, and monitor real-user experience. APM is the deepest pillar of the Elastic Observability exam.</p>
+    <div class="prog-bar-wrap">
+      <span class="prog-lbl">Progress</span>
+      <div class="prog-track"><div class="prog-fill" id="pFill"></div></div>
+      <span class="prog-num" id="pNum">0 / 8 objectives</span>
+    </div>
+  </div>
+</header>
+
+<main>
+<div class="wrap">
+<div class="cards" id="cardList">
+
+<!-- ══ OBJ 1 ══ -->
+<div class="card open" id="c1">
+  <div class="card-hd" onclick="tog('c1')">
+    <span class="card-n">01</span>
+    <div class="card-info">
+      <div class="card-subtitle">APM App</div>
+      <div class="card-title">Use the APM App to Analyze Application Performance</div>
+      <div class="card-tags"><span class="ctag kb">Kibana</span><span class="ctag hi">Core Exam</span></div>
+    </div>
+    <div class="done-pip"></div>
+    <span class="card-chev">▾</span>
+  </div>
+  <div class="card-body">
+    <p class="prose">The <strong>APM app</strong> (Kibana → Observability → APM) provides a unified view of application performance across your entire service fleet. It surfaces slow transactions, errors, service dependencies, and infrastructure correlation in one place.</p>
+
+    <div class="callout exam"><span class="callout-icon">🎯</span><div><strong>Exam objective:</strong> "Use the APM app in Kibana to analyze and answer questions about APM data collected in Elasticsearch." Expect tasks like finding the slowest transaction, identifying an error, or reading a service's latency metrics.</div></div>
+
+    <div class="slbl"><span class="dot"></span>APM App Sections</div>
+    <div class="code">
+<span class="cm"># Navigation: Kibana → Observability → APM</span>
+
+<span class="kw">SERVICES</span> (list view)
+  All instrumented services with:
+  — Latency (avg / 95th / 99th percentile)
+  — Throughput (transactions per minute)
+  — Error rate (%)
+  — Click a service → Service Overview
+
+<span class="kw">SERVICE OVERVIEW</span>
+  Transactions tab: list of transaction types with latency breakdown
+  Errors tab: error groups with stack traces
+  Service Map: visualize dependencies
+  Infrastructure tab: correlated hosts / containers
+  Logs tab: correlated log entries
+
+<span class="kw">TRACES</span>  (global trace list)
+  All distributed traces across all services
+  Filter by service, transaction, duration
+
+<span class="kw">SERVICE MAP</span>
+  Topology of all services and their call relationships
+  Click a node → service details
+  Edge = calls between services (annotated with latency/errors)
+    </div>
+
+    <div class="slbl"><span class="dot"></span>Interactive Trace Waterfall Demo</div>
+    <div class="trace-demo">
+      <div class="trace-toolbar">
+        <span class="trace-lbl">DISTRIBUTED TRACE WATERFALL</span>
+        <button class="trace-btn active" id="trBtn1" onclick="showTrace('checkout')">Checkout Flow</button>
+        <button class="trace-btn" id="trBtn2" onclick="showTrace('search')">Search Query</button>
+        <button class="trace-btn" id="trBtn3" onclick="showTrace('error')">Error Trace</button>
+      </div>
+      <div class="trace-summary" id="traceSummary"></div>
+      <div class="waterfall" id="waterfall"></div>
+    </div>
+
+    <button class="done-btn" onclick="markDone('c1',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+<!-- ══ OBJ 2 ══ -->
+<div class="card" id="c2">
+  <div class="card-hd" onclick="tog('c2')">
+    <span class="card-n">02</span>
+    <div class="card-info">
+      <div class="card-subtitle">RUM / User Experience</div>
+      <div class="card-title">Use the User Experience App to Analyze RUM Data</div>
+      <div class="card-tags"><span class="ctag rum">RUM</span><span class="ctag kb">Kibana</span></div>
+    </div>
+    <div class="done-pip"></div>
+    <span class="card-chev">▾</span>
+  </div>
+  <div class="card-body">
+    <p class="prose"><strong>Real User Monitoring (RUM)</strong> uses the Elastic APM JavaScript agent to capture how real users experience your web app — page load times, resource timing, JS errors, and user journeys. Data appears in the Kibana <em>User Experience</em> app.</p>
+
+    <div class="callout exam"><span class="callout-icon">🎯</span><div><strong>Exam objective:</strong> "Use the Real Experience app in Kibana to analyze and answer questions about RUM data collected in Elasticsearch." Know the Core Web Vitals metrics and how to read them.</div></div>
+
+    <div class="slbl"><span class="dot"></span>Core Web Vitals — User Experience Dashboard</div>
+    <div class="rum-demo">
+      <div class="trace-toolbar">
+        <span class="trace-lbl">USER EXPERIENCE · CORE WEB VITALS</span>
+        <select style="font-family:'Azeret Mono',monospace;font-size:10px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:3px 8px;" onchange="updateRUM(this.value)">
+          <option value="good">Good performance</option>
+          <option value="needs">Needs improvement</option>
+          <option value="poor">Poor performance</option>
+        </select>
+      </div>
+      <div class="rum-metrics" id="rumMetrics"></div>
+      <div style="padding:10px 16px;font-family:'Azeret Mono',monospace;font-size:10px;color:var(--text-mute);border-top:1px solid var(--border)">
+        <span id="rumInfo">LCP: Largest Contentful Paint · FID: First Input Delay · CLS: Cumulative Layout Shift · TBT: Total Blocking Time</span>
+      </div>
+    </div>
+
+    <div class="slbl"><span class="dot"></span>Core Web Vitals Thresholds</div>
+    <table class="tbl">
+      <tr><th>Metric</th><th>Good</th><th>Needs Improvement</th><th>Poor</th><th>What it measures</th></tr>
+      <tr><td>LCP</td><td>&lt; 2.5s</td><td>2.5s – 4s</td><td>&gt; 4s</td><td>Largest element paint time (perceived load speed)</td></tr>
+      <tr><td>FID</td><td>&lt; 100ms</td><td>100ms – 300ms</td><td>&gt; 300ms</td><td>First Input Delay (interactivity responsiveness)</td></tr>
+      <tr><td>CLS</td><td>&lt; 0.1</td><td>0.1 – 0.25</td><td>&gt; 0.25</td><td>Cumulative Layout Shift (visual stability)</td></tr>
+      <tr><td>FCP</td><td>&lt; 1.8s</td><td>1.8s – 3s</td><td>&gt; 3s</td><td>First Contentful Paint (first content rendered)</td></tr>
+      <tr><td>TBT</td><td>&lt; 200ms</td><td>200ms – 600ms</td><td>&gt; 600ms</td><td>Total Blocking Time (main thread blocked)</td></tr>
+    </table>
+
+    <div class="slbl"><span class="dot"></span>Adding the RUM JavaScript Agent</div>
+    <div class="code">
+<button class="copy-btn" onclick="cpCode(this)">copy</button>
+<span class="cm">// Install the Elastic APM RUM agent</span>
+npm install @elastic/apm-rum
+
+<span class="cm">// Initialize in your app entry point (e.g. index.js)</span>
+<span class="kw">import</span> { init <span class="kw">as</span> initApm } <span class="kw">from</span> <span class="st">'@elastic/apm-rum'</span>
+
+<span class="kw">const</span> apm = initApm({
+  serviceName: <span class="st">'my-frontend-app'</span>,
+  serverUrl:   <span class="st">'https://apm-server:8200'</span>,
+  serviceVersion: <span class="st">'1.0.0'</span>,
+  environment: <span class="st">'production'</span>,
+
+  <span class="cm">// Enable distributed tracing with backend</span>
+  distributedTracingOrigins: [<span class="st">'https://api.myapp.com'</span>],
+})
+    </div>
+
+    <button class="done-btn" onclick="markDone('c2',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+<!-- ══ OBJ 3 ══ -->
+<div class="card" id="c3">
+  <div class="card-hd" onclick="tog('c3')">
+    <span class="card-n">03</span>
+    <div class="card-info">
+      <div class="card-subtitle">APM Agents</div>
+      <div class="card-title">Configure APM Agents for Application Instrumentation</div>
+      <div class="card-tags"><span class="ctag apm">APM Agent</span><span class="ctag cfg">Config</span></div>
+    </div>
+    <div class="done-pip"></div>
+    <span class="card-chev">▾</span>
+  </div>
+  <div class="card-body">
+    <p class="prose">APM agents are language-specific libraries that instrument your application code — they automatically capture transactions, spans, errors, and metrics without requiring manual code changes for most frameworks.</p>
+
+    <div class="slbl"><span class="dot"></span>Interactive APM Agent Config Generator</div>
+    <div class="agent-builder">
+      <div class="ab-toolbar">
+        <span class="ab-title">APM Agent Configuration Generator</span>
+        <span style="font-family:'Azeret Mono',monospace;font-size:9px;color:var(--violet)">INTERACTIVE</span>
+      </div>
+      <div class="ab-grid">
+        <div class="ab-form">
+          <div class="ab-fg">
+            <label class="ab-lbl">Language / Agent</label>
+            <select class="ab-sel" id="agLang" onchange="genAgent()">
+              <option value="java">Java</option>
+              <option value="node">Node.js</option>
+              <option value="python">Python (Django/Flask)</option>
+              <option value="dotnet">.NET</option>
+              <option value="ruby">Ruby on Rails</option>
+              <option value="go">Go</option>
+              <option value="php">PHP</option>
+            </select>
+          </div>
+          <div class="ab-fg">
+            <label class="ab-lbl">Service Name</label>
+            <input class="ab-inp" id="agSvc" value="my-backend-service" oninput="genAgent()"/>
+          </div>
+          <div class="ab-fg">
+            <label class="ab-lbl">APM Server URL</label>
+            <input class="ab-inp" id="agUrl" value="http://localhost:8200" oninput="genAgent()"/>
+          </div>
+          <div class="ab-fg">
+            <label class="ab-lbl">Environment</label>
+            <select class="ab-sel" id="agEnv" onchange="genAgent()">
+              <option value="production">production</option>
+              <option value="staging">staging</option>
+              <option value="development">development</option>
+            </select>
+          </div>
+          <div class="ab-fg">
+            <label class="ab-lbl">Secret Token</label>
+            <input class="ab-inp" id="agToken" value="" placeholder="optional" oninput="genAgent()"/>
+          </div>
+          <button class="ab-run" onclick="genAgent()">⚡ Generate Config</button>
+        </div>
+        <div class="ab-out" id="agOut"><span style="color:var(--text-mute)">← Select language and click Generate</span></div>
+      </div>
+    </div>
+
+    <div class="slbl"><span class="dot"></span>Key APM Agent Config Settings</div>
+    <table class="tbl">
+      <tr><th>Setting</th><th>Purpose</th><th>Example</th></tr>
+      <tr><td>service_name</td><td>Identifies the service in APM UI</td><td>checkout-api</td></tr>
+      <tr><td>server_url</td><td>APM Server endpoint</td><td>http://apm-server:8200</td></tr>
+      <tr><td>environment</td><td>Filters by env in APM app</td><td>production / staging</td></tr>
+      <tr><td>secret_token</td><td>Authenticates agent → server</td><td>mySecretToken123</td></tr>
+      <tr><td>transaction_sample_rate</td><td>% of transactions to capture (0.0–1.0)</td><td>0.1 = 10% sampling</td></tr>
+      <tr><td>log_level</td><td>Agent's own log verbosity</td><td>error / warn / info / debug</td></tr>
+    </table>
+
+    <div class="slbl"><span class="dot"></span>Practice Quiz</div>
+    <div class="quiz" id="q3">
+      <div class="quiz-hdr">◆ Exam Question</div>
+      <div class="quiz-q">Your APM agents are sending data but you're receiving 10× more transactions than expected, causing storage issues. Which setting should you adjust?</div>
+      <div class="quiz-opts" id="qo3">
+        <div class="qo" onclick="doQ('q3',0,2)"><span class="ql">a</span><span>Increase <code>server_url</code> timeout to drop slower transactions</span></div>
+        <div class="qo" onclick="doQ('q3',1,2)"><span class="ql">b</span><span>Set <code>environment: production</code> to enable auto-filtering</span></div>
+        <div class="qo" onclick="doQ('q3',2,2)"><span class="ql">c</span><span>Reduce <code>transaction_sample_rate</code> — e.g. set to 0.1 to capture only 10% of transactions</span></div>
+        <div class="qo" onclick="doQ('q3',3,2)"><span class="ql">d</span><span>Disable the APM agent on non-critical services</span></div>
+      </div>
+      <div class="qfb" id="qf3"></div>
+    </div>
+    <button class="done-btn" onclick="markDone('c3',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+<!-- ══ OBJ 4 ══ -->
+<div class="card" id="c4">
+  <div class="card-hd" onclick="tog('c4')">
+    <span class="card-n">04</span>
+    <div class="card-info">
+      <div class="card-subtitle">APM Integration</div>
+      <div class="card-title">Edit and Configure the APM Integration</div>
+      <div class="card-tags"><span class="ctag apm">APM</span><span class="ctag cfg">Fleet</span></div>
+    </div>
+    <div class="done-pip"></div>
+    <span class="card-chev">▾</span>
+  </div>
+  <div class="card-body">
+    <p class="prose">The <strong>APM integration</strong> is managed through Kibana's Fleet/Integrations interface. It configures the APM Server (receiving endpoint for agents) as part of an Elastic Agent policy. You can set the host/port, authentication (secret token or API keys), TLS, and RUM settings.</p>
+
+    <div class="callout exam"><span class="callout-icon">🎯</span><div><strong>Exam objective:</strong> "Edit and configure the APM integration." You need to know how to navigate to it in Fleet, change the APM Server host/port, enable RUM, and set the secret token.</div></div>
+
+    <div class="slbl"><span class="dot"></span>APM Integration Navigation &amp; Key Settings</div>
+    <div class="code">
+<button class="copy-btn" onclick="cpCode(this)">copy</button>
+<span class="cm"># Navigate to: Kibana → Fleet → Agent policies → [policy with APM]</span>
+<span class="cm"># OR: Kibana → Observability → APM → Add APM integration</span>
+
+<span class="kw">KEY SETTINGS IN THE APM INTEGRATION:</span>
+
+<span class="fd">Host</span>:              <span class="vl">0.0.0.0:8200</span>   <span class="cm"># APM Server listen address</span>
+<span class="fd">URL</span>:               <span class="vl">https://apm-server:8200</span>  <span class="cm"># What agents connect to</span>
+
+<span class="fd">Secret token</span>:     <span class="vl">mySecretToken</span>  <span class="cm"># Shared secret for agent auth</span>
+<span class="fd">API key auth</span>:     <span class="vl">enabled/disabled</span>  <span class="cm"># Alternative to secret token</span>
+
+<span class="fd">Enable RUM</span>:        <span class="vl">true</span>           <span class="cm"># Allow browser agents (CORS)</span>
+<span class="fd">Allowed origins</span>:  <span class="vl">["*"]</span>          <span class="cm"># CORS origins for RUM</span>
+
+<span class="fd">TLS</span>:               <span class="cm"># Configure certificate/key for HTTPS</span>
+  enabled: <span class="vl">true</span>
+  certificate: <span class="vl">/path/to/cert.pem</span>
+  key: <span class="vl">/path/to/key.pem</span>
+
+<span class="fd">Tail-based sampling</span>: <span class="vl">false</span>  <span class="cm"># Advanced: sample based on full trace outcome</span>
+    </div>
+
+    <div class="callout tip"><span class="callout-icon">💡</span><div><strong>RUM must be explicitly enabled</strong> in the APM integration. By default it's disabled. When enabled, the APM Server accepts data from browser-based JavaScript agents and you must also configure allowed CORS origins.</div></div>
+
+    <div class="slbl"><span class="dot"></span>APM Server vs APM Integration</div>
+    <table class="tbl">
+      <tr><th>Approach</th><th>How it works</th><th>Config location</th></tr>
+      <tr><td>APM Integration (Fleet)</td><td>APM Server runs inside Elastic Agent, managed via Fleet</td><td>Kibana → Fleet → Agent policies → APM integration</td></tr>
+      <tr><td>Standalone APM Server</td><td>Separate apm-server binary, configured via apm-server.yml</td><td>apm-server.yml on the host</td></tr>
+    </table>
+
+    <div class="callout warn"><span class="callout-icon">⚠️</span><div>The exam uses the <strong>Fleet-managed APM integration</strong> approach. Know how to navigate to it in the Kibana UI and change settings via the integration edit form — not by editing YAML files directly.</div></div>
+    <button class="done-btn" onclick="markDone('c4',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+<!-- ══ OBJ 5 ══ -->
+<div class="card" id="c5">
+  <div class="card-hd" onclick="tog('c5')">
+    <span class="card-n">05</span>
+    <div class="card-info">
+      <div class="card-subtitle">Traces &amp; Spans</div>
+      <div class="card-title">Understand Transactions, Spans &amp; Distributed Tracing</div>
+      <div class="card-tags"><span class="ctag apm">APM</span></div>
+    </div>
+    <div class="done-pip"></div>
+    <span class="card-chev">▾</span>
+  </div>
+  <div class="card-body">
+    <p class="prose">APM data is organized into a hierarchy: a <strong>trace</strong> is the complete journey of a request across all services. Each service contributes a <strong>transaction</strong> (the entry point for that service). Within a transaction, individual operations are captured as <strong>spans</strong> (DB queries, HTTP calls, cache operations).</p>
+
+    <div class="slbl"><span class="dot"></span>APM Terminology</div>
+    <table class="tbl">
+      <tr><th>Term</th><th>Definition</th><th>Example</th></tr>
+      <tr><td>Trace</td><td>Complete end-to-end journey of a single request across all services</td><td>User clicks "Buy" → checkout → payment → inventory → email</td></tr>
+      <tr><td>Transaction</td><td>Entry point for a single service — the top-level operation</td><td>HTTP GET /api/checkout in the checkout-service</td></tr>
+      <tr><td>Span</td><td>A timed operation within a transaction</td><td>SELECT * FROM orders — 12ms DB query</td></tr>
+      <tr><td>Trace ID</td><td>Unique ID shared across all services for one request</td><td>abc123def456… (propagated via HTTP headers)</td></tr>
+      <tr><td>Parent ID</td><td>Links spans/transactions to their parent</td><td>checkout span → parent is the API gateway transaction</td></tr>
+      <tr><td>Service Map</td><td>Topology view of service dependencies derived from trace data</td><td>Shows checkout-api → payment-service → stripe (external)</td></tr>
+      <tr><td>Error group</td><td>Clustered collection of similar errors across transactions</td><td>NullPointerException in OrderService.java:142</td></tr>
+    </table>
+
+    <div class="slbl"><span class="dot"></span>Distributed Trace Propagation</div>
+    <div class="code">
+<span class="cm"># How trace context is propagated between services</span>
+<span class="cm"># W3C Trace Context (standard format used by Elastic APM)</span>
+
+<span class="cm"># HTTP headers added by APM agent automatically:</span>
+traceparent: <span class="vl">00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01</span>
+             <span class="cm"># version-traceId(32hex)-parentId(16hex)-flags</span>
+tracestate:  <span class="vl">es=s:1</span>
+             <span class="cm"># vendor-specific state (es = Elastic, s = sample rate)</span>
+
+<span class="cm"># When service-B receives this, its APM agent:</span>
+<span class="cm"># 1. Reads the traceparent header</span>
+<span class="cm"># 2. Creates a new transaction linked to the same trace ID</span>
+<span class="cm"># 3. Sets its parent to the upstream span/transaction ID</span>
+<span class="cm"># → All services appear in the SAME waterfall in the APM app</span>
+    </div>
+
+    <div class="callout tip"><span class="callout-icon">💡</span><div>In the APM app, click any transaction → "Trace sample" → you see the full distributed waterfall. Click any span to see its details: DB statement, HTTP URL, error details, etc. This is what the exam will ask you to navigate.</div></div>
+    <button class="done-btn" onclick="markDone('c5',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+<!-- ══ OBJ 6 ══ -->
+<div class="card" id="c6">
+  <div class="card-hd" onclick="tog('c6')">
+    <span class="card-n">06</span>
+    <div class="card-info">
+      <div class="card-subtitle">Service Maps</div>
+      <div class="card-title">Use the Service Map to Understand Dependencies</div>
+      <div class="card-tags"><span class="ctag kb">Kibana</span><span class="ctag apm">APM</span></div>
+    </div>
+    <div class="done-pip"></div>
+    <span class="card-chev">▾</span>
+  </div>
+  <div class="card-body">
+    <p class="prose">The <strong>Service Map</strong> auto-generates a live topology diagram from your trace data. Every service that calls another automatically appears as a connected node. It's the fastest way to understand the architecture of a distributed system and spot problematic dependencies.</p>
+
+    <div class="slbl"><span class="dot"></span>Interactive Service Map Demo</div>
+    <div class="smap-demo">
+      <div class="trace-toolbar">
+        <span class="trace-lbl">SERVICE MAP · E-COMMERCE PLATFORM</span>
+        <button class="trace-btn" onclick="toggleSmap()">Toggle Anomaly View</button>
+      </div>
+      <div class="smap-area">
+        <svg id="smapSvg" width="100%" height="280" viewBox="0 0 700 280"></svg>
+      </div>
+    </div>
+
+    <div class="slbl"><span class="dot"></span>Service Map Features</div>
+    <table class="tbl">
+      <tr><th>Feature</th><th>How to use</th></tr>
+      <tr><td>Click a node</td><td>Opens a side panel with that service's latency, throughput, error rate</td></tr>
+      <tr><td>Click an edge</td><td>Shows connection details — calls per minute, latency of that dependency</td></tr>
+      <tr><td>Colour coding</td><td>Green = healthy, Yellow = degraded, Red = high error rate / anomaly</td></tr>
+      <tr><td>External nodes</td><td>Third-party dependencies (Stripe, AWS S3, external APIs) appear as diamonds</td></tr>
+      <tr><td>ML anomaly overlay</td><td>Enable ML for APM to show anomaly indicators on service nodes</td></tr>
+      <tr><td>Environment filter</td><td>Filter map to show only production / staging services</td></tr>
+    </table>
+
+    <div class="callout tip"><span class="callout-icon">💡</span><div>On the exam, you may be asked "which service is calling X" or "which service has the highest error rate" — the Service Map answers both visually. Don't overlook it as a quick navigation tool.</div></div>
+    <button class="done-btn" onclick="markDone('c6',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+<!-- ══ OBJ 7 ══ -->
+<div class="card" id="c7">
+  <div class="card-hd" onclick="tog('c7')">
+    <span class="card-n">07</span>
+    <div class="card-info">
+      <div class="card-subtitle">APM Alerting</div>
+      <div class="card-title">Create APM Alerts for Latency, Errors &amp; Anomalies</div>
+      <div class="card-tags"><span class="ctag cfg">Alerting</span><span class="ctag kb">Kibana</span></div>
+    </div>
+    <div class="done-pip"></div>
+    <span class="card-chev">▾</span>
+  </div>
+  <div class="card-body">
+    <p class="prose">The APM app integrates with Kibana Alerting to fire notifications when service performance degrades. You can alert on transaction latency, error rate, anomaly score, or transaction throughput — all scoped to a specific service, transaction type, and environment.</p>
+
+    <div class="code">
+<button class="copy-btn" onclick="cpCode(this)">copy</button>
+<span class="cm"># Creating an APM alert</span>
+<span class="kw">Navigate to:</span>
+  Kibana → Observability → APM → [service] → Alerts → Create alert
+  <span class="cm">OR: Observability → Alerts → Manage Rules → Create rule → APM</span>
+
+<span class="kw">APM Rule Types:</span>
+  <span class="vl">Latency threshold</span>     — avg/95th/99th latency > X ms
+  <span class="vl">Error count</span>           — errors > N per minute
+  <span class="vl">Error rate</span>            — error % > X% of transactions
+  <span class="vl">Transaction throughput</span> — tpm < N (alert on traffic drops)
+  <span class="vl">Anomaly (ML)</span>          — anomaly score > N on latency/throughput
+
+<span class="kw">Example — Latency alert:</span>
+  Service:     <span class="st">checkout-api</span>
+  Type:        <span class="st">request</span>
+  Environment: <span class="st">production</span>
+  Aggregation: <span class="vl">95th percentile</span>
+  Threshold:   <span class="vl">is above 2000ms</span>
+  Window:      <span class="vl">last 5 minutes</span>
+  Action:      <span class="fd">Slack connector</span> → #apm-alerts
+    </div>
+
+    <div class="slbl"><span class="dot"></span>Practice Quiz</div>
+    <div class="quiz" id="q7">
+      <div class="quiz-hdr">◆ Exam Question</div>
+      <div class="quiz-q">You want to alert when the <code>payment-service</code> error rate exceeds 5% for more than 2 minutes. Which APM rule type should you use?</div>
+      <div class="quiz-opts" id="qo7">
+        <div class="qo" onclick="doQ('q7',0,1)"><span class="ql">a</span><span>Latency threshold — set to 5% of the 95th percentile value</span></div>
+        <div class="qo" onclick="doQ('q7',1,1)"><span class="ql">b</span><span>Error rate — set threshold to 5%, window to 2 minutes, scoped to payment-service</span></div>
+        <div class="qo" onclick="doQ('q7',2,1)"><span class="ql">c</span><span>Transaction throughput — alert when throughput drops below expected level</span></div>
+        <div class="qo" onclick="doQ('q7',3,1)"><span class="ql">d</span><span>Anomaly — the ML job will detect a 5% error rate automatically</span></div>
+      </div>
+      <div class="qfb" id="qf7"></div>
+    </div>
+    <button class="done-btn" onclick="markDone('c7',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+<!-- ══ OBJ 8 ══ -->
+<div class="card" id="c8">
+  <div class="card-hd" onclick="tog('c8')">
+    <span class="card-n">08</span>
+    <div class="card-info">
+      <div class="card-subtitle">APM + Logs Correlation</div>
+      <div class="card-title">Correlate APM Traces with Logs &amp; Infrastructure</div>
+      <div class="card-tags"><span class="ctag apm">APM</span><span class="ctag kb">Logs</span></div>
+    </div>
+    <div class="done-pip"></div>
+    <span class="card-chev">▾</span>
+  </div>
+  <div class="card-body">
+    <p class="prose">One of Elastic's most powerful features is <strong>correlation</strong> between APM traces and logs. When your application logs include the <code>trace.id</code> and <code>transaction.id</code> fields (injected by the APM agent), you can jump directly from a trace to its associated log lines — and vice versa.</p>
+
+    <div class="slbl"><span class="dot"></span>Enabling Log Correlation</div>
+    <div class="steps">
+      <div class="step"><div class="snum">1</div><div class="sc"><div class="st">Configure APM agent to inject trace IDs into logs</div><div class="sd">Most agents do this automatically when using a supported logging framework (Log4j, Logback, Winston, structlog, etc.).</div></div></div>
+      <div class="step"><div class="snum">2</div><div class="sc"><div class="st">Ensure logs are in ECS format</div><div class="sd">Logs must have <code>trace.id</code>, <code>transaction.id</code>, and <code>service.name</code> fields using ECS field names for correlation to work.</div></div></div>
+      <div class="step"><div class="snum">3</div><div class="sc"><div class="st">Ship logs with Filebeat (ECS-compatible output)</div><div class="sd">Use Filebeat with the appropriate module or with <code>json.message_key</code> to parse structured JSON logs.</div></div></div>
+      <div class="step"><div class="snum">4</div><div class="sc"><div class="st">In APM app — click any transaction → Logs tab</div><div class="sd">The APM app automatically queries logs using the trace.id from the selected transaction — no manual filtering needed.</div></div></div>
+    </div>
+
+    <div class="code">
+<span class="cm"># Example correlated log line (ECS format)</span>
+{
+  <span class="fd">"@timestamp"</span>: <span class="st">"2026-02-27T10:23:45.123Z"</span>,
+  <span class="fd">"log.level"</span>: <span class="st">"ERROR"</span>,
+  <span class="fd">"message"</span>: <span class="st">"Payment failed: card_declined for order 9981"</span>,
+  <span class="fd">"service.name"</span>: <span class="st">"payment-service"</span>,
+  <span class="fd">"trace.id"</span>: <span class="vl">"4bf92f3577b34da6a3ce929d0e0e4736"</span>,   <span class="cm">← KEY FIELD</span>
+  <span class="fd">"transaction.id"</span>: <span class="vl">"00f067aa0ba902b7"</span>,              <span class="cm">← KEY FIELD</span>
+  <span class="fd">"host.name"</span>: <span class="st">"payment-01.prod"</span>
+}
+    </div>
+
+    <div class="callout info"><span class="callout-icon">ℹ️</span><div>In the APM app, the <strong>Infrastructure tab</strong> on a service shows which hosts/containers are running that service — derived by correlating <code>service.name</code> across APM data and Metricbeat/Agent data. No extra config needed.</div></div>
+    <button class="done-btn" onclick="markDone('c8',this)">☐ Mark as Understood</button>
+  </div>
+</div>
+
+</div><!-- /cards -->
+
+<!-- ── CHEATSHEET ── -->
+<div class="cheatsheet">
+  <div class="cs-hd" onclick="toggleCS()">
+    <span class="cs-hd-title">📋 Topic 3 Cheatsheet — APM Quick Reference</span>
+    <span class="cs-chev" id="csChev">▾ expand</span>
+  </div>
+  <div class="cs-body" id="csBody">
+    <div class="cs-grid">
+      <div class="cs-item"><div class="cs-t">APM App Navigation</div><div class="cs-d">Kibana → Observability → APM<br>Services → Service Overview<br>Traces → Waterfall view</div></div>
+      <div class="cs-item"><div class="cs-t">APM Integration (Fleet)</div><div class="cs-d">Fleet → Agent policies → APM<br>Set host, secret token, RUM enabled<br>RUM disabled by default!</div></div>
+      <div class="cs-item"><div class="cs-t">Transaction Sample Rate</div><div class="cs-d">transaction_sample_rate: 0.1<br>1.0 = 100% (capture all)<br>Reduce to control storage</div></div>
+      <div class="cs-item"><div class="cs-t">Core Web Vitals</div><div class="cs-d">LCP &lt; 2.5s · FID &lt; 100ms<br>CLS &lt; 0.1 · FCP &lt; 1.8s<br>User Experience app in Kibana</div></div>
+      <div class="cs-item"><div class="cs-t">Trace Hierarchy</div><div class="cs-d">Trace → Transaction → Span<br>trace.id shared across services<br>W3C traceparent header</div></div>
+      <div class="cs-item"><div class="cs-t">Log Correlation Fields</div><div class="cs-d">trace.id · transaction.id<br>service.name (ECS format)<br>APM agent injects automatically</div></div>
+      <div class="cs-item"><div class="cs-t">APM Alert Types</div><div class="cs-d">Latency threshold<br>Error rate / Error count<br>Throughput · ML Anomaly</div></div>
+      <div class="cs-item"><div class="cs-t">RUM Agent Setup</div><div class="cs-d">npm install @elastic/apm-rum<br>init with serverUrl + serviceName<br>Enable RUM in APM integration!</div></div>
+    </div>
+    <div class="slbl"><span class="dot"></span>APM Agent Quick Config (All Languages)</div>
+    <div class="code" style="margin-bottom:0">
+<span class="cm"># Java (environment variables or elasticapm.properties)</span>
+ELASTIC_APM_SERVICE_NAME=<span class="st">my-service</span>
+ELASTIC_APM_SERVER_URL=<span class="vl">http://localhost:8200</span>
+ELASTIC_APM_SECRET_TOKEN=<span class="vl">myToken</span>
+
+<span class="cm"># Node.js</span>
+<span class="kw">require</span>(<span class="st">'elastic-apm-node'</span>).start({ serviceName: <span class="st">'my-service'</span>, serverUrl: <span class="st">'...'</span> })
+
+<span class="cm"># Python (elasticapm)</span>
+ELASTIC_APM_SERVICE_NAME=<span class="st">my-service</span> ELASTIC_APM_SERVER_URL=<span class="vl">http://localhost:8200</span>
+
+<span class="cm"># .NET (appsettings.json)</span>
+<span class="fd">"ElasticApm"</span>: { <span class="fd">"ServiceName"</span>: <span class="st">"my-service"</span>, <span class="fd">"ServerUrl"</span>: <span class="st">"http://localhost:8200"</span> }
+    </div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+</main>
+
+<footer>
+  <div class="wrap" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;width:100%">
+    <span class="ft">Elastic Certified Observability Engineer · Topic 3 · APM · 8 Objectives</span>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <a href="#" class="nav-btn" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">↑ Top</a>
+      <a href="#" class="nav-btn" onclick="alert('Open Topic 2: Logging!');return false;">← Logging</a>
+      <a href="#" class="nav-btn primary" onclick="alert('Ask Claude to generate Topic 4: Uptime!');return false;">Topic 4: Uptime →</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ── TRACE DATA ──
+const traces={
+  checkout:{
+    summary:{duration:'284ms',spans:8,services:4,errors:0},
+    spans:[
+      {name:'GET /api/checkout',service:'api-gateway',start:0,dur:284,color:'#9c6aff',err:false},
+      {name:'authenticate user',service:'api-gateway',start:8,dur:22,color:'#7b52cc',err:false},
+      {name:'POST /checkout',service:'checkout-service',start:32,dur:240,color:'#06d6a0',err:false},
+      {name:'SELECT * FROM cart',service:'checkout-service',start:38,dur:18,color:'#049f77',err:false},
+      {name:'POST /charge',service:'payment-service',start:60,dur:145,color:'#74b9ff',err:false},
+      {name:'Stripe API call',service:'payment-service',start:68,dur:130,color:'#4a90d9',err:false},
+      {name:'UPDATE inventory',service:'inventory-service',start:210,dur:45,color:'#ffd166',err:false},
+      {name:'PUBLISH order.created',service:'checkout-service',start:258,dur:20,color:'#049f77',err:false},
+    ]
+  },
+  search:{
+    summary:{duration:'89ms',spans:5,services:2,errors:0},
+    spans:[
+      {name:'GET /api/search?q=shoes',service:'api-gateway',start:0,dur:89,color:'#9c6aff',err:false},
+      {name:'GET /search',service:'search-service',start:10,dur:72,color:'#06d6a0',err:false},
+      {name:'ES query products-*',service:'search-service',start:14,dur:58,color:'#049f77',err:false},
+      {name:'load facets cache',service:'search-service',start:14,dur:8,color:'#049f77',err:false},
+      {name:'render results',service:'search-service',start:74,dur:8,color:'#049f77',err:false},
+    ]
+  },
+  error:{
+    summary:{duration:'1240ms',spans:6,services:3,errors:1},
+    spans:[
+      {name:'POST /api/payment',service:'api-gateway',start:0,dur:1240,color:'#9c6aff',err:false},
+      {name:'POST /process',service:'payment-service',start:12,dur:1220,color:'#ff6b6b',err:true},
+      {name:'SELECT balance FROM accounts',service:'payment-service',start:18,dur:980,color:'#cc4444',err:true},
+      {name:'db-01 connection attempt',service:'payment-service',start:18,dur:30000/100,color:'#aa3333',err:true},
+      {name:'retry connection (1/3)',service:'payment-service',start:320,dur:30000/100,color:'#aa3333',err:true},
+      {name:'ConnectionTimeoutException',service:'payment-service',start:620,dur:600,color:'#cc2222',err:true},
+    ]
+  }
+};
+
+let currentTrace='checkout';
+function showTrace(key){
+  currentTrace=key;
+  ['trBtn1','trBtn2','trBtn3'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  const map={checkout:'trBtn1',search:'trBtn2',error:'trBtn3'};
+  document.getElementById(map[key]).classList.add('active');
+  renderTrace(key);
+}
+
+function renderTrace(key){
+  const t=traces[key];
+  const s=t.summary;
+  document.getElementById('traceSummary').innerHTML=`
+    <div class="trace-stat"><div class="ts-val ${s.errors>0?'bad':''}">${s.duration}</div><div class="ts-lbl">Total Duration</div></div>
+    <div class="trace-stat"><div class="ts-val">${s.spans}</div><div class="ts-lbl">Spans</div></div>
+    <div class="trace-stat"><div class="ts-val">${s.services}</div><div class="ts-lbl">Services</div></div>
+    <div class="trace-stat"><div class="ts-val ${s.errors>0?'bad':'ok'}">${s.errors}</div><div class="ts-lbl">Errors</div></div>
+  `;
+  const maxDur=Math.max(...t.spans.map(s=>s.start+s.dur));
+  const wf=document.getElementById('waterfall');
+  wf.innerHTML=t.spans.map((sp,i)=>{
+    const pct=(sp.start/maxDur*100).toFixed(1);
+    const width=((sp.dur/maxDur)*100).toFixed(1);
+    const minW=Math.max(parseFloat(width),1);
+    return `<div class="wf-row" style="animation-delay:${i*0.04}s">
+      <div class="wf-name ${sp.err?'wf-err':''}">
+        <span class="service">${sp.service}</span>${sp.name}
+      </div>
+      <div class="wf-track">
+        <div class="wf-bar" style="left:${pct}%;width:${minW}%;background:${sp.color};" title="${sp.dur}ms — ${sp.name}">
+          ${parseFloat(width)>8?sp.dur+'ms':''}
+        </div>
+      </div>
+      <div class="wf-dur ${sp.err?'wf-err':''}">${sp.dur}ms${sp.err?' ⚠':''}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── SERVICE MAP ──
+let smapAnomalyMode=false;
+function toggleSmap(){
+  smapAnomalyMode=!smapAnomalyMode;
+  drawSmap();
+}
+
+const services=[
+  {id:'gw',  name:'api-gateway',      x:80, y:140, color:'#9c6aff', healthy:true},
+  {id:'co',  name:'checkout',         x:230,y:60,  color:'#06d6a0', healthy:true},
+  {id:'pa',  name:'payment-service',  x:420,y:60,  color:'#ff6b6b', healthy:false},
+  {id:'in',  name:'inventory',        x:420,y:220, color:'#06d6a0', healthy:true},
+  {id:'se',  name:'search-service',   x:230,y:220, color:'#ffd166', healthy:true},
+  {id:'st',  name:'stripe (external)',x:590,y:60,  color:'#74b9ff', healthy:true,external:true},
+  {id:'db',  name:'postgres',         x:590,y:220, color:'#74b9ff', healthy:true,external:true},
+];
+const edges=[
+  {from:'gw',to:'co',label:'45ms'},
+  {from:'gw',to:'se',label:'12ms'},
+  {from:'co',to:'pa',label:'145ms ⚠'},
+  {from:'co',to:'in',label:'45ms'},
+  {from:'pa',to:'st',label:'130ms'},
+  {from:'in',to:'db',label:'18ms'},
+  {from:'se',to:'db',label:'58ms'},
+];
+
+function drawSmap(){
+  const svg=document.getElementById('smapSvg');
+  let content='';
+  // edges
+  edges.forEach(e=>{
+    const from=services.find(s=>s.id===e.from);
+    const to=services.find(s=>s.id===e.to);
+    const color=e.label.includes('⚠')?'#ff6b6b':'#3d3d4f';
+    const mx=(from.x+to.x)/2, my=(from.y+to.y)/2;
+    content+=`<line x1="${from.x+40}" y1="${from.y}" x2="${to.x+(to.external?10:40)}" y2="${to.y}" stroke="${color}" stroke-width="1.5" opacity=".6"/>`;
+    content+=`<text x="${mx}" y="${my-4}" fill="${color}" font-family="Azeret Mono,monospace" font-size="9" text-anchor="middle">${e.label}</text>`;
+  });
+  // nodes
+  services.forEach(s=>{
+    const hasAnomaly=smapAnomalyMode&&!s.healthy;
+    const nodeColor=hasAnomaly?'#ff6b6b':s.color;
+    const pulse=hasAnomaly?`<circle cx="${s.x+40}" cy="${s.y}" r="30" fill="none" stroke="${nodeColor}" stroke-width="1" opacity=".3"><animate attributeName="r" values="28;38;28" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" values=".4;0;.4" dur="2s" repeatCount="indefinite"/></circle>`:'';
+    if(s.external){
+      // diamond for external
+      content+=`${pulse}<polygon points="${s.x+40},${s.y-16} ${s.x+56},${s.y} ${s.x+40},${s.y+16} ${s.x+24},${s.y}" fill="${nodeColor}" opacity=".15" stroke="${nodeColor}" stroke-width="1"/>`;
+      content+=`<text x="${s.x+40}" y="${s.y+4}" fill="${nodeColor}" font-family="Azeret Mono,monospace" font-size="9" text-anchor="middle">${s.name.split(' ')[0]}</text>`;
+    } else {
+      content+=`${pulse}<circle cx="${s.x+40}" cy="${s.y}" r="28" fill="${nodeColor}" opacity=".12" stroke="${nodeColor}" stroke-width="1.5"/>`;
+      content+=`<text x="${s.x+40}" y="${s.y-4}" fill="${nodeColor}" font-family="Azeret Mono,monospace" font-size="9" text-anchor="middle" font-weight="500">${s.name.split('-')[0]}</text>`;
+      if(s.name.includes('-')){
+        content+=`<text x="${s.x+40}" y="${s.y+8}" fill="${nodeColor}" font-family="Azeret Mono,monospace" font-size="8" text-anchor="middle" opacity=".7">${s.name.split('-').slice(1).join('-')}</text>`;
+      }
+      if(hasAnomaly){
+        content+=`<text x="${s.x+40}" y="${s.y+20}" fill="${nodeColor}" font-size="12" text-anchor="middle">⚠</text>`;
+      }
+    }
+  });
+  svg.innerHTML=content;
+}
+
+// ── RUM DEMO ──
+const rumData={
+  good:  [{name:'LCP',val:'1.8s',cls:'ok'},{name:'FID',val:'45ms',cls:'ok'},{name:'CLS',val:'0.04',cls:'ok'},{name:'FCP',val:'1.2s',cls:'ok'},{name:'TBT',val:'120ms',cls:'ok'},{name:'Sessions',val:'12,450',cls:''}],
+  needs: [{name:'LCP',val:'3.2s',cls:'warn'},{name:'FID',val:'180ms',cls:'warn'},{name:'CLS',val:'0.14',cls:'warn'},{name:'FCP',val:'2.4s',cls:'warn'},{name:'TBT',val:'380ms',cls:'warn'},{name:'Sessions',val:'12,450',cls:''}],
+  poor:  [{name:'LCP',val:'5.8s',cls:'bad'},{name:'FID',val:'450ms',cls:'bad'},{name:'CLS',val:'0.34',cls:'bad'},{name:'FCP',val:'4.1s',cls:'bad'},{name:'TBT',val:'820ms',cls:'bad'},{name:'Sessions',val:'12,450',cls:''}],
+};
+function updateRUM(mode){
+  const data=rumData[mode];
+  document.getElementById('rumMetrics').innerHTML=data.map(m=>`
+    <div class="rum-metric">
+      <div class="rm-val ${m.cls}">${m.val}</div>
+      <div class="rm-lbl">${m.name}</div>
+    </div>`).join('');
+}
+
+// ── AGENT GENERATOR ──
+const agentDefs={
+  java:{
+    code:(svc,url,env,tok)=>`<span class="y-c"># 1. Add agent JAR to JVM startup</span>\n<span class="y-c">-javaagent:/path/to/elastic-apm-agent.jar</span>\n\n<span class="y-c"># 2. Set system properties or elasticapm.properties:</span>\n<span class="y-k">elastic.apm.service_name</span>=<span class="y-s">${svc}</span>\n<span class="y-k">elastic.apm.server_url</span>=<span class="y-s">${url}</span>\n<span class="y-k">elastic.apm.environment</span>=<span class="y-s">${env}</span>${tok?`\n<span class="y-k">elastic.apm.secret_token</span>=<span class="y-s">${tok}</span>`:''}\n<span class="y-k">elastic.apm.transaction_sample_rate</span>=<span class="y-n">1.0</span>`
+  },
+  node:{
+    code:(svc,url,env,tok)=>`<span class="y-c">// Install: npm install elastic-apm-node</span>\n<span class="y-c">// Add as FIRST require in app entry point:</span>\n<span class="y-k">require</span>(<span class="y-s">'elastic-apm-node'</span>).start({\n  <span class="y-k">serviceName</span>: <span class="y-s">'${svc}'</span>,\n  <span class="y-k">serverUrl</span>:   <span class="y-s">'${url}'</span>,\n  <span class="y-k">environment</span>: <span class="y-s">'${env}'</span>,${tok?`\n  <span class="y-k">secretToken</span>: <span class="y-s">'${tok}'</span>,`:''}\n  <span class="y-k">transactionSampleRate</span>: <span class="y-n">1.0</span>,\n})`
+  },
+  python:{
+    code:(svc,url,env,tok)=>`<span class="y-c"># Install: pip install elastic-apm</span>\n<span class="y-c"># Django: add to settings.py</span>\n<span class="y-k">INSTALLED_APPS</span> += [<span class="y-s">'elasticapm.contrib.django'</span>]\n\n<span class="y-k">ELASTIC_APM</span> = {\n  <span class="y-k">'SERVICE_NAME'</span>: <span class="y-s">'${svc}'</span>,\n  <span class="y-k">'SERVER_URL'</span>:   <span class="y-s">'${url}'</span>,\n  <span class="y-k">'ENVIRONMENT'</span>: <span class="y-s">'${env}'</span>,${tok?`\n  <span class="y-k">'SECRET_TOKEN'</span>: <span class="y-s">'${tok}'</span>,`:''}\n}\n\n<span class="y-c"># OR via environment variables:</span>\n<span class="y-k">ELASTIC_APM_SERVICE_NAME</span>=<span class="y-s">${svc}</span>`
+  },
+  dotnet:{
+    code:(svc,url,env,tok)=>`<span class="y-c">// Install: dotnet add package Elastic.Apm.AspNetCore</span>\n<span class="y-c">// appsettings.json:</span>\n{\n  <span class="y-k">"ElasticApm"</span>: {\n    <span class="y-k">"ServiceName"</span>: <span class="y-s">"${svc}"</span>,\n    <span class="y-k">"ServerUrl"</span>:   <span class="y-s">"${url}"</span>,\n    <span class="y-k">"Environment"</span>: <span class="y-s">"${env}"</span>${tok?`,\n    <span class="y-k">"SecretToken"</span>: <span class="y-s">"${tok}"</span>`:''}\n  }\n}\n<span class="y-c">// Startup.cs:</span>\napp.UseAllElasticApm(Configuration);`
+  },
+  ruby:{
+    code:(svc,url,env,tok)=>`<span class="y-c"># Gemfile: gem 'elastic-apm'</span>\n<span class="y-c"># config/elastic_apm.yml:</span>\n<span class="y-k">service_name</span>: <span class="y-s">'${svc}'</span>\n<span class="y-k">server_url</span>:   <span class="y-s">'${url}'</span>\n<span class="y-k">environment</span>:  <span class="y-s">'${env}'</span>${tok?`\n<span class="y-k">secret_token</span>: <span class="y-s">'${tok}'</span>`:''}`
+  },
+  go:{
+    code:(svc,url,env,tok)=>`<span class="y-c">// go get go.elastic.co/apm/v2</span>\n<span class="y-c">// Environment variables (recommended):</span>\n<span class="y-k">ELASTIC_APM_SERVICE_NAME</span>=<span class="y-s">${svc}</span>\n<span class="y-k">ELASTIC_APM_SERVER_URL</span>=<span class="y-s">${url}</span>\n<span class="y-k">ELASTIC_APM_ENVIRONMENT</span>=<span class="y-s">${env}</span>${tok?`\n<span class="y-k">ELASTIC_APM_SECRET_TOKEN</span>=<span class="y-s">${tok}</span>`:''}\n\n<span class="y-c">// Wrap your HTTP handler:</span>\napm.WrapHandlerFunc(myHandler)`
+  },
+  php:{
+    code:(svc,url,env,tok)=>`<span class="y-c">// Install Elastic APM PHP extension + agent package</span>\n<span class="y-c">// php.ini or environment variables:</span>\n<span class="y-k">ELASTIC_APM_SERVICE_NAME</span>=<span class="y-s">${svc}</span>\n<span class="y-k">ELASTIC_APM_SERVER_URL</span>=<span class="y-s">${url}</span>\n<span class="y-k">ELASTIC_APM_ENVIRONMENT</span>=<span class="y-s">${env}</span>${tok?`\n<span class="y-k">ELASTIC_APM_SECRET_TOKEN</span>=<span class="y-s">${tok}</span>`:''}`
+  }
+};
+function genAgent(){
+  const lang=document.getElementById('agLang').value;
+  const svc=document.getElementById('agSvc').value||'my-service';
+  const url=document.getElementById('agUrl').value||'http://localhost:8200';
+  const env=document.getElementById('agEnv').value;
+  const tok=document.getElementById('agToken').value;
+  document.getElementById('agOut').innerHTML=agentDefs[lang].code(svc,url,env,tok);
+}
+
+// ── TOGGLE ──
+function tog(id){document.getElementById(id).classList.toggle('open')}
+
+// ── MARK DONE ──
+let dc=0;const T=8;
+function markDone(id,btn){
+  const c=document.getElementById(id);
+  if(c.classList.contains('done'))return;
+  c.classList.add('done');btn.classList.add('marked');btn.textContent='✓ Understood';dc++;
+  document.getElementById('pFill').style.width=(dc/T*100)+'%';
+  document.getElementById('pNum').textContent=dc+' / '+T+' objectives';
+}
+
+// ── QUIZ ──
+const qA={
+  q3:{c:2,ok:'✓ Correct! transaction_sample_rate controls the percentage of transactions captured. Setting it to 0.1 captures only 10%, drastically reducing storage while still giving representative data for analysis.',fail:'✗ The correct setting is transaction_sample_rate (e.g. 0.1 = 10%). This is the primary lever for controlling APM data volume without losing observability coverage.'},
+  q7:{c:1,ok:'✓ Correct! The "Error rate" rule type is designed exactly for this use case — set the threshold to 5%, the window to 2 minutes, and scope it to the payment-service.',fail:'✗ The "Error rate" APM rule type lets you set a percentage threshold (5%) and a time window (2 minutes) scoped to a specific service. That\'s the right choice here.'},
+};
+function doQ(qid,sel,correct){
+  const opts=document.getElementById('qo'+qid.replace('q',''));
+  if(opts.querySelector('.locked'))return;
+  opts.querySelectorAll('.qo').forEach((o,i)=>{
+    o.classList.add('locked');
+    if(i===correct)o.classList.add('correct');
+    else if(i===sel&&sel!==correct)o.classList.add('wrong');
+  });
+  const fb=document.getElementById('qf'+qid.replace('q',''));
+  const ok=sel===correct;
+  fb.className='qfb show '+(ok?'correct':'wrong');
+  fb.textContent=qA[qid][ok?'ok':'fail'];
+}
+
+// ── CHEATSHEET ──
+function toggleCS(){
+  const b=document.getElementById('csBody');
+  const ch=document.getElementById('csChev');
+  const open=b.classList.toggle('open');
+  ch.textContent=open?'▴ collapse':'▾ expand';
+}
+
+function cpCode(btn){
+  const pre=btn.parentElement;
+  const txt=pre.innerText.replace('copy','').trim();
+  navigator.clipboard.writeText(txt).catch(()=>{});
+  btn.textContent='✓';setTimeout(()=>btn.textContent='copy',1500);
+}
+
+// ── INIT ──
+renderTrace('checkout');
+drawSmap();
+updateRUM('good');
+genAgent();
+</script>
+</body>
+</html>
