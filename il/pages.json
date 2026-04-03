@@ -89,7 +89,7 @@
     "title": "Elastic Certified SIEM",
    "path": "ECObservability/",
   "description": "Full study guide to ECS",
-  "tags": ["elastic", "certification","analyst"],
+  "tags": ["elastic", "certification","SIEM"],
   "pages": [
     { "title": "Overview",  "path": "topic1-elastic-siem-fundamentals.html" },
     { "title": "Queries",   "path": "topic2-data-ingestion-ecs.html" },
